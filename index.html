@@ -155,8 +155,6 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 .lk-sc{text-align:center;padding:10px 0 4px}
 .lk-big{font-size:48px;margin-bottom:12px}.lk-title{font-size:17px;font-weight:700;margin-bottom:6px}
 .lk-sub{font-size:13px;color:#6B7280;margin-bottom:18px}
-.fl{font-size:12px;color:#9CA3AF;cursor:pointer;text-decoration:underline;margin-top:10px;display:block}.fl:hover{color:#534AB7}
-.nh{font-size:11px;color:#C4C9D4;margin-top:10px}
 .er{display:flex;gap:6px;flex-wrap:wrap}
 .eo{font-size:20px;cursor:pointer;padding:5px;border-radius:6px;border:2px solid transparent;transition:all .1s}
 .eo:hover{background:#F4F4F7}.eo.on{border-color:#534AB7;background:#EEF0FF}
@@ -207,7 +205,6 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   <div class="sb-scroll" id="tree"></div>
   <div class="sb-foot">
     <button class="sb-btn" id="btn-new-folder">&#65291; New Folder</button>
-    <button class="sb-btn plain" id="btn-settings">&#9881; Settings &amp; Master PIN</button>
   </div>
 </div>
 <div id="main">
@@ -273,9 +270,7 @@ function folderLabel(id){var p=[],c=gf(id);while(c){p.unshift(c.name);c=c.parent
 function docIco(d){if(d.format==='pdf'||d.type==='pdf')return'&#128196;';if(d.cloudType==='image')return'&#128444;';if(d.cloudType==='video')return'&#127916;';var m={pdf:'&#128196;',presentation:'&#128202;',spreadsheet:'&#128203;',image:'&#128444;',link:'&#128279;',other:'&#128206;'};return m[d.type]||'&#128206;';}
 function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);var t=d.ops.map(o=>typeof o.insert==='string'?o.insert:'').join('').replace(/\n/g,' ').trim();return esc(t.substring(0,140)+(t.length>140?'...':''));}catch(e){return esc(String(c).substring(0,140));}}
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
-function gmh(){return localStorage.getItem('G_mp')||'';}
-function hmp(){return!!gmh();}
-async function imp(pw){if(!hmp())return false;return(await hw(pw))===gmh();}
+async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();render();}
 function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();render();}
@@ -635,39 +630,18 @@ function openLockModal(type,id){
 // UNLOCK
 function unlockFolder(lid,dest){
   var f=gf(lid);window._dest=dest;
-  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(f?f.name:'')+'</div><div class="lk-sub">This folder is password protected.</div><div class="fr"><input type="password" id="up2" placeholder="Enter password"><div class="e-msg" id="ue">Wrong password. Try again.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="uf-c">Cancel</button><button class="btn pr" id="uf-ok">Unlock</button></div>'+(hmp()?'<span class="fl" id="uf-fp">Forgot password? Use Master PIN</span>':'<div class="nh">Tip: set a Master PIN in Settings as backup.</div>')+'</div>');
+  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(f?f.name:'')+'</div><div class="lk-sub">This folder is password protected.</div><div class="fr"><input type="password" id="up2" placeholder="Enter password"><div class="e-msg" id="ue">Wrong password. Try again.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="uf-c">Cancel</button><button class="btn pr" id="uf-ok">Unlock</button></div></div>');
   document.getElementById('uf-c').addEventListener('click',closeModal);
-  if(hmp())document.getElementById('uf-fp').addEventListener('click',()=>masterFallback('folder',lid));
   var inp=document.getElementById('up2');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doUF(lid);});document.getElementById('uf-ok').addEventListener('click',()=>doUF(lid));
 }
 async function doUF(id){var f=gf(id),pw=document.getElementById('up2').value||'';if((await hw(pw))===f.pw||await imp(pw)){UF.add(id);closeModal();var d=window._dest;window._dest=null;if(d)goTo(d);}else{document.getElementById('ue').classList.add('on');var i=document.getElementById('up2');i.classList.add('err');i.value='';i.focus();}}
 function unlockDoc(id){
   var d=D.find(v=>v.id===id);
-  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(d?d.name:'')+'</div><div class="lk-sub">This document is password protected.</div><div class="fr"><input type="password" id="udp" placeholder="Enter password"><div class="e-msg" id="ude">Wrong password.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="ud-c">Cancel</button><button class="btn pr" id="ud-ok">Unlock</button></div>'+(hmp()?'<span class="fl" id="ud-fp">Forgot password? Use Master PIN</span>':'<div class="nh">Tip: set a Master PIN in Settings as backup.</div>')+'</div>');
+  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(d?d.name:'')+'</div><div class="lk-sub">This document is password protected.</div><div class="fr"><input type="password" id="udp" placeholder="Enter password"><div class="e-msg" id="ude">Wrong password.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="ud-c">Cancel</button><button class="btn pr" id="ud-ok">Unlock</button></div></div>');
   document.getElementById('ud-c').addEventListener('click',closeModal);
-  if(hmp())document.getElementById('ud-fp').addEventListener('click',()=>masterFallback('doc',id));
   var inp=document.getElementById('udp');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doUD(id);});document.getElementById('ud-ok').addEventListener('click',()=>doUD(id));
 }
 async function doUD(id){var d=D.find(v=>v.id===id),pw=document.getElementById('udp').value||'';if((await hw(pw))===d.pw||await imp(pw)){UD.add(id);closeModal();renderMain();}else{document.getElementById('ude').classList.add('on');var i=document.getElementById('udp');i.classList.add('err');i.value='';i.focus();}}
-function masterFallback(type,id){
-  var item=type==='folder'?gf(id):D.find(d=>d.id===id);
-  modal('<div class="lk-sc"><div class="lk-big">&#128272;</div><div class="lk-title">Master PIN</div><div class="lk-sub">Enter your master PIN to unlock <strong>'+esc(item?item.name:'')+'</strong>.</div><div class="fr"><input type="password" id="mfp" placeholder="Master PIN"><div class="e-msg" id="mfe">Wrong master PIN.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="mf-c">Cancel</button><button class="btn pr" id="mf-ok">Unlock</button></div></div>');
-  document.getElementById('mf-c').addEventListener('click',closeModal);var inp=document.getElementById('mfp');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doMF(type,id);});document.getElementById('mf-ok').addEventListener('click',()=>doMF(type,id));
-}
-async function doMF(type,id){var pw=document.getElementById('mfp').value||'';if(await imp(pw)){if(type==='folder'){UF.add(id);closeModal();var d=window._dest;window._dest=null;if(d)goTo(d);else goTo(pathTo(id));}else{UD.add(id);closeModal();renderMain();}}else{document.getElementById('mfe').classList.add('on');var i=document.getElementById('mfp');i.classList.add('err');i.value='';i.focus();}}
-// SETTINGS
-function openSettings(){
-  var has=hmp();
-  modal('<div class="m-title">Settings</div><div style="background:#F8F7FF;border:1px solid #E0DEFF;border-radius:8px;padding:14px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Master PIN</div><div style="font-size:12px;color:#6B7280;margin-bottom:10px;line-height:1.5">'+(has?'A master PIN is set. Use it as fallback if you forget any password.':'No master PIN yet. Recommended — gets you back in if you forget any password.')+'</div><button class="btn se sm" id="set-mp">'+(has?'Change / Remove':'Set Master PIN')+'</button></div>');
-  document.getElementById('set-mp').addEventListener('click',()=>{closeModal();openMasterSetup(has);});
-}
-function openMasterSetup(isChange){
-  modal('<div class="m-title">'+(isChange?'Change Master PIN':'Set Master PIN')+'</div><div class="m-sub">'+(isChange?'Update your backup PIN.':'This PIN unlocks anything if you forget a specific password.')+'</div>'+(isChange?'<div class="fr"><label>Current PIN</label><input type="password" id="mc2"><div class="e-msg" id="mce">Wrong PIN.</div></div>':'')+'<div class="fr"><label>New PIN</label><input type="password" id="mn" placeholder="Choose a PIN or passphrase"></div><div class="fr"><label>Confirm PIN</label><input type="password" id="mf2" placeholder="Confirm"><div class="e-msg" id="mfe2">PINs do not match.</div></div><div class="m-foot" style="justify-content:space-between">'+(isChange?'<button class="btn da sm" id="mp-rm">Remove PIN</button>':'<div></div>')+'<div style="display:flex;gap:8px"><button class="btn se" id="mp-c">Cancel</button><button class="btn pr" id="mp-s">Save PIN</button></div></div>',true);
-  document.getElementById('mp-c').addEventListener('click',closeModal);
-  if(isChange)document.getElementById('mp-rm').addEventListener('click',async()=>{var cu=document.getElementById('mc2'),ce=document.getElementById('mce');if(cu&&(await hw(cu.value))!==gmh()){ce.classList.add('on');cu.classList.add('err');return;}localStorage.removeItem('G_mp');closeModal();toast('Master PIN removed.');});
-  document.getElementById('mp-s').addEventListener('click',async()=>{var nw=document.getElementById('mn').value,c2=document.getElementById('mf2').value;var fe=document.getElementById('mfe2'),cu=document.getElementById('mc2'),ce=document.getElementById('mce');if(ce)ce.classList.remove('on');fe.classList.remove('on');if(isChange&&cu&&(await hw(cu.value))!==gmh()){ce.classList.add('on');cu.classList.add('err');return;}if(!nw){document.getElementById('mn').classList.add('err');return;}if(nw!==c2){fe.classList.add('on');document.getElementById('mf2').classList.add('err');return;}localStorage.setItem('G_mp',await hw(nw));closeModal();toast('Master PIN saved!');});
-}
-function nudgeMaster(){if(hmp())return;modal('<div style="text-align:center;padding:8px 0"><div style="font-size:44px;margin-bottom:12px">&#128272;</div><div class="m-title" style="text-align:center">Set a Master PIN?</div><div class="m-sub" style="text-align:center">If you forget any lock password, this PIN gets you back in. Skip and set later via Settings.</div></div><div class="m-foot" style="justify-content:center;gap:10px"><button class="btn se" id="nm-s">Skip for now</button><button class="btn pr" id="nm-ok">Set Master PIN</button></div>');document.getElementById('nm-s').addEventListener('click',closeModal);document.getElementById('nm-ok').addEventListener('click',()=>{closeModal();openMasterSetup(false);});}
 // LIGHTBOX
 function openLightbox(url,name){var ov=document.createElement('div');ov.className='lb-ov';var img=document.createElement('img');img.src=url;img.alt=name||'';var cls=document.createElement('button');cls.className='lb-close';cls.innerHTML='&#10005;';var nm=document.createElement('div');nm.className='lb-name';nm.textContent=name||'';ov.appendChild(img);ov.appendChild(cls);ov.appendChild(nm);document.body.appendChild(ov);function closeLB(){ov.remove();document.removeEventListener('keydown',onKey);}function onKey(e){if(e.key==='Escape')closeLB();}ov.addEventListener('click',e=>{if(e.target===ov)closeLB();});cls.addEventListener('click',closeLB);document.addEventListener('keydown',onKey);}
 // MODAL
@@ -676,9 +650,8 @@ function closeModal(){document.getElementById('MR').innerHTML='';}
 function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2200);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeCtx();}if((e.metaKey||e.ctrlKey)&&e.key==='s'&&VIEW==='mom'){e.preventDefault();saveMom();}});
 document.getElementById('btn-new-folder').addEventListener('click',()=>openNewFolder(null));
-document.getElementById('btn-settings').addEventListener('click',openSettings);
 document.getElementById('sb-toggle').addEventListener('click',()=>{var sb=document.getElementById('sidebar');sb.classList.toggle('collapsed');});
-loadExp();setTimeout(nudgeMaster,1500);
+loadExp();
 </script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 </body>
