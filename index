@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workspace</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100vh;overflow:hidden;display:flex}
+#sidebar{width:260px;min-width:260px;background:#1A1D2E;display:flex;flex-direction:column;height:100vh;border-right:1px solid #252840;transition:width .2s ease,min-width .2s ease}
+#sidebar.collapsed{width:0;min-width:0;overflow:hidden;border-right:none}
+#sb-toggle{background:none;border:1px solid #E5E7EB;border-radius:6px;color:#6B7280;font-size:15px;cursor:pointer;padding:4px 8px;line-height:1;transition:background .15s,color .15s;flex-shrink:0}
+#sb-toggle:hover{background:#F4F4F7;color:#374151}
+.sb-head{padding:18px 16px 14px;border-bottom:1px solid #252840}
+.sb-logo{font-size:17px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.sb-dot{width:8px;height:8px;border-radius:50%;background:#7B74E8}
+.sb-sub{font-size:11px;color:#6B7280;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.sync-row{display:flex;align-items:center;gap:5px;margin-top:7px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#4B5563;flex-shrink:0;transition:background .3s}
+.sync-dot.live{background:#22c55e}.sync-dot.err{background:#ef4444}
+.sync-lbl{font-size:11px;color:#6B7280}
+.sb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#4B5563;font-weight:600;padding:12px 16px 6px}
+.sb-scroll{flex:1;overflow-y:auto;padding:4px 0}
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:#2D3148;border-radius:2px}
+.sb-foot{padding:12px 16px;border-top:1px solid #252840;display:flex;flex-direction:column;gap:7px}
+.sb-btn{width:100%;padding:8px;background:#252840;border:1px dashed #3D4160;border-radius:6px;color:#8B8FA8;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.sb-btn:hover{background:#2D3148;color:#B0B4C8;border-color:#534AB7}
+.sb-btn.plain{border-style:solid;opacity:.7}.sb-btn.plain:hover{opacity:1}
+.ti{display:flex;align-items:center;gap:5px;padding:5px 8px 5px calc(12px + var(--d,0)*16px);cursor:pointer;font-size:13px;color:#B0B4C8;border-radius:4px;margin:1px 8px;user-select:none;transition:background .1s,color .1s}
+.ti:hover{background:#252840;color:#E8EAF0}.ti.on{background:#534AB7;color:#fff}
+.ti .ic{font-size:13px;flex-shrink:0}.ti .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ti .lk{font-size:10px;flex-shrink:0;opacity:.6}
+.ti .cv{font-size:10px;opacity:.5;width:14px;text-align:center;transition:transform .15s;flex-shrink:0}
+.ti .cv.op{transform:rotate(90deg)}
+.ti .mb{opacity:0;background:none;border:none;cursor:pointer;font-size:14px;color:#8B8FA8;padding:1px 4px;border-radius:4px;font-family:inherit;flex-shrink:0;line-height:1}
+.ti:hover .mb{opacity:1}.ti .mb:hover{background:#3D4160;color:#E8EAF0}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid #EAECF0;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#bc{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
+.bc-i{color:#6B7280;cursor:pointer;transition:color .1s}.bc-i:hover{color:#534AB7}
+.bc-i.cur{color:#1C1C2E;font-weight:600}.bc-s{color:#D0D5DD;font-size:11px}
+#ta{display:flex;gap:8px;flex-shrink:0}
+#ca{flex:1;overflow-y:auto;padding:24px}
+#ca::-webkit-scrollbar{width:6px}
+#ca::-webkit-scrollbar-thumb{background:#DDE0E8;border-radius:3px}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#6B7280;font-size:14px}
+.spinner{width:32px;height:32px;border:3px solid #EAECF0;border-top-color:#534AB7;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn.pr{background:#534AB7;color:#fff}.btn.pr:hover{background:#443CA0}
+.btn.se{background:#F4F4F7;color:#374151;border:1px solid #E5E7EB}.btn.se:hover{background:#EEEEF3}
+.btn.da{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}.btn.da:hover{background:#FEE2E2}
+.btn.wa{background:#FFFBEB;color:#D97706;border:1px solid #FDE68A}
+.btn.gr{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0}.btn.gr:hover{background:#D1FAE5}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.home{max-width:800px}
+.h-greet{font-size:24px;font-weight:700;margin-bottom:4px}
+.h-sub{font-size:14px;color:#6B7280;margin-bottom:20px}
+.stats{display:flex;gap:12px;margin-bottom:24px}
+.stat{background:#fff;border:1px solid #EAECF0;border-radius:10px;padding:16px 20px;flex:1}
+.stat-n{font-size:26px;font-weight:700;color:#534AB7}.stat-l{font-size:12px;color:#6B7280;margin-top:2px}
+.sec-l{font-size:13px;font-weight:600;margin-bottom:12px}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.fc{background:#fff;border:1px solid #EAECF0;border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;position:relative}
+.fc:hover{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.08);transform:translateY(-1px)}
+.fc.lkd{border-color:#FCD34D;background:#FFFBEB}.fc.lkd:hover{border-color:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
+.fc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.fc-mb{opacity:0;background:#F4F4F7;border:1px solid #E5E7EB;border-radius:5px;cursor:pointer;font-size:13px;padding:3px 6px;color:#6B7280;font-family:inherit;transition:opacity .1s}
+.fc:hover .fc-mb{opacity:1}.fc-mb:hover{background:#EEEEF3!important}
+.fc-name{font-size:13px;font-weight:600}.fc-meta{font-size:11px;color:#9CA3AF;margin-top:3px}
+.add-c{background:#fff;border:1px dashed #D0D5DD;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;gap:6px}
+.add-c:hover{border-color:#534AB7;background:#F8F7FF}
+.add-c-plus{font-size:24px;opacity:.35;color:#534AB7}.add-c-lbl{font-size:12px;color:#9CA3AF}
+.starred-section{background:#fff;border:1px solid #FDE68A;border-radius:10px;padding:16px;margin-bottom:20px}
+.starred-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.si{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;cursor:pointer;transition:all .1s}
+.si:hover{border-color:#F59E0B;box-shadow:0 0 0 2px rgba(245,158,11,.1)}
+.si-icon{font-size:17px;flex-shrink:0}
+.si-info{flex:1;min-width:0}
+.si-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-meta{font-size:11px;color:#9CA3AF;margin-top:2px}
+.fv{max-width:900px}
+.fv-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px}
+.fv-tr{display:flex;align-items:center;gap:10px}
+.fv-icon{font-size:32px}.fv-name{font-size:22px;font-weight:700}
+.fv-meta{font-size:12px;color:#9CA3AF;margin-top:3px}
+.tab-bar{display:flex;border-bottom:2px solid #EAECF0;margin-bottom:20px}
+.tab{padding:10px 18px;font-size:13px;font-weight:500;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab:hover{color:#374151}.tab.on{color:#534AB7;border-bottom-color:#534AB7;font-weight:600}
+.chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;background:#EEF0FF;color:#534AB7;margin-left:4px}
+.tab-actions{display:flex;justify-content:flex-end;margin-bottom:14px}
+.search-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search-bar input[type=text]{flex:1;min-width:0;width:auto;padding:7px 10px;border:1px solid #EAECF0;border-radius:7px;font-size:13px;font-family:inherit;outline:none;box-shadow:none}
+.search-bar input[type=text]:focus{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.1)}
+.search-bar select{width:auto;padding:7px 10px;border:1px solid #EAECF0;border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#374151;cursor:pointer;flex-shrink:0}
+.ml{display:flex;flex-direction:column;gap:10px}
+.mc{background:#fff;border:1px solid #EAECF0;border-radius:8px;padding:16px;cursor:pointer;transition:all .15s;position:relative}
+.mc:hover{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.08)}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mc-title{font-size:14px;font-weight:600;flex:1;min-width:0}
+.mc-date{font-size:11px;color:#9CA3AF;white-space:nowrap}
+.mc-prev{font-size:12px;color:#6B7280;margin-top:6px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mc-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;background:#EEF0FF;color:#534AB7}
+.mc-actions{display:flex;gap:5px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid #F3F4F6}
+.star-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:.3;transition:all .15s;flex-shrink:0;line-height:1;color:#F59E0B}
+.star-btn:hover{opacity:.7}.star-btn.on{opacity:1}
+.me{max-width:760px}
+.me-top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.back-btn{background:#F4F4F7;border:1px solid #E5E7EB;border-radius:7px;padding:7px 12px;cursor:pointer;font-size:13px;font-family:inherit;color:#374151;display:flex;align-items:center;gap:5px}
+.back-btn:hover{background:#EEEEF3}
+.me-meta{font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px}
+.ql-toolbar{border-radius:8px 8px 0 0!important;border-color:#EAECF0!important;background:#FAFAFA}
+.ql-container{border-radius:0 0 8px 8px!important;border-color:#EAECF0!important;font-family:'Inter',sans-serif!important;font-size:14px!important}
+.ql-editor{min-height:260px;line-height:1.7;color:#374151;padding:16px!important}
+.ql-editor.ql-blank::before{color:#9CA3AF!important;font-style:normal!important}
+.ql-editor li[data-list=checked]{text-decoration:line-through;opacity:.55}
+.dl{display:flex;flex-direction:column;gap:8px}
+.dc{background:#fff;border:1px solid #EAECF0;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color .15s,box-shadow .15s}
+.dc.lkd{border-color:#FCD34D;background:#FFFBEB}
+.dc.dc-clickable{cursor:pointer}.dc.dc-clickable:hover{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.08)}
+.dc-ic{font-size:22px;flex-shrink:0}
+.dc-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0}
+.dc-inf{flex:1;min-width:0}.dc-name{font-size:13px;font-weight:600}
+.dc-meta{font-size:11px;color:#9CA3AF;margin-top:2px}
+.dc-act{display:flex;gap:5px;flex-shrink:0;align-items:center;flex-wrap:wrap}
+.ib{background:#F4F4F7;border:1px solid #E5E7EB;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s}
+.ib:hover{background:#EEEEF3}
+.upload-zone{border:2px dashed #D0D5DD;border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
+.upload-zone:hover,.upload-zone.drag{border-color:#534AB7;background:#F8F7FF}
+.upload-zone-icon{font-size:32px;margin-bottom:8px;opacity:.5}
+.upload-zone-text{font-size:13px;color:#6B7280}
+.upload-zone-sub{font-size:11px;color:#9CA3AF;margin-top:4px}
+.upload-prog{background:#EEF0FF;border-radius:6px;height:6px;margin-top:10px;overflow:hidden;display:none}
+.upload-prog-bar{height:100%;background:#534AB7;border-radius:6px;transition:width .3s;width:0}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(2px)}
+.modal{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto}
+.modal.w{max-width:560px}
+.m-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.m-sub{font-size:13px;color:#6B7280;margin-bottom:16px;line-height:1.5}
+.m-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.fr{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+input[type=text],input[type=url],input[type=date],input[type=password],textarea,select{width:100%;padding:9px 12px;border:1px solid #D0D5DD;border-radius:7px;font-family:inherit;font-size:13px;color:#1C1C2E;outline:none;transition:border-color .15s;background:#fff}
+input:focus,textarea:focus,select:focus{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.1)}
+.inp-big{font-size:18px!important;font-weight:700!important;border:none!important;border-bottom:2px solid #EAECF0!important;border-radius:0!important;padding:4px 0!important;box-shadow:none!important}
+.inp-big:focus{border-bottom-color:#534AB7!important;box-shadow:none!important}
+.e-msg{font-size:12px;color:#DC2626;margin-top:5px;display:none}.e-msg.on{display:block}
+input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)!important}
+.lk-sc{text-align:center;padding:10px 0 4px}
+.lk-big{font-size:48px;margin-bottom:12px}.lk-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.lk-sub{font-size:13px;color:#6B7280;margin-bottom:18px}
+.fl{font-size:12px;color:#9CA3AF;cursor:pointer;text-decoration:underline;margin-top:10px;display:block}.fl:hover{color:#534AB7}
+.nh{font-size:11px;color:#C4C9D4;margin-top:10px}
+.er{display:flex;gap:6px;flex-wrap:wrap}
+.eo{font-size:20px;cursor:pointer;padding:5px;border-radius:6px;border:2px solid transparent;transition:all .1s}
+.eo:hover{background:#F4F4F7}.eo.on{border-color:#534AB7;background:#EEF0FF}
+.empty{text-align:center;padding:40px 20px}
+.empty-ic{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-t{font-size:14px;font-weight:600;margin-bottom:6px}
+.empty-s{font-size:12px;color:#9CA3AF;margin-bottom:16px}
+.dz{background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:14px;margin-top:4px}
+.dz p{font-size:13px;color:#DC2626;margin-bottom:12px;line-height:1.5}
+.ctx{position:fixed;background:#fff;border:1px solid #E5E7EB;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.13);padding:5px;z-index:9999;min-width:185px}
+.ct{display:flex;align-items:center;gap:9px;padding:8px 11px;font-size:13px;color:#374151;cursor:pointer;border-radius:6px;white-space:nowrap;transition:background .1s}
+.ct:hover{background:#F4F4F7}.ct.da{color:#DC2626}.ct.da:hover{background:#FEF2F2}
+.ct.wa{color:#D97706}.ct.wa:hover{background:#FFFBEB}
+.cd{height:1px;background:#EAECF0;margin:4px 0}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1D2E;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;transition:opacity .3s}
+.move-fi{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;cursor:pointer;font-size:13px;color:#374151;transition:background .1s;user-select:none}
+.move-fi:hover{background:#F4F4F7}.move-fi.sel{background:#EEF0FF;color:#534AB7;font-weight:500}
+.dp-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F8F7FF;border:1px solid #E0DEFF;border-radius:7px;cursor:pointer;transition:all .1s;user-select:none}
+.dp-item:hover,.dp-item.sel{background:#EEF0FF;border-color:#534AB7}
+.dp-check{font-size:16px;opacity:.2;flex-shrink:0;transition:opacity .15s;color:#534AB7}
+.dp-item.sel .dp-check{opacity:1}
+.lb-ov{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:lbIn .15s ease}
+@keyframes lbIn{from{opacity:0}to{opacity:1}}
+.lb-ov img{max-width:90vw;max-height:90vh;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.5);cursor:default;object-fit:contain}
+.lb-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:9001}
+.lb-close:hover{background:rgba(255,255,255,.3)}
+.lb-name{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw;text-align:center}
+@media print{
+  body>*{display:none!important}
+  #pdf-print{display:block!important;padding:40px;font-family:'Inter',sans-serif;color:#1C1C2E}
+  #pdf-print h1{font-size:24px;font-weight:700;margin-bottom:8px}
+  #pdf-print .pm{font-size:13px;color:#6B7280;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #EAECF0}
+  #pdf-print .pb{font-size:14px;line-height:1.8}
+  #pdf-print .pt{margin-top:20px;padding-top:16px;border-top:1px solid #EAECF0}
+  #pdf-print .ptag{display:inline-block;padding:2px 10px;background:#EEF0FF;color:#534AB7;border-radius:4px;font-size:12px;margin-right:6px}
+}
+#pdf-print{display:none}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo"><div class="sb-dot"></div>Workspace</div>
+    <div class="sb-sub">Greg &middot; Personal</div>
+    <div class="sync-row"><div class="sync-dot" id="sdot"></div><span class="sync-lbl" id="slbl">Connecting...</span></div>
+  </div>
+  <div class="sb-lbl">Folders</div>
+  <div class="sb-scroll" id="tree"></div>
+  <div class="sb-foot">
+    <button class="sb-btn" id="btn-new-folder">&#65291; New Folder</button>
+    <button class="sb-btn plain" id="btn-settings">&#9881; Settings &amp; Master PIN</button>
+  </div>
+</div>
+<div id="main">
+  <div id="topbar"><div style="display:flex;align-items:center;gap:10px"><button id="sb-toggle" title="Toggle sidebar">&#9776;</button><div id="bc"></div></div><div id="ta"></div></div>
+  <div id="ca"><div class="loading"><div class="spinner"></div><span>Connecting to cloud...</span></div></div>
+</div>
+<div id="MR"></div><div id="CR"></div><div id="pdf-print"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-project-5b838.firebaseapp.com",projectId:"greg-project-5b838",storageBucket:"greg-project-5b838.firebasestorage.app",messagingSenderId:"695512510143",appId:"1:695512510143:web:ceed96aacd618115ba600a"};
+const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
+const db=getFirestore(initializeApp(FB));
+var F=[],M=[],D=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false},_quill=null;
+function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
+function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d){setSS('live');render();}}
+function sF(f){setDoc(doc(db,'folders',f.id),f).catch(console.error);}
+function sM(m){setDoc(doc(db,'moms',m.id),m).catch(console.error);}
+function sD(d){setDoc(doc(db,'docs',d.id),d).catch(console.error);}
+function dF(id){deleteDoc(doc(db,'folders',id)).catch(console.error);}
+function dM(id){deleteDoc(doc(db,'moms',id)).catch(console.error);}
+function dD(id){deleteDoc(doc(db,'docs',id)).catch(console.error);}
+function dFDeep(fid){kids(fid).forEach(c=>dFDeep(c.id));momsOf(fid).forEach(m=>dM(m.id));docsOf(fid).forEach(d=>dD(d.id));dF(fid);}
+onSnapshot(collection(db,'folders'),snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+onSnapshot(collection(db,'moms'),snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+onSnapshot(collection(db,'docs'),snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m)render();},e=>{setSS('err');console.error(e);});
+async function uploadCL(file,onProg){
+  return new Promise((res,rej)=>{
+    var fd=new FormData();fd.append('file',file);fd.append('upload_preset',CL_PRESET);
+    var rt;
+    if(/^image\//i.test(file.type)||/\.(png|jpg|jpeg|gif|webp|bmp|svg|tiff|ico)$/i.test(file.name)){rt='image';}
+    else if(/^video\//i.test(file.type)||/\.(mp4|mov|avi|mkv|webm)$/i.test(file.name)){rt='video';}
+    else{rt='raw';}
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST','https://api.cloudinary.com/v1_1/'+CL_CLOUD+'/'+rt+'/upload');
+    xhr.upload.onprogress=e=>{if(e.lengthComputable&&onProg)onProg(Math.round(e.loaded/e.total*100));};
+    xhr.onload=()=>{
+      if(xhr.status===200){var r=JSON.parse(xhr.responseText);res({url:r.secure_url,name:file.name,cloudType:r.resource_type,format:r.format||file.name.split('.').pop().toLowerCase()});}
+      else{
+        var msg='Upload failed ('+xhr.status+')';
+        try{var er=JSON.parse(xhr.responseText);msg=er.error&&er.error.message?er.error.message:msg;}catch(e){}
+        if(xhr.status===400&&msg.toLowerCase().includes('format')){msg='This file format is not allowed in your Cloudinary preset. Go to Cloudinary → Settings → Upload → upload preset → Allowed formats, and add the format.';}
+        else if(xhr.status===401){msg='Cloudinary auth error. Check your upload preset is set to Unsigned.';}
+        rej(new Error(msg));
+      }
+    };
+    xhr.onerror=()=>rej(new Error('Network error'));xhr.send(fd);
+  });
+}
+function uid(){return '_'+Math.random().toString(36).slice(2,10);}
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+function gf(id){return F.find(f=>f.id===id);}
+function kids(pid){return F.filter(f=>f.parent===pid);}
+function momsOf(fid){return M.filter(m=>m.folderId===fid);}
+function docsOf(fid){return D.filter(d=>d.folderId===fid);}
+function cf(){return PATH.length?gf(PATH[PATH.length-1]):null;}
+function pathTo(id){var p=[],c=gf(id);while(c){p.unshift(c.id);c=c.parent?gf(c.parent):null;}return p;}
+function cnt(fid){return kids(fid).length+momsOf(fid).length+docsOf(fid).length;}
+function saveExp(){localStorage.setItem('G_exp',JSON.stringify([...EXP]));}
+function loadExp(){try{EXP=new Set(JSON.parse(localStorage.getItem('G_exp')||'[]'));}catch(e){}}
+function folderLabel(id){var p=[],c=gf(id);while(c){p.unshift(c.name);c=c.parent?gf(c.parent):null;}return p.join(' / ');}
+function docIco(d){if(d.format==='pdf'||d.type==='pdf')return'&#128196;';if(d.cloudType==='image')return'&#128444;';if(d.cloudType==='video')return'&#127916;';var m={pdf:'&#128196;',presentation:'&#128202;',spreadsheet:'&#128203;',image:'&#128444;',link:'&#128279;',other:'&#128206;'};return m[d.type]||'&#128206;';}
+function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);var t=d.ops.map(o=>typeof o.insert==='string'?o.insert:'').join('').replace(/\n/g,' ').trim();return esc(t.substring(0,140)+(t.length>140?'...':''));}catch(e){return esc(String(c).substring(0,140));}}
+async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
+function gmh(){return localStorage.getItem('G_mp')||'';}
+function hmp(){return!!gmh();}
+async function imp(pw){if(!hmp())return false;return(await hw(pw))===gmh();}
+function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
+function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();render();}
+function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();render();}
+function goId(id){goTo(pathTo(id));}
+function setTab(t){TAB=t;renderMain();}
+function showCtx(e,fid){
+  e.stopPropagation();closeCtx();var f=gf(fid);if(!f)return;
+  var el=document.createElement('div');el.className='ctx';el.id='CTX';
+  var h='<div class="ct" data-a="open" data-id="'+fid+'">&#128194; Open</div>';
+  h+='<div class="ct" data-a="rename" data-id="'+fid+'">&#9999; Rename</div>';
+  h+='<div class="ct" data-a="sub" data-id="'+fid+'">&#128193; Add Subfolder</div>';
+  h+='<div class="cd"></div>';
+  if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">&#128274; Lock Again</div>';
+  h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+(f.pw?'&#128273; Change Lock':'&#128274; Set Lock')+'</div>';
+  h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">&#128465; Delete</div>';
+  el.innerHTML=h;
+  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='del')askDeleteFolder(id);});
+  document.getElementById('CR').appendChild(el);el.style.left=Math.min(e.clientX,innerWidth-200)+'px';el.style.top=Math.min(e.clientY,innerHeight-220)+'px';
+}
+function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
+document.addEventListener('click',closeCtx);
+function render(){renderTree();renderBC();renderTB();renderMain();}
+function renderTree(){var el=document.getElementById('tree');el.innerHTML='';kids(null).forEach(f=>buildNode(el,f,0));}
+function buildNode(par,f,d){
+  var ch=kids(f.id),act=PATH[PATH.length-1]===f.id,exp=EXP.has(f.id);
+  var el=document.createElement('div');el.className='ti'+(act?' on':'');el.style.setProperty('--d',d);
+  el.innerHTML='<span class="ic">'+(f.icon||'&#128193;')+'</span><span class="nm">'+esc(f.name)+'</span>'+(f.pw?'<span class="lk">&#128274;</span>':'')+'<span class="cv'+(exp?' op':'')+'" data-tog="'+f.id+'">'+(ch.length?'&#9658;':'')+'</span><button class="mb" data-fid="'+f.id+'">&#8943;</button>';
+  el.querySelector('.mb').addEventListener('click',e=>{e.stopPropagation();showCtx(e,f.id);});
+  var cvEl=el.querySelector('.cv[data-tog]');
+  if(cvEl&&ch.length){cvEl.style.cursor='pointer';cvEl.style.padding='2px 4px';cvEl.addEventListener('click',e=>{e.stopPropagation();var isExp=EXP.has(f.id);isExp?EXP.delete(f.id):EXP.add(f.id);saveExp();renderTree();});}
+  el.addEventListener('click',e=>{if(e.target.closest('.mb')||e.target.closest('.cv[data-tog]'))return;goTo(pathTo(f.id));});
+  par.appendChild(el);if(exp&&!ifl(f.id))ch.forEach(c=>buildNode(par,c,d+1));
+}
+function renderBC(){
+  var el=document.getElementById('bc');
+  var h='<span class="bc-i'+(VIEW==='home'&&!PATH.length?' cur':'')+'" id="bc-home">&#127968; Home</span>';
+  PATH.forEach((id,i)=>{var f=gf(id);if(!f)return;var cur=i===PATH.length-1&&VIEW!=='mom';h+='<span class="bc-s">&#8250;</span><span class="bc-i'+(cur?' cur':'')+'" data-bcid="'+id+'">'+esc(f.name)+(f.pw?' &#128274;':'')+'</span>';});
+  if(VIEW==='mom'&&EMOM)h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">&#128221; '+esc(EMOM.title||'MoM')+'</span>';
+  el.innerHTML=h;
+  var hb=document.getElementById('bc-home');if(hb)hb.addEventListener('click',goHome);
+  el.querySelectorAll('[data-bcid]').forEach(b=>b.addEventListener('click',()=>goId(b.dataset.bcid)));
+}
+function renderTB(){
+  var el=document.getElementById('ta');el.innerHTML='';
+  if(VIEW==='folder'){
+    var f=cf();if(!f)return;
+    var r=document.createElement('button');r.className='btn se sm';r.textContent='Rename';r.addEventListener('click',()=>openRename(f.id));el.appendChild(r);
+    if(f.pw&&UF.has(f.id)){var lk=document.createElement('button');lk.className='btn wa sm';lk.textContent='Lock';lk.addEventListener('click',()=>relock(f.id));el.appendChild(lk);}
+    var sl=document.createElement('button');sl.className='btn se sm';sl.textContent=f.pw?'Change Lock':'Set Lock';sl.addEventListener('click',()=>openLockModal('folder',f.id));el.appendChild(sl);
+  }else if(VIEW==='mom'){
+    var ep=document.createElement('button');ep.className='btn gr sm';ep.textContent='Export PDF';ep.addEventListener('click',exportPDF);el.appendChild(ep);
+    var sv=document.createElement('button');sv.className='btn pr sm';sv.textContent='Save';sv.addEventListener('click',saveMom);el.appendChild(sv);
+  }
+}
+function renderMain(){
+  var el=document.getElementById('ca');
+  if(VIEW==='home')el.innerHTML=homeHTML();
+  else if(VIEW==='folder')el.innerHTML=folderHTML();
+  else if(VIEW==='mom'){el.innerHTML=momEdHTML();bindMomEditor();}
+  bindMainEvents();
+}
+function bindMainEvents(){
+  var ca=document.getElementById('ca');
+  ca.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>setTab(el.dataset.tab)));
+  ca.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>goId(el.dataset.goto)));
+  ca.querySelectorAll('[data-ctx]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();showCtx(e,el.dataset.ctx);}));
+  ca.querySelectorAll('[data-openmom]').forEach(el=>el.addEventListener('click',()=>openMom(el.dataset.openmom)));
+  ca.querySelectorAll('[data-openurl]').forEach(el=>el.addEventListener('click',()=>window.open(el.dataset.openurl,'_blank')));
+  ca.querySelectorAll('[data-lightbox]').forEach(el=>el.addEventListener('click',()=>openLightbox(el.dataset.lightbox,el.dataset.lbname)));
+  ca.querySelectorAll('[data-unlockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();unlockDoc(el.dataset.unlockdoc);}));
+  ca.querySelectorAll('[data-relockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();relockDoc(el.dataset.relockdoc);}));
+  ca.querySelectorAll('[data-lockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openLockModal('doc',el.dataset.lockdoc);}));
+  ca.querySelectorAll('[data-deldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();dD(el.dataset.deldoc);}));
+  ca.querySelectorAll('[data-movedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('doc',el.dataset.movedoc);}));
+  ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
+  ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
+  ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
+  ca.querySelectorAll('[data-delfolder]').forEach(el=>el.addEventListener('click',()=>askDeleteFolder(el.dataset.delfolder)));
+  ca.querySelectorAll('[data-starmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var m=M.find(v=>v.id===el.dataset.starmom);if(m){m.starred=!m.starred;sM(m);}}));
+  ca.querySelectorAll('[data-stardoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var d=D.find(v=>v.id===el.dataset.stardoc);if(d){d.starred=!d.starred;sD(d);}}));
+  var nb=ca.querySelector('[data-newmom]');if(nb)nb.addEventListener('click',newMom);
+  var ab=ca.querySelector('[data-adddoc]');if(ab)ab.addEventListener('click',openAddDoc);
+  var sb=ca.querySelector('[data-newsub]');if(sb)sb.addEventListener('click',()=>openNewFolder(sb.dataset.newsub));
+  var afc=ca.querySelector('[data-addfolder]');if(afc)afc.addEventListener('click',()=>openNewFolder(null));
+  // search + sort
+  var ms=ca.querySelector('#mom-search');var msort=ca.querySelector('#mom-sort');
+  if(ms)ms.addEventListener('input',applyMomFilter);
+  if(msort)msort.addEventListener('change',applyMomFilter);
+  var ds=ca.querySelector('#doc-search');var dsort=ca.querySelector('#doc-sort');
+  if(ds)ds.addEventListener('input',applyDocFilter);
+  if(dsort)dsort.addEventListener('change',applyDocFilter);
+}
+function applyMomFilter(){
+  var q=(document.getElementById('mom-search')||{}).value||'';
+  var sort=(document.getElementById('mom-sort')||{}).value||'date';
+  var q2=q.toLowerCase();
+  var list=document.querySelector('#ca .ml');if(!list)return;
+  var cards=Array.from(list.querySelectorAll('.mc'));
+  cards.forEach(c=>{var t=(c.querySelector('.mc-title')||{}).textContent||'';var p=(c.querySelector('.mc-prev')||{}).textContent||'';c.style.display=(!q2||(t+p).toLowerCase().includes(q2))?'':'none';});
+  if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.mc-title')||{}).textContent||'').localeCompare((b.querySelector('.mc-title')||{}).textContent||''));vis.forEach(c=>list.appendChild(c));}
+}
+function applyDocFilter(){
+  var q=(document.getElementById('doc-search')||{}).value||'';
+  var sort=(document.getElementById('doc-sort')||{}).value||'date';
+  var q2=q.toLowerCase();
+  var list=document.querySelector('#ca .dl');if(!list)return;
+  var cards=Array.from(list.querySelectorAll('.dc'));
+  cards.forEach(c=>{var n=(c.querySelector('.dc-name')||{}).textContent||'';c.style.display=(!q2||n.toLowerCase().includes(q2))?'':'none';});
+  if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.dc-name')||{}).textContent||'').localeCompare((b.querySelector('.dc-name')||{}).textContent||''));vis.forEach(c=>list.appendChild(c));}
+}
+// HOME
+function homeHTML(){
+  var r=kids(null);
+  return '<div class="home"><div class="h-greet">Good day, Greg &#128075;</div><div class="h-sub">Your workspace — everything in one place, nothing gets lost.</div>'+
+    '<div class="stats"><div class="stat"><div class="stat-n">'+F.length+'</div><div class="stat-l">Total Folders</div></div><div class="stat"><div class="stat-n">'+M.length+'</div><div class="stat-l">Meeting Notes</div></div><div class="stat"><div class="stat-n">'+D.length+'</div><div class="stat-l">Documents</div></div></div>'+
+    '<div class="sec-l">Workspaces</div><div class="fg">'+r.map(f=>fcard(f,true)).join('')+'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New Folder</div></div></div></div>';
+}
+function fcard(f,big){
+  var n=cnt(f.id),lkd=!!f.pw,meta=lkd&&!UF.has(f.id)?'Password protected':n+' item'+(n!==1?'s':'');
+  return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'"><div class="fc-top"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:'+(big?'26px':'20px')+'">'+(f.icon||'&#128193;')+'</span>'+(lkd?'<span style="font-size:12px">&#128274;</span>':'')+'</div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div><div class="fc-name">'+esc(f.name)+'</div><div class="fc-meta">'+meta+'</div></div>';
+}
+// FOLDER VIEW
+function folderHTML(){
+  var f=cf();if(!f)return'';
+  var s=kids(f.id),ms=momsOf(f.id).sort((a,b)=>b.date-a.date),ds=docsOf(f.id),t=TAB;
+  var starCount=ms.filter(m=>m.starred).length+ds.filter(d=>d.starred).length;
+  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
+    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">&#128193; Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">&#128221; Minutes of Meeting'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">&#128206; Documents'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">&#9733; Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
+    (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
+}
+function subHTML(s,fid){
+  var h='<div class="tab-actions"><button class="btn pr sm" data-newsub="'+fid+'">+ New Subfolder</button></div>';
+  if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Break this space into sections</div></div>';
+  return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+'</div>';
+}
+function momListHTML(ms){
+  var h='<div class="tab-actions"><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
+  h+='<div class="search-bar"><input type="text" id="mom-search" placeholder="&#128269; Search MoMs..."><select id="mom-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
+  if(!ms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Log your first MoM here</div></div>';
+  return h+'<div class="ml">'+ms.map(m=>'<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div class="mc-date">'+fmtDate(m.date)+'</div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>').join('')+'</div>';
+}
+function docListHTML(ds){
+  var h='<div class="tab-actions"><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
+  h+='<div class="search-bar"><input type="text" id="doc-search" placeholder="&#128269; Search documents..."><select id="doc-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
+  if(!ds.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents yet</div><div class="empty-s">Upload files or add links</div></div>';
+  return h+'<div class="dl">'+ds.map(d=>{
+    var lkd=!!d.pw,ulkd=UD.has(d.id),show=!lkd||ulkd;
+    var isImg=d.cloudType==='image'&&d.url&&show&&d.format!=='pdf'&&d.type!=='pdf';
+    var clickAttr=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':show&&d.url?'data-openurl="'+esc(d.url)+'"':'';
+    var clickable=isImg||(show&&!!d.url);
+    return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
+      (isImg?'<img class="dc-thumb" src="'+esc(d.url)+'" alt="'+esc(d.name)+'">':'<div class="dc-ic">'+docIco(d)+'</div>')+
+      '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(d.cloudType||d.type||'')+(d.added?' &middot; Added '+fmtDate(d.added):'')+(show&&d.note?' &middot; '+esc(d.note):(!show?' &middot; Password protected':''))+'</div></div>'+
+      '<div class="dc-act">'+
+        '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'" style="margin-right:2px">&#9733;</button>'+
+        (lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'">&#128274;</button>':'')+
+        (lkd&&ulkd?'<button class="ib" data-relockdoc="'+d.id+'">&#128274;</button>':'')+
+        '<button class="ib" data-renamedoc="'+d.id+'" title="Rename">&#9999;</button>'+
+        (show&&d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">&#11015;</button>':'')+
+        '<button class="ib" data-movedoc="'+d.id+'" title="Move">&#128194;</button>'+
+        '<button class="ib" data-lockdoc="'+d.id+'">&#128273;</button>'+
+        '<button class="ib" data-deldoc="'+d.id+'">&#128465;</button>'+
+      '</div></div>';
+  }).join('')+'</div>';
+}
+function starredTabHTML(fid){
+  var sm=momsOf(fid).filter(m=>m.starred).sort((a,b)=>b.date-a.date);
+  var sd=docsOf(fid).filter(d=>d.starred);
+  if(!sm.length&&!sd.length)return'<div class="empty"><div class="empty-ic">&#9733;</div><div class="empty-t">No starred items yet</div><div class="empty-s">Star any MoM or document to pin it here</div></div>';
+  return'<div class="starred-list">'+
+    sm.map(m=>'<div class="si" data-openmom="'+m.id+'"><div class="si-icon">&#128221;</div><div class="si-info"><div class="si-name">'+esc(m.title||'Untitled')+'</div><div class="si-meta">MoM &nbsp;&#183;&nbsp; '+fmtDate(m.date)+'</div></div><button class="star-btn on" data-starmom="'+m.id+'">&#9733;</button></div>').join('')+
+    sd.map(d=>{var isImg=d.cloudType==='image'&&d.url&&d.format!=='pdf';var ca=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':d.url?'data-openurl="'+esc(d.url)+'"':'';return'<div class="si" '+ca+'><div class="si-icon">'+docIco(d)+'</div><div class="si-info"><div class="si-name">'+esc(d.name)+'</div><div class="si-meta">Doc &nbsp;&#183;&nbsp; '+fmtDate(d.added)+'</div></div><button class="star-btn on" data-stardoc="'+d.id+'">&#9733;</button></div>';}).join('')+
+  '</div>';
+}
+// MOM EDITOR
+function newMom(){var f=cf();if(!f)return;var m={id:uid(),folderId:f.id,title:'Meeting Notes',date:Date.now(),content:'',tags:[],starred:false};sM(m);EMOM=m;VIEW='mom';render();}
+function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';if(!PATH.length||PATH[PATH.length-1]!==m.folderId){PATH=pathTo(m.folderId);PATH.forEach(id=>EXP.add(id));saveExp();}render();}
+function momEdHTML(){
+  var m=EMOM;if(!m)return'';
+  var fld=gf(m.folderId),dv=m.date?new Date(m.date).toISOString().split('T')[0]:'';
+  var hasDocs=docsOf(m.folderId).filter(d=>d.url).length>0;
+  return '<div class="me"><div class="me-top"><button class="back-btn" id="mom-back">&#8592; Back</button><div class="me-meta">Minutes of Meeting &middot; '+esc(fld?fld.name:'')+'</div></div>'+
+    '<div class="fr"><input class="inp-big" type="text" id="mt" value="'+esc(m.title)+'" placeholder="Meeting title..."></div>'+
+    '<div class="fr"><label>Date</label><input type="date" id="md" value="'+dv+'"></div>'+
+    '<div class="fr"><label>Tags <span style="font-weight:400;color:#9CA3AF">(comma separated)</span></label><input type="text" id="mg" value="'+esc((m.tags||[]).join(', '))+'" placeholder="e.g. client call, urgent"></div>'+
+    '<div class="fr"><label>Google Doc Link <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><div style="display:flex;gap:8px"><input type="url" id="mgdoc" value="'+esc(m.gdoc||'')+'" placeholder="https://docs.google.com/...">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="btn se sm" style="white-space:nowrap;text-decoration:none">Open &#8599;</a>':'')+'</div></div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin-bottom:0">Notes</label><div style="display:flex;gap:6px">'+(hasDocs?'<button class="btn se sm" id="insert-doc-btn">&#128206; Insert doc link</button>':'')+'<button class="btn se sm" id="insert-mom-btn">&#128221; Insert MoM link</button></div></div>'+
+    '<div id="quill-editor" style="margin-bottom:16px"></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<button class="btn pr" id="mom-save">Save</button>'+
+      '<button class="btn se" id="mom-cancel">Cancel</button>'+
+      '<button class="btn gr sm" id="mom-export">&#8595; Export PDF</button>'+
+      '<button class="btn se sm" id="mom-move">&#128194; Move</button>'+
+      '<button class="btn se sm'+(m.starred?' on':'') +'" id="mom-star" style="color:'+(m.starred?'#F59E0B':'#6B7280')+'">&#9733; '+(m.starred?'Starred':'Star')+'</button>'+
+      '<button class="btn da sm" style="margin-left:auto" id="mom-del">&#128465; Delete</button>'+
+    '</div></div>';
+}
+function bindMomEditor(){
+  _quill=new Quill('#quill-editor',{theme:'snow',placeholder:'Attendees:\n-\n\nAgenda:\n-\n\nKey Decisions:\n-\n\nAction Items:\n- [ ] ',modules:{toolbar:[[{header:[1,2,3,false]}],['bold','italic','underline','strike'],[{color:[]},{background:[]}],[{list:'ordered'},{list:'bullet'},{list:'check'}],[{indent:'-1'},{indent:'+1'}],['link'],['clean']]}});
+  if(EMOM&&EMOM.content){try{_quill.setContents(JSON.parse(EMOM.content));}catch(e){_quill.setText(EMOM.content);}}
+  _quill.on('text-change',()=>{if(EMOM)EMOM.content=JSON.stringify(_quill.getContents());});
+  document.getElementById('mom-back').addEventListener('click',backMom);
+  document.getElementById('mom-save').addEventListener('click',saveMom);
+  document.getElementById('mom-cancel').addEventListener('click',backMom);
+  document.getElementById('mom-export').addEventListener('click',exportPDF);
+  document.getElementById('mom-del').addEventListener('click',()=>askDelMom(EMOM.id));
+  document.getElementById('mom-move').addEventListener('click',()=>openMoveModal('mom',EMOM.id));
+  document.getElementById('mom-star').addEventListener('click',()=>{if(EMOM){EMOM.starred=!EMOM.starred;sM(EMOM);var b=document.getElementById('mom-star');if(b){b.style.color=EMOM.starred?'#F59E0B':'#6B7280';b.innerHTML='&#9733; '+(EMOM.starred?'Starred':'Star');}}});
+  var ib=document.getElementById('insert-doc-btn');if(ib)ib.addEventListener('click',()=>openDocPicker(EMOM.folderId));
+  var imb=document.getElementById('insert-mom-btn');if(imb)imb.addEventListener('click',()=>openMomPicker(EMOM.id));
+  document.getElementById('quill-editor').addEventListener('click',e=>{var a=e.target.closest('a');if(a&&a.href&&a.href.includes('mom.local/')){e.preventDefault();var mid=a.href.split('mom.local/')[1];if(mid){saveMom();openMom(mid);}}});
+}
+function insertDocLink(name,url){if(_quill){var r=_quill.getSelection(true),idx=r?r.index:_quill.getLength();_quill.insertText(idx,'\n');_quill.insertText(idx+1,name,{link:url});_quill.insertText(idx+1+name.length,'\n');if(EMOM)EMOM.content=JSON.stringify(_quill.getContents());}}
+function collectMom(){
+  if(!EMOM)return;
+  var t=document.getElementById('mt'),d=document.getElementById('md'),g=document.getElementById('mg'),gd=document.getElementById('mgdoc');
+  if(t)EMOM.title=t.value||EMOM.title;
+  if(d&&d.value)EMOM.date=new Date(d.value).getTime();
+  if(g)EMOM.tags=g.value.split(',').map(v=>v.trim()).filter(Boolean);
+  if(_quill)EMOM.content=JSON.stringify(_quill.getContents());
+  if(gd)EMOM.gdoc=gd.value.trim();
+}
+function saveMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;backMom();}
+function backMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;VIEW='folder';TAB='mom';EMOM=null;render();}
+function askDelMom(id){
+  modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
+  document.getElementById('dm-c').addEventListener('click',closeModal);
+  document.getElementById('dm-d').addEventListener('click',()=>{dM(id);EMOM=null;_quill=null;VIEW='folder';TAB='mom';closeModal();render();});
+}
+function exportPDF(){
+  collectMom();var m=EMOM;if(!m)return;var fld=gf(m.folderId);
+  var body=_quill?_quill.root.innerHTML:'<p>'+esc(m.content||'')+'</p>';
+  document.getElementById('pdf-print').innerHTML='<h1>'+esc(m.title||'Meeting Notes')+'</h1><div class="pm">'+(fld?'Folder: '+esc(fld.name)+' &nbsp;&middot;&nbsp; ':'')+'Date: '+fmtDate(m.date)+(m.tags&&m.tags.length?' &nbsp;&middot;&nbsp; Tags: '+m.tags.map(t=>esc(t)).join(', '):'')+'</div><div class="pb">'+body+'</div>'+(m.tags&&m.tags.length?'<div class="pt">'+m.tags.map(t=>'<span class="ptag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div style="margin-top:40px;font-size:11px;color:#9CA3AF">Exported from Greg\'s Workspace &middot; '+new Date().toLocaleDateString()+'</div>';
+  window.print();
+}
+// DOC PICKER
+function openDocPicker(folderId){
+  var fdocs=docsOf(folderId).filter(d=>d.url);if(!fdocs.length){toast('No documents in this folder yet.');return;}
+  modal('<div class="m-title">&#128206; Insert Doc Link</div><div class="m-sub">Select documents to insert as links into your notes.</div><div id="dp-list" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;margin-bottom:4px">'+fdocs.map(d=>'<div class="dp-item" data-name="'+esc(d.name)+'" data-url="'+esc(d.url)+'"><span style="font-size:18px">'+docIco(d)+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">'+esc(d.name)+'</span><span class="dp-check">&#10003;</span></div>').join('')+'</div><div class="m-foot"><button class="btn se" id="dp-c">Cancel</button><button class="btn pr" id="dp-i">Insert Selected</button></div>');
+  document.getElementById('dp-c').addEventListener('click',closeModal);
+  document.getElementById('dp-list').querySelectorAll('.dp-item').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('sel')));
+  document.getElementById('dp-i').addEventListener('click',()=>{var sel=document.getElementById('dp-list').querySelectorAll('.dp-item.sel');if(!sel.length){toast('Select at least one document first.');return;}sel.forEach(el=>insertDocLink(el.dataset.name,el.dataset.url));closeModal();toast(sel.length+' link'+(sel.length>1?'s':'')+' inserted.');});
+}
+// MOM PICKER
+function openMomPicker(currentMomId){
+  var allMoms=M.filter(m=>m.id!==currentMomId).sort((a,b)=>b.date-a.date);
+  if(!allMoms.length){toast('No other MoMs to link to yet.');return;}
+  modal('<div class="m-title">&#128221; Insert MoM Link</div><div class="m-sub">Select MoMs to insert as links into your notes.</div><div id="mp-list" style="display:flex;flex-direction:column;gap:7px;max-height:340px;overflow-y:auto;margin-bottom:4px">'+allMoms.map(m=>{var fld=gf(m.folderId);return'<div class="dp-item" data-momid="'+m.id+'" data-name="'+esc(m.title||'Untitled')+'"><span style="font-size:18px">&#128221;</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(m.title||'Untitled')+'</div><div style="font-size:11px;color:#9CA3AF">'+esc(fld?fld.name:'')+(m.date?' &middot; '+fmtDate(m.date):'')+'</div></div><span class="dp-check">&#10003;</span></div>';}).join('')+'</div><div class="m-foot"><button class="btn se" id="mp-c">Cancel</button><button class="btn pr" id="mp-i">Insert Selected</button></div>');
+  document.getElementById('mp-c').addEventListener('click',closeModal);
+  document.getElementById('mp-list').querySelectorAll('.dp-item').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('sel')));
+  document.getElementById('mp-i').addEventListener('click',()=>{
+    var sel=document.getElementById('mp-list').querySelectorAll('.dp-item.sel');
+    if(!sel.length){toast('Select at least one MoM first.');return;}
+    sel.forEach(el=>{
+      var mid=el.dataset.momid,name=el.dataset.name;
+      if(_quill){var r=_quill.getSelection(true),idx=r?r.index:_quill.getLength();_quill.insertText(idx,'\n');_quill.insertText(idx+1,'📝 '+name,{link:'https://mom.local/'+mid});_quill.insertText(idx+1+name.length+2,'\n');if(EMOM)EMOM.content=JSON.stringify(_quill.getContents());}
+    });
+    closeModal();toast(sel.length+' MoM link'+(sel.length>1?'s':'')+' inserted.');
+  });
+}
+// MOVE MODAL - full tree
+function openMoveModal(type,itemId){
+  var item=type==='mom'?M.find(m=>m.id===itemId):D.find(d=>d.id===itemId);if(!item)return;
+  var curFid=item.folderId;
+  function buildTree(pid,depth){
+    return F.filter(f=>f.parent===pid).map(f=>{
+      var isCur=f.id===curFid;
+      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+f.id+'" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(isCur?' (current)':'')+'</span></div>'+buildTree(f.id,depth+1);
+    }).join('');
+  }
+  var tree=buildTree(null,0);
+  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  var sel=null;
+  document.getElementById('mv-c').addEventListener('click',closeModal);
+  document.getElementById('mv-list').querySelectorAll('.move-fi:not([style*="pointer-events:none"])').forEach(el=>{
+    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;document.getElementById('mv-ok').disabled=false;});
+  });
+  document.getElementById('mv-ok').addEventListener('click',()=>{
+    if(!sel)return;
+    if(type==='mom'){var m=M.find(v=>v.id===itemId);if(m){m.folderId=sel;sM(m);}}
+    else{var d=D.find(v=>v.id===itemId);if(d){d.folderId=sel;sD(d);}}
+    closeModal();toast('Moved to '+folderLabel(sel));
+  });
+}
+// RENAME DOC
+function openRenameDoc(id){
+  var d=D.find(v=>v.id===id);if(!d)return;
+  modal('<div class="m-title">&#9999; Rename Document</div><div class="fr"><label>Name</label><input type="text" id="rd-n" value="'+esc(d.name)+'"></div><div class="m-foot"><button class="btn se" id="rd-c">Cancel</button><button class="btn pr" id="rd-s">Save</button></div>');
+  document.getElementById('rd-c').addEventListener('click',closeModal);
+  document.getElementById('rd-s').addEventListener('click',()=>{var n=document.getElementById('rd-n').value.trim();if(!n)return;d.name=n;sD(d);closeModal();toast('Renamed.');});
+}
+// DOWNLOAD
+async function downloadFile(url,name){
+  try{toast('Downloading...');var res=await fetch(url);if(!res.ok)throw new Error('Failed');var blob=await res.blob();var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name||'download';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
+  catch(e){window.open(url,'_blank');}
+}
+// DOCS
+function openAddDoc(){
+  var f=cf();if(!f)return;var fid=f.id;
+  modal('<div class="m-title">Add Document</div><div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn pr sm" id="tab-up-btn">&#8679; Upload File</button><button class="btn se sm" id="tab-lk-btn">&#128279; Add Link</button></div>'+
+    '<div id="tab-up"><div class="fr"><label>Name <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><input type="text" id="dn-up" placeholder="Uses filename if blank"></div><div class="upload-zone" id="dz"><div class="upload-zone-icon">&#128193;</div><div class="upload-zone-text">Click to choose or drag &amp; drop</div><div class="upload-zone-sub">Images, PDFs, videos, docs — any file up to 100MB</div><div class="upload-prog" id="uprog"><div class="upload-prog-bar" id="upbar"></div></div></div><input type="file" id="fi" style="display:none"><div id="up-status" style="font-size:12px;color:#6B7280;margin-top:8px;min-height:18px"></div><div class="fr" style="margin-top:12px"><label>Note <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><input type="text" id="dnote-up" placeholder="e.g. Sent to client May 15"></div><div class="m-foot"><button class="btn se" id="up-c">Cancel</button><button class="btn pr" id="up-s" disabled>Save</button></div></div>'+
+    '<div id="tab-lk" style="display:none"><div class="fr"><label>Name</label><input type="text" id="dn-lk" placeholder="e.g. Q2 Proposal, Canva Deck"></div><div class="fr"><label>Type</label><select id="dt-lk"><option value="link">Link / URL</option><option value="presentation">Presentation</option><option value="pdf">PDF / Document</option><option value="spreadsheet">Spreadsheet</option><option value="image">Image</option><option value="other">Other</option></select></div><div class="fr"><label>URL</label><input type="url" id="du-lk" placeholder="https://..."></div><div class="fr"><label>Note <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><input type="text" id="dno-lk" placeholder="e.g. Sent to client May 15"></div><div class="m-foot"><button class="btn se" id="lk-c">Cancel</button><button class="btn pr" id="lk-s">Save</button></div></div>',true);
+  window._uploadData=null;
+  document.getElementById('tab-up-btn').addEventListener('click',()=>{document.getElementById('tab-up').style.display='';document.getElementById('tab-lk').style.display='none';document.getElementById('tab-up-btn').className='btn pr sm';document.getElementById('tab-lk-btn').className='btn se sm';});
+  document.getElementById('tab-lk-btn').addEventListener('click',()=>{document.getElementById('tab-lk').style.display='';document.getElementById('tab-up').style.display='none';document.getElementById('tab-lk-btn').className='btn pr sm';document.getElementById('tab-up-btn').className='btn se sm';});
+  document.getElementById('up-c').addEventListener('click',closeModal);document.getElementById('lk-c').addEventListener('click',closeModal);
+  var dz=document.getElementById('dz');
+  dz.addEventListener('click',()=>document.getElementById('fi').click());
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])doUpload(e.dataTransfer.files[0]);});
+  document.getElementById('fi').addEventListener('change',e=>{if(e.target.files[0])doUpload(e.target.files[0]);});
+  async function doUpload(file){
+    var st=document.getElementById('up-status'),pg=document.getElementById('uprog'),bar=document.getElementById('upbar'),sb=document.getElementById('up-s'),tx=dz.querySelector('.upload-zone-text');
+    st.textContent='Uploading '+file.name+'...';pg.style.display='block';sb.disabled=true;
+    try{var r=await uploadCL(file,p=>{bar.style.width=p+'%';});window._uploadData={...r,origName:file.name};st.innerHTML='<span style="color:#059669">&#10003; '+esc(file.name)+' ready</span>';if(tx)tx.textContent='Ready: '+file.name;sb.disabled=false;}
+    catch(err){st.innerHTML='<span style="color:#DC2626">'+(err.message||'Upload failed. Try again.')+'</span>';pg.style.display='none';console.error(err);}
+  }
+  document.getElementById('up-s').addEventListener('click',()=>{var fd=window._uploadData;if(!fd){alert('Please select a file first.');return;}var ne=document.getElementById('dn-up'),no=document.getElementById('dnote-up');sD({id:uid(),folderId:fid,name:(ne&&ne.value.trim())||fd.origName||'File',cloudType:fd.cloudType,format:fd.format,url:fd.url,note:(no&&no.value.trim())||'',added:Date.now(),uploaded:true,type:fd.cloudType||'other',starred:false});window._uploadData=null;closeModal();setTab('doc');});
+  document.getElementById('lk-s').addEventListener('click',()=>{var n=document.getElementById('dn-lk').value.trim();if(!n){alert('Please enter a name.');return;}sD({id:uid(),folderId:fid,name:n,type:document.getElementById('dt-lk').value||'other',url:document.getElementById('du-lk').value.trim(),note:document.getElementById('dno-lk').value.trim(),added:Date.now(),starred:false});closeModal();setTab('doc');});
+}
+function relockDoc(id){UD.delete(id);renderMain();}
+// FOLDERS
+var EMOJIS=['📁','🏢','🍱','📈','👥','🚀','💼','🎯','📋','🌿','⚡','🔑','💡','🗂️','🛒','🏗️','🎨','📊','🧪','🤝','📱','💰','🖥️','📣'];
+function emRow(sel){return'<div class="er">'+EMOJIS.map(e=>'<span class="eo'+(e===sel?' on':'')+'" data-em="'+e+'">'+e+'</span>').join('')+'</div>';}
+function bindEmoji(c){c.querySelectorAll('.eo').forEach(el=>el.addEventListener('click',()=>{c.querySelectorAll('.eo').forEach(e=>e.classList.remove('on'));el.classList.add('on');}));}
+function getSelEmoji(c){return(c.querySelector('.eo.on')||{}).textContent||'📁';}
+function openNewFolder(pid){
+  var pn=pid?(gf(pid)||{}).name:null;
+  modal('<div class="m-title">New Folder'+(pn?' <span style="font-size:12px;color:#9CA3AF;font-weight:400">under '+esc(pn)+'</span>':'')+  '</div><div class="fr"><label>Name</label><input type="text" id="fn" placeholder="e.g. Clients, Product Roadmap..."></div><div class="fr"><label>Icon</label>'+emRow('📁')+'</div><div class="m-foot"><button class="btn se" id="nf-c">Cancel</button><button class="btn pr" id="nf-s">Create</button></div>',true);
+  var mr=document.getElementById('MR');bindEmoji(mr);
+  document.getElementById('nf-c').addEventListener('click',closeModal);
+  document.getElementById('nf-s').addEventListener('click',()=>{var n=document.getElementById('fn').value.trim();if(!n){alert('Please enter a name.');return;}sF({id:uid(),name:n,icon:getSelEmoji(mr),parent:pid||null,created:Date.now()});if(pid)EXP.add(pid);saveExp();closeModal();});
+}
+function openRename(id){
+  var f=gf(id);if(!f)return;
+  modal('<div class="m-title">Rename</div><div class="fr"><label>Name</label><input type="text" id="rn" value="'+esc(f.name)+'"></div><div class="fr"><label>Icon</label>'+emRow(f.icon||'📁')+'</div><div class="m-foot"><button class="btn se" id="rn-c">Cancel</button><button class="btn pr" id="rn-s">Save</button></div>',true);
+  var mr=document.getElementById('MR');bindEmoji(mr);
+  document.getElementById('rn-c').addEventListener('click',closeModal);
+  document.getElementById('rn-s').addEventListener('click',()=>{var n=document.getElementById('rn').value.trim();if(!n)return;f.name=n;f.icon=getSelEmoji(mr);sF(f);closeModal();});
+}
+function askDeleteFolder(id){
+  var f=gf(id),tot=cnt(id);
+  modal('<div class="m-title">Delete "'+esc(f?f.name:'')+'"?</div><div class="dz"><p>This will permanently delete this folder'+(tot>0?' and all '+tot+' item'+(tot!==1?'s':'')+' inside':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="df-c">Cancel</button><button class="btn da" id="df-d">Yes, Delete</button></div></div>');
+  document.getElementById('df-c').addEventListener('click',closeModal);
+  document.getElementById('df-d').addEventListener('click',()=>{var f2=gf(id),par=f2?f2.parent:null;dFDeep(id);closeModal();par?goTo(pathTo(par)):goHome();});
+}
+function relock(id){UF.delete(id);if(PATH.includes(id))goHome();else render();}
+// LOCK
+function openLockModal(type,id){
+  var item=type==='folder'?gf(id):D.find(d=>d.id===id);if(!item)return;var has=!!item.pw;
+  modal('<div class="m-title">'+(has?'Change / Remove Lock':'Set a Password Lock')+'</div><div class="m-sub">This '+type+' will require a password to open.</div>'+(has?'<div class="fr"><label>Current Password</label><input type="password" id="lc"><div class="e-msg" id="lce">Wrong password.</div></div>':'')+'<div class="fr"><label>New Password</label><input type="password" id="ln" placeholder="Choose a password"></div><div class="fr"><label>Confirm</label><input type="password" id="lf" placeholder="Confirm password"><div class="e-msg" id="lfe">Passwords do not match.</div></div><div class="m-foot" style="justify-content:space-between">'+(has?'<button class="btn da sm" id="lk-rm">Remove Lock</button>':'<div></div>')+'<div style="display:flex;gap:8px"><button class="btn se" id="lk-c">Cancel</button><button class="btn pr" id="lk-s">Set Lock</button></div></div>',true);
+  document.getElementById('lk-c').addEventListener('click',closeModal);
+  if(has)document.getElementById('lk-rm').addEventListener('click',async()=>{var cu=document.getElementById('lc'),ce=document.getElementById('lce');var it=type==='folder'?gf(id):D.find(d=>d.id===id);if(cu&&(await hw(cu.value))!==it.pw){ce.classList.add('on');cu.classList.add('err');return;}if(type==='folder'){var f=gf(id);if(f){delete f.pw;sF(f);}UF.delete(id);}else{var d=D.find(v=>v.id===id);if(d){delete d.pw;sD(d);}UD.delete(id);}closeModal();toast('Lock removed.');});
+  document.getElementById('lk-s').addEventListener('click',async()=>{var nw=document.getElementById('ln').value,c2=document.getElementById('lf').value;var fe=document.getElementById('lfe'),cu=document.getElementById('lc'),ce=document.getElementById('lce');if(ce)ce.classList.remove('on');if(fe)fe.classList.remove('on');if(!nw){document.getElementById('ln').classList.add('err');return;}if(nw!==c2){fe.classList.add('on');document.getElementById('lf').classList.add('err');return;}if(has&&cu){var it=type==='folder'?gf(id):D.find(d=>d.id===id);if((await hw(cu.value))!==it.pw){ce.classList.add('on');cu.classList.add('err');return;}}var h=await hw(nw);if(type==='folder'){var f=gf(id);if(f){f.pw=h;sF(f);UF.add(id);}}else{var d=D.find(v=>v.id===id);if(d){d.pw=h;sD(d);UD.add(id);}}closeModal();toast('Lock set!');});
+}
+// UNLOCK
+function unlockFolder(lid,dest){
+  var f=gf(lid);window._dest=dest;
+  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(f?f.name:'')+'</div><div class="lk-sub">This folder is password protected.</div><div class="fr"><input type="password" id="up2" placeholder="Enter password"><div class="e-msg" id="ue">Wrong password. Try again.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="uf-c">Cancel</button><button class="btn pr" id="uf-ok">Unlock</button></div>'+(hmp()?'<span class="fl" id="uf-fp">Forgot password? Use Master PIN</span>':'<div class="nh">Tip: set a Master PIN in Settings as backup.</div>')+'</div>');
+  document.getElementById('uf-c').addEventListener('click',closeModal);
+  if(hmp())document.getElementById('uf-fp').addEventListener('click',()=>masterFallback('folder',lid));
+  var inp=document.getElementById('up2');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doUF(lid);});document.getElementById('uf-ok').addEventListener('click',()=>doUF(lid));
+}
+async function doUF(id){var f=gf(id),pw=document.getElementById('up2').value||'';if((await hw(pw))===f.pw||await imp(pw)){UF.add(id);closeModal();var d=window._dest;window._dest=null;if(d)goTo(d);}else{document.getElementById('ue').classList.add('on');var i=document.getElementById('up2');i.classList.add('err');i.value='';i.focus();}}
+function unlockDoc(id){
+  var d=D.find(v=>v.id===id);
+  modal('<div class="lk-sc"><div class="lk-big">&#128274;</div><div class="lk-title">'+esc(d?d.name:'')+'</div><div class="lk-sub">This document is password protected.</div><div class="fr"><input type="password" id="udp" placeholder="Enter password"><div class="e-msg" id="ude">Wrong password.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="ud-c">Cancel</button><button class="btn pr" id="ud-ok">Unlock</button></div>'+(hmp()?'<span class="fl" id="ud-fp">Forgot password? Use Master PIN</span>':'<div class="nh">Tip: set a Master PIN in Settings as backup.</div>')+'</div>');
+  document.getElementById('ud-c').addEventListener('click',closeModal);
+  if(hmp())document.getElementById('ud-fp').addEventListener('click',()=>masterFallback('doc',id));
+  var inp=document.getElementById('udp');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doUD(id);});document.getElementById('ud-ok').addEventListener('click',()=>doUD(id));
+}
+async function doUD(id){var d=D.find(v=>v.id===id),pw=document.getElementById('udp').value||'';if((await hw(pw))===d.pw||await imp(pw)){UD.add(id);closeModal();renderMain();}else{document.getElementById('ude').classList.add('on');var i=document.getElementById('udp');i.classList.add('err');i.value='';i.focus();}}
+function masterFallback(type,id){
+  var item=type==='folder'?gf(id):D.find(d=>d.id===id);
+  modal('<div class="lk-sc"><div class="lk-big">&#128272;</div><div class="lk-title">Master PIN</div><div class="lk-sub">Enter your master PIN to unlock <strong>'+esc(item?item.name:'')+'</strong>.</div><div class="fr"><input type="password" id="mfp" placeholder="Master PIN"><div class="e-msg" id="mfe">Wrong master PIN.</div></div><div style="display:flex;gap:8px;justify-content:center;margin-top:4px"><button class="btn se" id="mf-c">Cancel</button><button class="btn pr" id="mf-ok">Unlock</button></div></div>');
+  document.getElementById('mf-c').addEventListener('click',closeModal);var inp=document.getElementById('mfp');inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')doMF(type,id);});document.getElementById('mf-ok').addEventListener('click',()=>doMF(type,id));
+}
+async function doMF(type,id){var pw=document.getElementById('mfp').value||'';if(await imp(pw)){if(type==='folder'){UF.add(id);closeModal();var d=window._dest;window._dest=null;if(d)goTo(d);else goTo(pathTo(id));}else{UD.add(id);closeModal();renderMain();}}else{document.getElementById('mfe').classList.add('on');var i=document.getElementById('mfp');i.classList.add('err');i.value='';i.focus();}}
+// SETTINGS
+function openSettings(){
+  var has=hmp();
+  modal('<div class="m-title">Settings</div><div style="background:#F8F7FF;border:1px solid #E0DEFF;border-radius:8px;padding:14px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Master PIN</div><div style="font-size:12px;color:#6B7280;margin-bottom:10px;line-height:1.5">'+(has?'A master PIN is set. Use it as fallback if you forget any password.':'No master PIN yet. Recommended — gets you back in if you forget any password.')+'</div><button class="btn se sm" id="set-mp">'+(has?'Change / Remove':'Set Master PIN')+'</button></div>');
+  document.getElementById('set-mp').addEventListener('click',()=>{closeModal();openMasterSetup(has);});
+}
+function openMasterSetup(isChange){
+  modal('<div class="m-title">'+(isChange?'Change Master PIN':'Set Master PIN')+'</div><div class="m-sub">'+(isChange?'Update your backup PIN.':'This PIN unlocks anything if you forget a specific password.')+'</div>'+(isChange?'<div class="fr"><label>Current PIN</label><input type="password" id="mc2"><div class="e-msg" id="mce">Wrong PIN.</div></div>':'')+'<div class="fr"><label>New PIN</label><input type="password" id="mn" placeholder="Choose a PIN or passphrase"></div><div class="fr"><label>Confirm PIN</label><input type="password" id="mf2" placeholder="Confirm"><div class="e-msg" id="mfe2">PINs do not match.</div></div><div class="m-foot" style="justify-content:space-between">'+(isChange?'<button class="btn da sm" id="mp-rm">Remove PIN</button>':'<div></div>')+'<div style="display:flex;gap:8px"><button class="btn se" id="mp-c">Cancel</button><button class="btn pr" id="mp-s">Save PIN</button></div></div>',true);
+  document.getElementById('mp-c').addEventListener('click',closeModal);
+  if(isChange)document.getElementById('mp-rm').addEventListener('click',async()=>{var cu=document.getElementById('mc2'),ce=document.getElementById('mce');if(cu&&(await hw(cu.value))!==gmh()){ce.classList.add('on');cu.classList.add('err');return;}localStorage.removeItem('G_mp');closeModal();toast('Master PIN removed.');});
+  document.getElementById('mp-s').addEventListener('click',async()=>{var nw=document.getElementById('mn').value,c2=document.getElementById('mf2').value;var fe=document.getElementById('mfe2'),cu=document.getElementById('mc2'),ce=document.getElementById('mce');if(ce)ce.classList.remove('on');fe.classList.remove('on');if(isChange&&cu&&(await hw(cu.value))!==gmh()){ce.classList.add('on');cu.classList.add('err');return;}if(!nw){document.getElementById('mn').classList.add('err');return;}if(nw!==c2){fe.classList.add('on');document.getElementById('mf2').classList.add('err');return;}localStorage.setItem('G_mp',await hw(nw));closeModal();toast('Master PIN saved!');});
+}
+function nudgeMaster(){if(hmp())return;modal('<div style="text-align:center;padding:8px 0"><div style="font-size:44px;margin-bottom:12px">&#128272;</div><div class="m-title" style="text-align:center">Set a Master PIN?</div><div class="m-sub" style="text-align:center">If you forget any lock password, this PIN gets you back in. Skip and set later via Settings.</div></div><div class="m-foot" style="justify-content:center;gap:10px"><button class="btn se" id="nm-s">Skip for now</button><button class="btn pr" id="nm-ok">Set Master PIN</button></div>');document.getElementById('nm-s').addEventListener('click',closeModal);document.getElementById('nm-ok').addEventListener('click',()=>{closeModal();openMasterSetup(false);});}
+// LIGHTBOX
+function openLightbox(url,name){var ov=document.createElement('div');ov.className='lb-ov';var img=document.createElement('img');img.src=url;img.alt=name||'';var cls=document.createElement('button');cls.className='lb-close';cls.innerHTML='&#10005;';var nm=document.createElement('div');nm.className='lb-name';nm.textContent=name||'';ov.appendChild(img);ov.appendChild(cls);ov.appendChild(nm);document.body.appendChild(ov);function closeLB(){ov.remove();document.removeEventListener('keydown',onKey);}function onKey(e){if(e.key==='Escape')closeLB();}ov.addEventListener('click',e=>{if(e.target===ov)closeLB();});cls.addEventListener('click',closeLB);document.addEventListener('keydown',onKey);}
+// MODAL
+function modal(html,wide){var r=document.getElementById('MR');r.innerHTML='<div class="ov" id="OV"><div class="modal'+(wide?' w':'')+'">'+html+'</div></div>';document.getElementById('OV').addEventListener('click',e=>{if(e.target.id==='OV')closeModal();});setTimeout(()=>{var i=r.querySelector('input[type=text],input[type=password]');if(i)i.focus();},50);}
+function closeModal(){document.getElementById('MR').innerHTML='';}
+function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2200);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeCtx();}if((e.metaKey||e.ctrlKey)&&e.key==='s'&&VIEW==='mom'){e.preventDefault();saveMom();}});
+document.getElementById('btn-new-folder').addEventListener('click',()=>openNewFolder(null));
+document.getElementById('btn-settings').addEventListener('click',openSettings);
+document.getElementById('sb-toggle').addEventListener('click',()=>{var sb=document.getElementById('sidebar');sb.classList.toggle('collapsed');});
+loadExp();setTimeout(nudgeMaster,1500);
+</script>
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+</body>
+</html>
