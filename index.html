@@ -212,25 +212,26 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   <div id="ca"><div class="loading"><div class="spinner"></div><span>Connecting to cloud...</span></div></div>
 </div>
 <div id="MR"></div><div id="CR"></div><div id="pdf-print"></div>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
 const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-project-5b838.firebaseapp.com",projectId:"greg-project-5b838",storageBucket:"greg-project-5b838.firebasestorage.app",messagingSenderId:"695512510143",appId:"1:695512510143:web:ceed96aacd618115ba600a"};
 const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
-const db=getFirestore(initializeApp(FB));
+firebase.initializeApp(FB);
+const db=firebase.firestore();
 var F=[],M=[],D=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false},_quill=null;
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
 function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d){setSS('live');render();}}
-function sF(f){setDoc(doc(db,'folders',f.id),f).catch(console.error);}
-function sM(m){setDoc(doc(db,'moms',m.id),m).catch(console.error);}
-function sD(d){setDoc(doc(db,'docs',d.id),d).catch(console.error);}
-function dF(id){deleteDoc(doc(db,'folders',id)).catch(console.error);}
-function dM(id){deleteDoc(doc(db,'moms',id)).catch(console.error);}
-function dD(id){deleteDoc(doc(db,'docs',id)).catch(console.error);}
+function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
+function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
+function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
+function dF(id){db.collection('folders').doc(id).delete().catch(console.error);}
+function dM(id){db.collection('moms').doc(id).delete().catch(console.error);}
+function dD(id){db.collection('docs').doc(id).delete().catch(console.error);}
 function dFDeep(fid){kids(fid).forEach(c=>dFDeep(c.id));momsOf(fid).forEach(m=>dM(m.id));docsOf(fid).forEach(d=>dD(d.id));dF(fid);}
-onSnapshot(collection(db,'folders'),snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-onSnapshot(collection(db,'moms'),snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-onSnapshot(collection(db,'docs'),snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m)render();},e=>{setSS('err');console.error(e);});
+db.collection('folders').onSnapshot(snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+db.collection('moms').onSnapshot(snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+db.collection('docs').onSnapshot(snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m)render();},e=>{setSS('err');console.error(e);});
 async function uploadCL(file,onProg){
   return new Promise((res,rej)=>{
     var fd=new FormData();fd.append('file',file);fd.append('upload_preset',CL_PRESET);
