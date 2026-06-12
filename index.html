@@ -72,7 +72,7 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .fc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
 .fc-mb{opacity:0;background:#F4F4F7;border:1px solid #E5E7EB;border-radius:5px;cursor:pointer;font-size:13px;padding:3px 6px;color:#6B7280;font-family:inherit;transition:opacity .1s}
 .fc:hover .fc-mb{opacity:1}.fc-mb:hover{background:#EEEEF3!important}
-.fc-name{font-size:13px;font-weight:600}..fc-meta{font-size:11px;color:#9CA3AF;margin-top:3px}
+.fc-name{font-size:13px;font-weight:600}.fc-meta{font-size:11px;color:#9CA3AF;margin-top:3px}
 .add-c{background:#fff;border:1px dashed #D0D5DD;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;gap:6px}
 .add-c:hover{border-color:#534AB7;background:#F8F7FF}
 .add-c-plus{font-size:24px;opacity:.35;color:#534AB7}.add-c-lbl{font-size:12px;color:#9CA3AF}
@@ -394,7 +394,7 @@ function fcard(f,big){
 }
 // FOLDER VIEW
 function folderHTML(){
-  var f=cf();if(!f)return '';
+  var f=cf();if(!f)return'';
   var s=kids(f.id),ms=momsOf(f.id).sort((a,b)=>b.date-a.date),ds=docsOf(f.id),t=TAB;
   var starCount=ms.filter(m=>m.starred).length+ds.filter(d=>d.starred).length;
   return '<div class="fv"><div class="fv-head"><div class="fv-tr"><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
