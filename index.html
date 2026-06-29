@@ -493,13 +493,12 @@ function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';i
 function momEdHTML(){
   var m=EMOM;if(!m)return'';
   var fld=gf(m.folderId),dv=m.date?new Date(m.date).toISOString().split('T')[0]:'';
-  var hasDocs=docsOf(m.folderId).filter(d=>d.url).length>0;
   return '<div class="me"><div class="me-top"><button class="back-btn" id="mom-back">&#8592; Back</button><div class="me-meta">Minutes of Meeting &middot; '+esc(fld?fld.name:'')+'</div></div>'+
     '<div class="fr"><input class="inp-big" type="text" id="mt" value="'+esc(m.title)+'" placeholder="Meeting title..."></div>'+
     '<div class="fr"><label>Date</label><input type="date" id="md" value="'+dv+'"></div>'+
     '<div class="fr"><label>Tags <span style="font-weight:400;color:#9CA3AF">(comma separated)</span></label><input type="text" id="mg" value="'+esc((m.tags||[]).join(', '))+'" placeholder="e.g. client call, urgent"></div>'+
     '<div class="fr"><label>Google Doc Link <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><div style="display:flex;gap:8px"><input type="url" id="mgdoc" value="'+esc(m.gdoc||'')+'" placeholder="https://docs.google.com/...">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="btn se sm" style="white-space:nowrap;text-decoration:none">Open &#8599;</a>':'')+'</div></div>'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin-bottom:0">Notes</label><div style="display:flex;gap:6px">'+(hasDocs?'<button class="btn se sm" id="insert-doc-btn">&#128206; Insert doc link</button>':'')+'<button class="btn se sm" id="insert-mom-btn">&#128221; Insert MoM link</button></div></div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin-bottom:0">Notes</label><div style="display:flex;gap:6px"><button class="btn se sm" id="insert-doc-btn">&#128206; Insert doc link</button><button class="btn se sm" id="insert-mom-btn">&#128221; Insert MoM link</button></div></div>'+
     '<div id="quill-editor" style="margin-bottom:16px"></div>'+
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
       '<button class="btn pr" id="mom-save">Save</button>'+
