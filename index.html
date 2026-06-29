@@ -719,6 +719,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeC
 document.getElementById('btn-new-folder').addEventListener('click',()=>openNewFolder(null));
 document.getElementById('sb-toggle').addEventListener('click',()=>{var sb=document.getElementById('sidebar');sb.classList.toggle('collapsed');});
 loadExp();
+if(window.innerWidth<=700)document.getElementById('sidebar').classList.add('collapsed');
 </script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 </body>
