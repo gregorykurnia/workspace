@@ -219,9 +219,9 @@ const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-proj
 const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
-var F=[],M=[],D=[],DF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false},_quill=null;
+var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_quill=null;
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df){setSS('live');render();}}
+function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');render();}}
 function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
 function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
 function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
@@ -232,12 +232,18 @@ function dFDeep(fid){kids(fid).forEach(c=>dFDeep(c.id));momsOf(fid).forEach(m=>d
 db.collection('folders').onSnapshot(snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
 db.collection('moms').onSnapshot(snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
 db.collection('docs').onSnapshot(snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
-db.collection('docfolders').onSnapshot(snap=>{DF=snap.docs.map(d=>d.data());LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+db.collection('docfolders').onSnapshot(snap=>{DF=snap.docs.map(d=>d.data());LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();},e=>{setSS('err');console.error(e);});
+db.collection('momfolders').onSnapshot(snap=>{MF=snap.docs.map(d=>d.data());LOADED.mf=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
 function sDF(df){db.collection('docfolders').doc(df.id).set(df).catch(console.error);}
 function dDF(id){db.collection('docfolders').doc(id).delete().catch(console.error);}
+function sMF(mf){db.collection('momfolders').doc(mf.id).set(mf).catch(console.error);}
+function dMF(id){db.collection('momfolders').doc(id).delete().catch(console.error);}
 function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
 function docsOfDF(dfid){return D.filter(d=>d.docFolderId===dfid);}
 function docsUngrp(fid){return D.filter(d=>d.folderId===fid&&!d.docFolderId);}
+function momFoldersOf(fid){return MF.filter(mf=>mf.folderId===fid);}
+function momsOfMF(mfid){return M.filter(m=>m.momFolderId===mfid);}
+function momsUngrp(fid){return M.filter(m=>m.folderId===fid&&!m.momFolderId);}
 async function uploadCL(file,onProg){
   return new Promise((res,rej)=>{
     var fd=new FormData();fd.append('file',file);fd.append('upload_preset',CL_PRESET);
@@ -282,7 +288,7 @@ function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();render();}
 function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();render();}
 function goId(id){goTo(pathTo(id));}
-function setTab(t){TAB=t;DOC_FOLDER=null;renderMain();}
+function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
 function showCtx(e,fid){
   e.stopPropagation();closeCtx();var f=gf(fid);if(!f)return;
   var el=document.createElement('div');el.className='ctx';el.id='CTX';
@@ -357,6 +363,11 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-renamedocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDocFolder(el.dataset.renamedocfolder);}));
   ca.querySelectorAll('[data-deldocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDeleteDocFolder(el.dataset.deldocfolder);}));
   var dfb=ca.querySelector('#docfolder-back');if(dfb)dfb.addEventListener('click',()=>{DOC_FOLDER=null;renderMain();});
+  ca.querySelectorAll('[data-openmomfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();MOM_FOLDER=el.dataset.openmomfolder;renderMain();}));
+  ca.querySelectorAll('[data-newmomfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openNewMomFolder(el.dataset.newmomfolder);}));
+  ca.querySelectorAll('[data-renamemomfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameMomFolder(el.dataset.renamemomfolder);}));
+  ca.querySelectorAll('[data-delmomfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDeleteMomFolder(el.dataset.delmomfolder);}));
+  var mfb=ca.querySelector('#momfolder-back');if(mfb)mfb.addEventListener('click',()=>{MOM_FOLDER=null;renderMain();});
   ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
   ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
   ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
@@ -408,7 +419,7 @@ function fcard(f,big){
 // FOLDER VIEW
 function folderHTML(){
   var f=cf();if(!f)return'';
-  var s=kids(f.id),ms=momsOf(f.id).sort((a,b)=>b.date-a.date),ds=docsOf(f.id),t=TAB;
+  var s=kids(f.id),ms=momsOf(f.id),ds=docsOf(f.id),t=TAB;
   var starCount=ms.filter(m=>m.starred).length+ds.filter(d=>d.starred).length;
   return '<div class="fv"><div class="fv-head"><div class="fv-tr"><button class="back-btn" id="folder-back">&#8592; Back</button><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
     '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">&#128193; Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">&#128221; Minutes of Meeting'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">&#128206; Documents'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">&#9733; Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
@@ -419,11 +430,40 @@ function subHTML(s,fid){
   if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Break this space into sections</div></div>';
   return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+'</div>';
 }
+function momCardHTML(m){
+  return '<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div class="mc-date">'+fmtDate(m.date)+'</div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>';
+}
 function momListHTML(ms){
-  var h='<div class="tab-actions"><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
+  var f=cf();if(!f)return'';
+  if(MOM_FOLDER){
+    var mf=MF.find(v=>v.id===MOM_FOLDER);
+    var mfmoms=momsOfMF(MOM_FOLDER).sort((a,b)=>b.date-a.date);
+    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="momfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(mf?mf.name:'Folder')+'</span><div style="flex:1"></div><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
+    h+='<div class="search-bar"><input type="text" id="mom-search" placeholder="&#128269; Search MoMs..."><select id="mom-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
+    if(!mfmoms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No MoMs in this folder</div><div class="empty-s">Create a new MoM or move existing ones here</div></div>';
+    return h+'<div class="ml">'+mfmoms.map(m=>momCardHTML(m)).join('')+'</div>';
+  }
+  var mfolders=momFoldersOf(f.id);
+  var ungrp=momsUngrp(f.id).sort((a,b)=>b.date-a.date);
+  var h='<div class="tab-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn se sm" data-newmomfolder="'+f.id+'">&#128193; New MoM Folder</button><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
   h+='<div class="search-bar"><input type="text" id="mom-search" placeholder="&#128269; Search MoMs..."><select id="mom-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
-  if(!ms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Log your first MoM here</div></div>';
-  return h+'<div class="ml">'+ms.map(m=>'<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div class="mc-date">'+fmtDate(m.date)+'</div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>').join('')+'</div>';
+  var content='';
+  if(mfolders.length){
+    content+='<div class="ml" style="margin-bottom:12px">'+mfolders.map(mf=>{
+      var mc=momsOfMF(mf.id).length;
+      return '<div class="mc" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer" data-openmomfolder="'+mf.id+'">'+
+        '<div style="font-size:22px">&#128193;</div>'+
+        '<div style="flex:1;min-width:0"><div class="mc-title">'+esc(mf.name)+'</div><div class="mc-prev">'+mc+' MoM'+(mc!==1?'s':'')+'</div></div>'+
+        '<div style="display:flex;gap:5px"><button class="ib" data-renamemomfolder="'+mf.id+'" title="Rename">&#9999;</button><button class="ib" data-delmomfolder="'+mf.id+'">&#128465;</button></div>'+
+      '</div>';
+    }).join('')+'</div>';
+  }
+  if(!mfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Log your first MoM or create a MoM folder</div></div>';
+  if(ungrp.length){
+    if(mfolders.length)content+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#9CA3AF;font-weight:600;margin-bottom:8px">Ungrouped</div>';
+    content+='<div class="ml">'+ungrp.map(m=>momCardHTML(m)).join('')+'</div>';
+  }
+  return h+content;
 }
 function docCardHTML(d){
   var lkd=!!d.pw,ulkd=UD.has(d.id),show=!lkd||ulkd;
@@ -488,7 +528,7 @@ function starredTabHTML(fid){
   '</div>';
 }
 // MOM EDITOR
-function newMom(){var f=cf();if(!f)return;var m={id:uid(),folderId:f.id,title:'Meeting Notes',date:Date.now(),content:'',tags:[],starred:false};sM(m);EMOM=m;VIEW='mom';render();}
+function newMom(){var f=cf();if(!f)return;var m={id:uid(),folderId:f.id,title:'Meeting Notes',date:Date.now(),content:'',tags:[],starred:false};if(MOM_FOLDER)m.momFolderId=MOM_FOLDER;sM(m);EMOM=m;VIEW='mom';render();}
 function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';if(!PATH.length||PATH[PATH.length-1]!==m.folderId){PATH=pathTo(m.folderId);PATH.forEach(id=>EXP.add(id));saveExp();}render();}
 function momEdHTML(){
   var m=EMOM;if(!m)return'';
@@ -535,7 +575,7 @@ function collectMom(){
   if(gd)EMOM.gdoc=gd.value.trim();
 }
 function saveMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;backMom();}
-function backMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;VIEW='folder';TAB='mom';EMOM=null;render();}
+function backMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=null;render();}
 function askDelMom(id){
   modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
@@ -577,30 +617,44 @@ function openMoveModal(type,itemId){
   var item=type==='mom'?M.find(m=>m.id===itemId):D.find(d=>d.id===itemId);if(!item)return;
   var curFid=item.folderId;
   var curDFid=type==='doc'?(item.docFolderId||null):null;
+  var curMFid=type==='mom'?(item.momFolderId||null):null;
+  var curSFid=type==='doc'?curDFid:curMFid;
   function buildTree(pid,depth){
     return F.filter(f=>f.parent===pid).map(f=>{
-      var isCur=f.id===curFid&&!curDFid;
-      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+f.id+'" data-dfid="" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(isCur?' (current)':'')+'</span></div>'+buildTree(f.id,depth+1)+buildDocFolders(f.id,depth+1);
+      var isCur=f.id===curFid&&!curSFid;
+      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+f.id+'" data-sfid="" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(isCur?' (current)':'')+'</span></div>'+buildTree(f.id,depth+1)+buildSubFolders(f.id,depth+1);
     }).join('');
   }
-  function buildDocFolders(fid,depth){
-    return DF.filter(df=>df.folderId===fid).map(df=>{
-      var isCur=df.folderId===curFid&&df.id===curDFid;
-      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+df.folderId+'" data-dfid="'+df.id+'" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(df.name)+(isCur?' (current)':'')+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">doc folder</span></div>';
-    }).join('');
+  function buildSubFolders(fid,depth){
+    var out='';
+    if(type==='doc'){
+      out+=DF.filter(df=>df.folderId===fid).map(df=>{
+        var isCur=df.folderId===curFid&&df.id===curDFid;
+        return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+df.folderId+'" data-sfid="'+df.id+'" data-sftype="doc" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(df.name)+(isCur?' (current)':'')+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">doc folder</span></div>';
+      }).join('');
+    }
+    if(type==='mom'){
+      out+=MF.filter(mf=>mf.folderId===fid).map(mf=>{
+        var isCur=mf.folderId===curFid&&mf.id===curMFid;
+        return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+mf.folderId+'" data-sfid="'+mf.id+'" data-sftype="mom" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(mf.name)+(isCur?' (current)':'')+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">MoM folder</span></div>';
+      }).join('');
+    }
+    return out;
   }
+  var curSFlabel=curSFid?((type==='doc'?(DF.find(v=>v.id===curSFid)||{}):(MF.find(v=>v.id===curSFid)||{})).name||'subfolder'):'';
   var tree=buildTree(null,0);
-  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+(curDFid?(', '+esc((DF.find(v=>v.id===curDFid)||{}).name||'doc folder')):'')+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
-  var sel=null,selDf=null;
+  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+(curSFid?(', '+esc(curSFlabel)):'')+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  var sel=null,selSf=null,selSfType=null;
   document.getElementById('mv-c').addEventListener('click',closeModal);
   document.getElementById('mv-list').querySelectorAll('.move-fi:not([style*="pointer-events:none"])').forEach(el=>{
-    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;selDf=el.dataset.dfid||null;document.getElementById('mv-ok').disabled=false;});
+    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;selSf=el.dataset.sfid||null;selSfType=el.dataset.sftype||null;document.getElementById('mv-ok').disabled=false;});
   });
   document.getElementById('mv-ok').addEventListener('click',()=>{
     if(!sel)return;
-    if(type==='mom'){var m=M.find(v=>v.id===itemId);if(m){m.folderId=sel;sM(m);}}
-    else{var d=D.find(v=>v.id===itemId);if(d){d.folderId=sel;if(selDf)d.docFolderId=selDf;else delete d.docFolderId;sD(d);}}
-    closeModal();toast('Moved to '+folderLabel(sel)+(selDf?(', '+(DF.find(v=>v.id===selDf)||{}).name):''));
+    if(type==='mom'){var m=M.find(v=>v.id===itemId);if(m){m.folderId=sel;if(selSf&&selSfType==='mom')m.momFolderId=selSf;else delete m.momFolderId;sM(m);}}
+    else{var d=D.find(v=>v.id===itemId);if(d){d.folderId=sel;if(selSf&&selSfType==='doc')d.docFolderId=selSf;else delete d.docFolderId;sD(d);}}
+    var sfLabel=selSf?((selSfType==='doc'?(DF.find(v=>v.id===selSf)||{}):(MF.find(v=>v.id===selSf)||{})).name||''):'';
+    closeModal();toast('Moved to '+folderLabel(sel)+(sfLabel?', '+sfLabel:''));
   });
 }
 // DOC FOLDER MANAGEMENT
@@ -620,6 +674,24 @@ function askDeleteDocFolder(id){
   modal('<div class="m-title">Delete "'+esc(df?df.name:'')+'"?</div><div class="dz"><p>This will delete the folder'+(dc?' and ungroup '+dc+' document'+(dc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddf-c">Cancel</button><button class="btn da" id="ddf-d">Delete</button></div></div>');
   document.getElementById('ddf-c').addEventListener('click',closeModal);
   document.getElementById('ddf-d').addEventListener('click',()=>{docsOfDF(id).forEach(d=>{delete d.docFolderId;sD(d);});dDF(id);closeModal();toast('Doc folder deleted.');});
+}
+// MOM FOLDER MANAGEMENT
+function openNewMomFolder(fid){
+  modal('<div class="m-title">New MoM Folder</div><div class="fr"><label>Name</label><input type="text" id="mfn" placeholder="e.g. Q1 Reviews, Client Calls..."></div><div class="m-foot"><button class="btn se" id="nmf-c">Cancel</button><button class="btn pr" id="nmf-s">Create</button></div>');
+  document.getElementById('nmf-c').addEventListener('click',closeModal);
+  document.getElementById('nmf-s').addEventListener('click',()=>{var n=document.getElementById('mfn').value.trim();if(!n){alert('Please enter a name.');return;}sMF({id:uid(),folderId:fid,name:n,created:Date.now()});closeModal();toast('MoM folder created.');});
+}
+function openRenameMomFolder(id){
+  var mf=MF.find(v=>v.id===id);if(!mf)return;
+  modal('<div class="m-title">Rename MoM Folder</div><div class="fr"><label>Name</label><input type="text" id="rmf-n" value="'+esc(mf.name)+'"></div><div class="m-foot"><button class="btn se" id="rmf-c">Cancel</button><button class="btn pr" id="rmf-s">Save</button></div>');
+  document.getElementById('rmf-c').addEventListener('click',closeModal);
+  document.getElementById('rmf-s').addEventListener('click',()=>{var n=document.getElementById('rmf-n').value.trim();if(!n)return;mf.name=n;sMF(mf);closeModal();toast('Renamed.');});
+}
+function askDeleteMomFolder(id){
+  var mf=MF.find(v=>v.id===id);var mc=momsOfMF(id).length;
+  modal('<div class="m-title">Delete "'+esc(mf?mf.name:'')+'"?</div><div class="dz"><p>This will delete the folder'+(mc?' and ungroup '+mc+' MoM'+(mc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmf-c">Cancel</button><button class="btn da" id="dmf-d">Delete</button></div></div>');
+  document.getElementById('dmf-c').addEventListener('click',closeModal);
+  document.getElementById('dmf-d').addEventListener('click',()=>{momsOfMF(id).forEach(m=>{delete m.momFolderId;sM(m);});dMF(id);closeModal();toast('MoM folder deleted.');});
 }
 // RENAME DOC
 function openRenameDoc(id){
