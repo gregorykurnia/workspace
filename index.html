@@ -219,9 +219,9 @@ const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-proj
 const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
-var F=[],M=[],D=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false},_quill=null;
+var F=[],M=[],D=[],DF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false},_quill=null;
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d){setSS('live');render();}}
+function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df){setSS('live');render();}}
 function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
 function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
 function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
@@ -231,7 +231,13 @@ function dD(id){db.collection('docs').doc(id).delete().catch(console.error);}
 function dFDeep(fid){kids(fid).forEach(c=>dFDeep(c.id));momsOf(fid).forEach(m=>dM(m.id));docsOf(fid).forEach(d=>dD(d.id));dF(fid);}
 db.collection('folders').onSnapshot(snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
 db.collection('moms').onSnapshot(snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-db.collection('docs').onSnapshot(snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m)render();},e=>{setSS('err');console.error(e);});
+db.collection('docs').onSnapshot(snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
+db.collection('docfolders').onSnapshot(snap=>{DF=snap.docs.map(d=>d.data());LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+function sDF(df){db.collection('docfolders').doc(df.id).set(df).catch(console.error);}
+function dDF(id){db.collection('docfolders').doc(id).delete().catch(console.error);}
+function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
+function docsOfDF(dfid){return D.filter(d=>d.docFolderId===dfid);}
+function docsUngrp(fid){return D.filter(d=>d.folderId===fid&&!d.docFolderId);}
 async function uploadCL(file,onProg){
   return new Promise((res,rej)=>{
     var fd=new FormData();fd.append('file',file);fd.append('upload_preset',CL_PRESET);
@@ -276,7 +282,7 @@ function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();render();}
 function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();render();}
 function goId(id){goTo(pathTo(id));}
-function setTab(t){TAB=t;renderMain();}
+function setTab(t){TAB=t;DOC_FOLDER=null;renderMain();}
 function showCtx(e,fid){
   e.stopPropagation();closeCtx();var f=gf(fid);if(!f)return;
   var el=document.createElement('div');el.className='ctx';el.id='CTX';
@@ -346,6 +352,11 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-lockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openLockModal('doc',el.dataset.lockdoc);}));
   ca.querySelectorAll('[data-deldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();dD(el.dataset.deldoc);}));
   ca.querySelectorAll('[data-movedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('doc',el.dataset.movedoc);}));
+  ca.querySelectorAll('[data-opendocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();DOC_FOLDER=el.dataset.opendocfolder;renderMain();}));
+  ca.querySelectorAll('[data-newdocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openNewDocFolder(el.dataset.newdocfolder);}));
+  ca.querySelectorAll('[data-renamedocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDocFolder(el.dataset.renamedocfolder);}));
+  ca.querySelectorAll('[data-deldocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDeleteDocFolder(el.dataset.deldocfolder);}));
+  var dfb=ca.querySelector('#docfolder-back');if(dfb)dfb.addEventListener('click',()=>{DOC_FOLDER=null;renderMain();});
   ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
   ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
   ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
@@ -414,29 +425,58 @@ function momListHTML(ms){
   if(!ms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Log your first MoM here</div></div>';
   return h+'<div class="ml">'+ms.map(m=>'<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div class="mc-date">'+fmtDate(m.date)+'</div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>').join('')+'</div>';
 }
+function docCardHTML(d){
+  var lkd=!!d.pw,ulkd=UD.has(d.id),show=!lkd||ulkd;
+  var isImg=d.cloudType==='image'&&d.url&&show&&d.format!=='pdf'&&d.type!=='pdf';
+  var clickAttr=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':show&&d.url?'data-openurl="'+esc(d.url)+'"':'';
+  var clickable=isImg||(show&&!!d.url);
+  return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
+    (isImg?'<img class="dc-thumb" src="'+esc(d.url)+'" alt="'+esc(d.name)+'">':'<div class="dc-ic">'+docIco(d)+'</div>')+
+    '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(d.cloudType||d.type||'')+(d.added?' &middot; Added '+fmtDate(d.added):'')+(show&&d.note?' &middot; '+esc(d.note):(!show?' &middot; Password protected':''))+'</div></div>'+
+    '<div class="dc-act">'+
+      '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'" style="margin-right:2px">&#9733;</button>'+
+      (lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'">&#128274;</button>':'')+
+      (lkd&&ulkd?'<button class="ib" data-relockdoc="'+d.id+'">&#128274;</button>':'')+
+      '<button class="ib" data-renamedoc="'+d.id+'" title="Rename">&#9999;</button>'+
+      (show&&d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">&#11015;</button>':'')+
+      '<button class="ib" data-movedoc="'+d.id+'" title="Move">&#128194;</button>'+
+      '<button class="ib" data-lockdoc="'+d.id+'">&#128273;</button>'+
+      '<button class="ib" data-deldoc="'+d.id+'">&#128465;</button>'+
+    '</div></div>';
+}
 function docListHTML(ds){
-  var h='<div class="tab-actions"><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
+  var f=cf();if(!f)return'';
+  if(DOC_FOLDER){
+    var df=DF.find(v=>v.id===DOC_FOLDER);
+    var dfdocs=docsOfDF(DOC_FOLDER);
+    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="docfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(df?df.name:'Folder')+'</span><div style="flex:1"></div><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
+    h+='<div class="search-bar"><input type="text" id="doc-search" placeholder="&#128269; Search documents..."><select id="doc-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
+    if(!dfdocs.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents in this folder</div><div class="empty-s">Add documents or move existing ones here</div></div>';
+    return h+'<div class="dl">'+dfdocs.map(d=>docCardHTML(d)).join('')+'</div>';
+  }
+  var dfolders=docFoldersOf(f.id);
+  var ungrp=docsUngrp(f.id);
+  var h='<div class="tab-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn se sm" data-newdocfolder="'+f.id+'">&#128193; New Doc Folder</button><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
   h+='<div class="search-bar"><input type="text" id="doc-search" placeholder="&#128269; Search documents..."><select id="doc-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
-  if(!ds.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents yet</div><div class="empty-s">Upload files or add links</div></div>';
-  return h+'<div class="dl">'+ds.map(d=>{
-    var lkd=!!d.pw,ulkd=UD.has(d.id),show=!lkd||ulkd;
-    var isImg=d.cloudType==='image'&&d.url&&show&&d.format!=='pdf'&&d.type!=='pdf';
-    var clickAttr=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':show&&d.url?'data-openurl="'+esc(d.url)+'"':'';
-    var clickable=isImg||(show&&!!d.url);
-    return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
-      (isImg?'<img class="dc-thumb" src="'+esc(d.url)+'" alt="'+esc(d.name)+'">':'<div class="dc-ic">'+docIco(d)+'</div>')+
-      '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(d.cloudType||d.type||'')+(d.added?' &middot; Added '+fmtDate(d.added):'')+(show&&d.note?' &middot; '+esc(d.note):(!show?' &middot; Password protected':''))+'</div></div>'+
-      '<div class="dc-act">'+
-        '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'" style="margin-right:2px">&#9733;</button>'+
-        (lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'">&#128274;</button>':'')+
-        (lkd&&ulkd?'<button class="ib" data-relockdoc="'+d.id+'">&#128274;</button>':'')+
-        '<button class="ib" data-renamedoc="'+d.id+'" title="Rename">&#9999;</button>'+
-        (show&&d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">&#11015;</button>':'')+
-        '<button class="ib" data-movedoc="'+d.id+'" title="Move">&#128194;</button>'+
-        '<button class="ib" data-lockdoc="'+d.id+'">&#128273;</button>'+
-        '<button class="ib" data-deldoc="'+d.id+'">&#128465;</button>'+
-      '</div></div>';
-  }).join('')+'</div>';
+  var content='';
+  if(dfolders.length){
+    content+='<div class="dl" style="margin-bottom:12px">'+dfolders.map(df=>{
+      var dc=docsOfDF(df.id).length;
+      return '<div class="dc dc-clickable" data-opendocfolder="'+df.id+'">'+
+        '<div class="dc-ic">&#128193;</div>'+
+        '<div class="dc-inf"><div class="dc-name">'+esc(df.name)+'</div><div class="dc-meta">'+dc+' document'+(dc!==1?'s':'')+'</div></div>'+
+        '<div class="dc-act">'+
+          '<button class="ib" data-renamedocfolder="'+df.id+'" title="Rename">&#9999;</button>'+
+          '<button class="ib" data-deldocfolder="'+df.id+'">&#128465;</button>'+
+        '</div></div>';
+    }).join('')+'</div>';
+  }
+  if(!dfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents yet</div><div class="empty-s">Upload files, add links, or create doc folders</div></div>';
+  if(ungrp.length){
+    if(dfolders.length)content+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#9CA3AF;font-weight:600;margin-bottom:8px">Ungrouped</div>';
+    content+='<div class="dl">'+ungrp.map(d=>docCardHTML(d)).join('')+'</div>';
+  }
+  return h+content;
 }
 function starredTabHTML(fid){
   var sm=momsOf(fid).filter(m=>m.starred).sort((a,b)=>b.date-a.date);
@@ -537,25 +577,50 @@ function openMomPicker(currentMomId){
 function openMoveModal(type,itemId){
   var item=type==='mom'?M.find(m=>m.id===itemId):D.find(d=>d.id===itemId);if(!item)return;
   var curFid=item.folderId;
+  var curDFid=type==='doc'?(item.docFolderId||null):null;
   function buildTree(pid,depth){
     return F.filter(f=>f.parent===pid).map(f=>{
-      var isCur=f.id===curFid;
-      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+f.id+'" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(isCur?' (current)':'')+'</span></div>'+buildTree(f.id,depth+1);
+      var isCur=f.id===curFid&&!curDFid;
+      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+f.id+'" data-dfid="" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(isCur?' (current)':'')+'</span></div>'+buildTree(f.id,depth+1)+buildDocFolders(f.id,depth+1);
+    }).join('');
+  }
+  function buildDocFolders(fid,depth){
+    return DF.filter(df=>df.folderId===fid).map(df=>{
+      var isCur=df.folderId===curFid&&df.id===curDFid;
+      return'<div class="move-fi'+(isCur?' sel':'')+'" data-fid="'+df.folderId+'" data-dfid="'+df.id+'" style="padding-left:'+(12+depth*16)+'px'+(isCur?';opacity:.45;pointer-events:none':'')+'">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(df.name)+(isCur?' (current)':'')+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">doc folder</span></div>';
     }).join('');
   }
   var tree=buildTree(null,0);
-  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
-  var sel=null;
+  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+(curDFid?(', '+esc((DF.find(v=>v.id===curDFid)||{}).name||'doc folder')):'')+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  var sel=null,selDf=null;
   document.getElementById('mv-c').addEventListener('click',closeModal);
   document.getElementById('mv-list').querySelectorAll('.move-fi:not([style*="pointer-events:none"])').forEach(el=>{
-    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;document.getElementById('mv-ok').disabled=false;});
+    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;selDf=el.dataset.dfid||null;document.getElementById('mv-ok').disabled=false;});
   });
   document.getElementById('mv-ok').addEventListener('click',()=>{
     if(!sel)return;
     if(type==='mom'){var m=M.find(v=>v.id===itemId);if(m){m.folderId=sel;sM(m);}}
-    else{var d=D.find(v=>v.id===itemId);if(d){d.folderId=sel;sD(d);}}
-    closeModal();toast('Moved to '+folderLabel(sel));
+    else{var d=D.find(v=>v.id===itemId);if(d){d.folderId=sel;if(selDf)d.docFolderId=selDf;else delete d.docFolderId;sD(d);}}
+    closeModal();toast('Moved to '+folderLabel(sel)+(selDf?(', '+(DF.find(v=>v.id===selDf)||{}).name):''));
   });
+}
+// DOC FOLDER MANAGEMENT
+function openNewDocFolder(fid){
+  modal('<div class="m-title">New Doc Folder</div><div class="fr"><label>Name</label><input type="text" id="dfn" placeholder="e.g. Contracts, Reports..."></div><div class="m-foot"><button class="btn se" id="ndf-c">Cancel</button><button class="btn pr" id="ndf-s">Create</button></div>');
+  document.getElementById('ndf-c').addEventListener('click',closeModal);
+  document.getElementById('ndf-s').addEventListener('click',()=>{var n=document.getElementById('dfn').value.trim();if(!n){alert('Please enter a name.');return;}sDF({id:uid(),folderId:fid,name:n,created:Date.now()});closeModal();toast('Doc folder created.');});
+}
+function openRenameDocFolder(id){
+  var df=DF.find(v=>v.id===id);if(!df)return;
+  modal('<div class="m-title">Rename Doc Folder</div><div class="fr"><label>Name</label><input type="text" id="rdf-n" value="'+esc(df.name)+'"></div><div class="m-foot"><button class="btn se" id="rdf-c">Cancel</button><button class="btn pr" id="rdf-s">Save</button></div>');
+  document.getElementById('rdf-c').addEventListener('click',closeModal);
+  document.getElementById('rdf-s').addEventListener('click',()=>{var n=document.getElementById('rdf-n').value.trim();if(!n)return;df.name=n;sDF(df);closeModal();toast('Renamed.');});
+}
+function askDeleteDocFolder(id){
+  var df=DF.find(v=>v.id===id);var dc=docsOfDF(id).length;
+  modal('<div class="m-title">Delete "'+esc(df?df.name:'')+'"?</div><div class="dz"><p>This will delete the folder'+(dc?' and ungroup '+dc+' document'+(dc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddf-c">Cancel</button><button class="btn da" id="ddf-d">Delete</button></div></div>');
+  document.getElementById('ddf-c').addEventListener('click',closeModal);
+  document.getElementById('ddf-d').addEventListener('click',()=>{docsOfDF(id).forEach(d=>{delete d.docFolderId;sD(d);});dDF(id);closeModal();toast('Doc folder deleted.');});
 }
 // RENAME DOC
 function openRenameDoc(id){
@@ -591,8 +656,8 @@ function openAddDoc(){
     try{var r=await uploadCL(file,p=>{bar.style.width=p+'%';});window._uploadData={...r,origName:file.name};st.innerHTML='<span style="color:#059669">&#10003; '+esc(file.name)+' ready</span>';if(tx)tx.textContent='Ready: '+file.name;sb.disabled=false;}
     catch(err){st.innerHTML='<span style="color:#DC2626">'+(err.message||'Upload failed. Try again.')+'</span>';pg.style.display='none';console.error(err);}
   }
-  document.getElementById('up-s').addEventListener('click',()=>{var fd=window._uploadData;if(!fd){alert('Please select a file first.');return;}var ne=document.getElementById('dn-up'),no=document.getElementById('dnote-up');sD({id:uid(),folderId:fid,name:(ne&&ne.value.trim())||fd.origName||'File',cloudType:fd.cloudType,format:fd.format,url:fd.url,note:(no&&no.value.trim())||'',added:Date.now(),uploaded:true,type:fd.cloudType||'other',starred:false});window._uploadData=null;closeModal();setTab('doc');});
-  document.getElementById('lk-s').addEventListener('click',()=>{var n=document.getElementById('dn-lk').value.trim();if(!n){alert('Please enter a name.');return;}sD({id:uid(),folderId:fid,name:n,type:document.getElementById('dt-lk').value||'other',url:document.getElementById('du-lk').value.trim(),note:document.getElementById('dno-lk').value.trim(),added:Date.now(),starred:false});closeModal();setTab('doc');});
+  document.getElementById('up-s').addEventListener('click',()=>{var fd=window._uploadData;if(!fd){alert('Please select a file first.');return;}var ne=document.getElementById('dn-up'),no=document.getElementById('dnote-up');var docObj={id:uid(),folderId:fid,name:(ne&&ne.value.trim())||fd.origName||'File',cloudType:fd.cloudType,format:fd.format,url:fd.url,note:(no&&no.value.trim())||'',added:Date.now(),uploaded:true,type:fd.cloudType||'other',starred:false};if(DOC_FOLDER)docObj.docFolderId=DOC_FOLDER;sD(docObj);window._uploadData=null;closeModal();if(!DOC_FOLDER)setTab('doc');else renderMain();});
+  document.getElementById('lk-s').addEventListener('click',()=>{var n=document.getElementById('dn-lk').value.trim();if(!n){alert('Please enter a name.');return;}var docObj={id:uid(),folderId:fid,name:n,type:document.getElementById('dt-lk').value||'other',url:document.getElementById('du-lk').value.trim(),note:document.getElementById('dno-lk').value.trim(),added:Date.now(),starred:false};if(DOC_FOLDER)docObj.docFolderId=DOC_FOLDER;sD(docObj);closeModal();if(!DOC_FOLDER)setTab('doc');else renderMain();});
 }
 function relockDoc(id){UD.delete(id);renderMain();}
 // FOLDERS
