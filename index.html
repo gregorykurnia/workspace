@@ -575,7 +575,7 @@ function collectMom(){
   if(gd)EMOM.gdoc=gd.value.trim();
 }
 function saveMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;backMom();}
-function backMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=null;render();}
+function backMom(){collectMom();if(EMOM)sM(EMOM);var mf=EMOM?EMOM.momFolderId||null:null;_quill=null;VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=mf;render();}
 function askDelMom(id){
   modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
