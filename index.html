@@ -356,6 +356,7 @@ function bindMainEvents(){
   var ab=ca.querySelector('[data-adddoc]');if(ab)ab.addEventListener('click',openAddDoc);
   var sb=ca.querySelector('[data-newsub]');if(sb)sb.addEventListener('click',()=>openNewFolder(sb.dataset.newsub));
   var afc=ca.querySelector('[data-addfolder]');if(afc)afc.addEventListener('click',()=>openNewFolder(null));
+  var fb=ca.querySelector('#folder-back');if(fb)fb.addEventListener('click',()=>{var f=cf();if(f&&f.parent){var par=gf(f.parent);if(par)goTo(pathTo(par.id));else goHome();}else goHome();});
   // search + sort
   var ms=ca.querySelector('#mom-search');var msort=ca.querySelector('#mom-sort');
   if(ms)ms.addEventListener('input',applyMomFilter);
@@ -398,7 +399,7 @@ function folderHTML(){
   var f=cf();if(!f)return'';
   var s=kids(f.id),ms=momsOf(f.id).sort((a,b)=>b.date-a.date),ds=docsOf(f.id),t=TAB;
   var starCount=ms.filter(m=>m.starred).length+ds.filter(d=>d.starred).length;
-  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
+  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><button class="back-btn" id="folder-back">&#8592; Back</button><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
     '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">&#128193; Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">&#128221; Minutes of Meeting'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">&#128206; Documents'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">&#9733; Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
