@@ -589,10 +589,21 @@ function exportPDF(){
 }
 // DOC PICKER
 function openDocPicker(folderId){
-  var fdocs=docsOf(folderId).filter(d=>d.url);if(!fdocs.length){toast('No documents in this folder yet.');return;}
-  modal('<div class="m-title">&#128206; Insert Doc Link</div><div class="m-sub">Select documents to insert as links into your notes.</div><div id="dp-list" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;margin-bottom:4px">'+fdocs.map(d=>'<div class="dp-item" data-name="'+esc(d.name)+'" data-url="'+esc(d.url)+'"><span style="font-size:18px">'+docIco(d)+'</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">'+esc(d.name)+'</span><span class="dp-check">&#10003;</span></div>').join('')+'</div><div class="m-foot"><button class="btn se" id="dp-c">Cancel</button><button class="btn pr" id="dp-i">Insert Selected</button></div>');
+  var alldocs=D.filter(d=>d.url).sort((a,b)=>esc(a.name).localeCompare(esc(b.name)));
+  if(!alldocs.length){toast('No documents with links found anywhere.');return;}
+  function renderList(q){
+    var filtered=q?alldocs.filter(d=>d.name.toLowerCase().includes(q)):alldocs;
+    var container=document.getElementById('dp-list');if(!container)return;
+    container.innerHTML=filtered.map(d=>{
+      var fld=gf(d.folderId);var loc=fld?folderLabel(d.folderId):'';
+      return'<div class="dp-item" data-name="'+esc(d.name)+'" data-url="'+esc(d.url)+'"><span style="font-size:18px">'+docIco(d)+'</span><div style="flex:1;min-width:0"><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(d.name)+'</div>'+(loc?'<div style="font-size:11px;color:#9CA3AF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(loc)+'</div>':'')+'</div><span class="dp-check">&#10003;</span></div>';
+    }).join('')||(q?'<div style="padding:16px;text-align:center;color:#9CA3AF;font-size:13px">No results for "'+esc(q)+'"</div>':'');
+    container.querySelectorAll('.dp-item').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('sel')));
+  }
+  modal('<div class="m-title">&#128206; Insert Doc Link</div><div class="m-sub">Search and select documents from anywhere in your workspace.</div><input type="text" id="dp-search" placeholder="&#128269; Search by name..." style="margin-bottom:10px"><div id="dp-list" style="display:flex;flex-direction:column;gap:7px;max-height:300px;overflow-y:auto;margin-bottom:4px"></div><div class="m-foot"><button class="btn se" id="dp-c">Cancel</button><button class="btn pr" id="dp-i">Insert Selected</button></div>');
+  renderList('');
+  document.getElementById('dp-search').addEventListener('input',e=>renderList(e.target.value.toLowerCase().trim()));
   document.getElementById('dp-c').addEventListener('click',closeModal);
-  document.getElementById('dp-list').querySelectorAll('.dp-item').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('sel')));
   document.getElementById('dp-i').addEventListener('click',()=>{var sel=document.getElementById('dp-list').querySelectorAll('.dp-item.sel');if(!sel.length){toast('Select at least one document first.');return;}sel.forEach(el=>insertDocLink(el.dataset.name,el.dataset.url));closeModal();toast(sel.length+' link'+(sel.length>1?'s':'')+' inserted.');});
 }
 // MOM PICKER
