@@ -221,7 +221,21 @@ firebase.initializeApp(FB);
 const db=firebase.firestore();
 var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_quill=null;
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');render();}}
+function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
+function buildHash(){
+  if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
+  if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
+  return'#';
+}
+function applyHash(){
+  var raw=window.location.hash;
+  if(!raw||raw==='#'){VIEW='home';PATH=[];EMOM=null;DOC_FOLDER=null;MOM_FOLDER=null;_quill=null;return;}
+  var p={};raw.slice(1).split('&').forEach(s=>{var i=s.indexOf('=');if(i>0)p[s.slice(0,i)]=decodeURIComponent(s.slice(i+1));});
+  if(p.m){var m=M.find(v=>v.id===p.m);if(m){EMOM=m;VIEW='mom';PATH=pathTo(m.folderId);PATH.forEach(id=>EXP.add(id));saveExp();_quill=null;return;}}
+  if(p.f){if(!gf(p.f)){VIEW='home';PATH=[];return;}PATH=pathTo(p.f);VIEW='folder';TAB=p.t||'sub';DOC_FOLDER=p.df||null;MOM_FOLDER=p.mf||null;EMOM=null;_quill=null;PATH.forEach(id=>EXP.add(id));saveExp();return;}
+  VIEW='home';PATH=[];EMOM=null;DOC_FOLDER=null;MOM_FOLDER=null;_quill=null;
+}
+window.addEventListener('hashchange',()=>{applyHash();render();});
 function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
 function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
 function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
@@ -285,8 +299,8 @@ function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);v
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
-function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();render();}
-function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();render();}
+function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();history.pushState(null,'',buildHash());render();}
+function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
 function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
 function showCtx(e,fid){
@@ -305,7 +319,7 @@ function showCtx(e,fid){
 }
 function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
 document.addEventListener('click',closeCtx);
-function render(){renderTree();renderBC();renderTB();renderMain();}
+function render(){renderTree();renderBC();renderTB();renderMain();history.replaceState(null,'',buildHash());}
 function renderTree(){var el=document.getElementById('tree');el.innerHTML='';kids(null).forEach(f=>buildNode(el,f,0));}
 function buildNode(par,f,d){
   var ch=kids(f.id),act=PATH[PATH.length-1]===f.id,exp=EXP.has(f.id);
@@ -529,7 +543,7 @@ function starredTabHTML(fid){
 }
 // MOM EDITOR
 function newMom(){var f=cf();if(!f)return;var m={id:uid(),folderId:f.id,title:'Meeting Notes',date:Date.now(),content:'',tags:[],starred:false};if(MOM_FOLDER)m.momFolderId=MOM_FOLDER;sM(m);EMOM=m;VIEW='mom';render();}
-function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';if(!PATH.length||PATH[PATH.length-1]!==m.folderId){PATH=pathTo(m.folderId);PATH.forEach(id=>EXP.add(id));saveExp();}render();}
+function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';if(!PATH.length||PATH[PATH.length-1]!==m.folderId){PATH=pathTo(m.folderId);PATH.forEach(id=>EXP.add(id));saveExp();}history.pushState(null,'',buildHash());render();}
 function momEdHTML(){
   var m=EMOM;if(!m)return'';
   var fld=gf(m.folderId),dv=m.date?new Date(m.date).toISOString().split('T')[0]:'';
@@ -575,7 +589,7 @@ function collectMom(){
   if(gd)EMOM.gdoc=gd.value.trim();
 }
 function saveMom(){collectMom();if(EMOM)sM(EMOM);_quill=null;backMom();}
-function backMom(){collectMom();if(EMOM)sM(EMOM);var mf=EMOM?EMOM.momFolderId||null:null;_quill=null;VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=mf;render();}
+function backMom(){collectMom();if(EMOM)sM(EMOM);var mf=EMOM?EMOM.momFolderId||null:null;_quill=null;VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=mf;history.pushState(null,'',buildHash());render();}
 function askDelMom(id){
   modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
