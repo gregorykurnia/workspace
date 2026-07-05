@@ -383,6 +383,8 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-delmomfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDeleteMomFolder(el.dataset.delmomfolder);}));
   var mfb=ca.querySelector('#momfolder-back');if(mfb)mfb.addEventListener('click',()=>{MOM_FOLDER=null;renderMain();});
   ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
+  ca.querySelectorAll('[data-renamemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameMom(el.dataset.renamemom);}));
+  ca.querySelectorAll('[data-delmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDelMomFromCard(el.dataset.delmom);}));
   ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
   ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
   ca.querySelectorAll('[data-delfolder]').forEach(el=>el.addEventListener('click',()=>askDeleteFolder(el.dataset.delfolder)));
@@ -445,7 +447,7 @@ function subHTML(s,fid){
   return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+'</div>';
 }
 function momCardHTML(m){
-  return '<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div class="mc-date">'+fmtDate(m.date)+'</div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>';
+  return '<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div style="display:flex;align-items:center;gap:4px"><div class="mc-date">'+fmtDate(m.date)+'</div><button class="ib" data-renamemom="'+m.id+'" title="Rename" style="font-size:12px;padding:2px 6px;opacity:0.6">&#9999;</button><button class="ib" data-delmom="'+m.id+'" title="Delete" style="font-size:12px;padding:2px 6px;opacity:0.6;color:#DC2626;border-color:#FECACA">&#128465;</button></div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>';
 }
 function momListHTML(ms){
   var f=cf();if(!f)return'';
@@ -594,6 +596,20 @@ function askDelMom(id){
   modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
   document.getElementById('dm-d').addEventListener('click',()=>{dM(id);EMOM=null;_quill=null;VIEW='folder';TAB='mom';closeModal();render();});
+}
+function askDelMomFromCard(id){
+  var m=M.find(v=>v.id===id);if(!m)return;
+  modal('<div class="m-title">Delete "'+esc(m.title||'Untitled')+'"?</div><div class="dz"><p>Permanently deleted. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmc-c">Cancel</button><button class="btn da" id="dmc-d">Delete</button></div></div>');
+  document.getElementById('dmc-c').addEventListener('click',closeModal);
+  document.getElementById('dmc-d').addEventListener('click',()=>{dM(id);closeModal();toast('MoM deleted.');});
+}
+function openRenameMom(id){
+  var m=M.find(v=>v.id===id);if(!m)return;
+  modal('<div class="m-title">&#9999; Rename MoM</div><div class="fr"><label>Title</label><input type="text" id="rm-n" value="'+esc(m.title||'')+'"></div><div class="m-foot"><button class="btn se" id="rm-c">Cancel</button><button class="btn pr" id="rm-s">Save</button></div>');
+  var inp=document.getElementById('rm-n');inp.focus();inp.select();
+  document.getElementById('rm-c').addEventListener('click',closeModal);
+  document.getElementById('rm-s').addEventListener('click',()=>{var n=inp.value.trim();if(!n)return;m.title=n;sM(m);closeModal();toast('Renamed.');});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){var n=inp.value.trim();if(!n)return;m.title=n;sM(m);closeModal();toast('Renamed.');}});
 }
 function exportPDF(){
   collectMom();var m=EMOM;if(!m)return;var fld=gf(m.folderId);
