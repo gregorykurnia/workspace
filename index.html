@@ -162,11 +162,16 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .mc:hover .mc-act{opacity:1}
 .star-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;opacity:.3;transition:all .15s;flex-shrink:0;line-height:1;color:#F59E0B}
 .star-btn:hover{opacity:.7}.star-btn.on{opacity:1}
-.me{max-width:760px}
-.me-top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-.back-btn{background:#F4F4F7;border:1px solid #E5E7EB;border-radius:7px;padding:7px 12px;cursor:pointer;font-size:13px;font-family:inherit;color:#374151;display:flex;align-items:center;gap:5px}
-.back-btn:hover{background:#EEEEF3}
-.me-meta{font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px}
+.me{max-width:780px}
+.me-top{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.back-btn{background:#fff;border:1px solid #E5E7EB;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit;color:#374151;display:flex;align-items:center;gap:6px;transition:background .12s}
+.back-btn:hover{background:#F3F4F6}
+.me-meta{font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px}
+.me-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.me-field{display:flex;flex-direction:column;gap:6px}
+.me-field label{font-size:12px;color:#6B7280;font-weight:500;margin:0}
+.me-field input,.me-field textarea{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 14px;font-size:13px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s}
+.me-field input:focus,.me-field textarea:focus{border-color:#6366F1;background:#fff}
 .ql-toolbar{border-radius:8px 8px 0 0!important;border-color:#EAECF0!important;background:#FAFAFA}
 .ql-container{border-radius:0 0 8px 8px!important;border-color:#EAECF0!important;font-family:'Inter',sans-serif!important;font-size:14px!important}
 .ql-editor{min-height:260px;line-height:1.7;color:#374151;padding:16px!important}
@@ -203,12 +208,12 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .m-title{font-size:16px;font-weight:700;margin-bottom:6px}
 .m-sub{font-size:13px;color:#6B7280;margin-bottom:16px;line-height:1.5}
 .m-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.fr{margin-bottom:14px}
+.fr{margin-bottom:16px}
 label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
 input[type=text],input[type=url],input[type=date],input[type=password],textarea,select{width:100%;padding:9px 12px;border:1px solid #D0D5DD;border-radius:7px;font-family:inherit;font-size:13px;color:#1C1C2E;outline:none;transition:border-color .15s;background:#fff}
 input:focus,textarea:focus,select:focus{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.1)}
-.inp-big{font-size:18px!important;font-weight:700!important;border:none!important;border-bottom:2px solid #EAECF0!important;border-radius:0!important;padding:4px 0!important;box-shadow:none!important}
-.inp-big:focus{border-bottom-color:#534AB7!important;box-shadow:none!important}
+.inp-big{font-size:28px!important;font-weight:700!important;border:none!important;border-radius:0!important;padding:4px 0 12px!important;box-shadow:none!important;background:transparent!important;color:#111827!important;border-bottom:1px solid #E5E7EB!important;margin-bottom:24px!important;width:100%}
+.inp-big:focus{outline:none!important;border-bottom-color:#6366F1!important;box-shadow:none!important}
 .e-msg{font-size:12px;color:#DC2626;margin-top:5px;display:none}.e-msg.on{display:block}
 input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)!important}
 .lk-sc{text-align:center;padding:8px 0 4px}
@@ -839,13 +844,33 @@ function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';i
 function momEdHTML(){
   var m=EMOM;if(!m)return'';
   var fld=gf(m.folderId),dv=m.date?new Date(m.date).toISOString().split('T')[0]:'';
-  return '<div class="me"><div class="me-top"><button class="back-btn" id="mom-back">&#8592; Back</button><div class="me-meta">Documents &middot; '+esc(fld?fld.name:'')+'</div></div>'+
-    '<div class="fr"><input class="inp-big" type="text" id="mt" value="'+esc(m.title)+'" placeholder="Meeting title..."></div>'+
-    '<div class="fr"><label>Date</label><input type="date" id="md" value="'+dv+'"></div>'+
-    '<div class="fr"><label>Tags <span style="font-weight:400;color:#9CA3AF">(comma separated)</span></label><input type="text" id="mg" value="'+esc((m.tags||[]).join(', '))+'" placeholder="e.g. client call, urgent"></div>'+
-    '<div class="fr"><label>Google Doc Link <span style="font-weight:400;color:#9CA3AF">(optional)</span></label><div style="display:flex;gap:8px"><input type="url" id="mgdoc" value="'+esc(m.gdoc||'')+'" placeholder="https://docs.google.com/...">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="btn se sm" style="white-space:nowrap;text-decoration:none">Open &#8599;</a>':'')+'</div></div>'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><label style="margin-bottom:0">Notes</label><div style="display:flex;gap:6px"><button class="btn se sm" id="insert-doc-btn">&#128206; Insert doc link</button><button class="btn se sm" id="insert-mom-btn">&#128221; Insert MoM link</button></div></div>'+
-    '<div id="quill-editor" style="margin-bottom:16px"></div>'+
+  var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
+  var iFileLink='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
+  var iDocLink='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+  return '<div class="me">'+
+    '<div class="me-top">'+
+      '<button class="back-btn" id="mom-back">'+iBack+' Back</button>'+
+      '<div class="me-meta"><span>MOM</span><span style="color:#D1D5DB">›</span><span>'+esc((fld?fld.name:'').toUpperCase())+'</span></div>'+
+    '</div>'+
+    '<input class="inp-big" type="text" id="mt" value="'+esc(m.title)+'" placeholder="Meeting title...">'+
+    '<div class="me-2col">'+
+      '<div class="me-field"><label>Date</label><input type="date" id="md" value="'+dv+'"></div>'+
+      '<div class="me-field"><label>Tags (comma separated)</label><input type="text" id="mg" value="'+esc((m.tags||[]).join(', '))+'" placeholder="e.g. client call, urgent"></div>'+
+    '</div>'+
+    '<div class="me-field fr">'+
+      '<label>Google Doc Link (optional)</label>'+
+      '<div style="display:flex;gap:8px">'+
+        '<input type="url" id="mgdoc" value="'+esc(m.gdoc||'')+'" placeholder="https://docs.google.com/..." style="flex:1">'+
+        (m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="btn se sm" style="white-space:nowrap;text-decoration:none;align-self:center">Open &#8599;</a>':'')+'</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+      '<label style="margin:0;font-size:12px;color:#6B7280;font-weight:500">Notes</label>'+
+      '<div style="display:flex;gap:6px">'+
+        '<button class="btn se sm" id="insert-doc-btn" style="font-size:11px">'+iFileLink+' Insert File Link</button>'+
+        '<button class="btn se sm" id="insert-mom-btn" style="font-size:11px">'+iDocLink+' Insert Document link</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="quill-editor" style="margin-bottom:20px"></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
       '<button class="btn dk" id="mom-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>'+
       '<button class="btn se" id="mom-cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</button>'+
