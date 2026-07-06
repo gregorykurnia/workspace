@@ -210,7 +210,7 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 <div id="sidebar">
   <div class="sb-head">
     <div class="sb-logo"><div class="sb-logo-icon">&#8862;</div>Workbase</div>
-    <button id="sb-toggle" title="Toggle sidebar">&#9776;</button>
+    <button id="sb-close" title="Collapse sidebar">&#9776;</button>
   </div>
   <div class="sb-nav">
     <div class="sb-nav-item active" id="nav-home"><span class="sni">&#8962;</span>Home</div>
@@ -234,7 +234,7 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   </div>
 </div>
 <div id="main">
-  <div id="topbar"><div style="display:flex;align-items:center;gap:10px"><div id="bc"></div></div><div id="ta"></div></div>
+  <div id="topbar"><div style="display:flex;align-items:center;gap:10px"><button id="sb-toggle" title="Toggle sidebar">&#9776;</button><div id="bc"></div></div><div id="ta"></div></div>
   <div id="ca"><div class="loading"><div class="spinner"></div><span>Connecting to cloud...</span></div></div>
 </div>
 <div id="MR"></div><div id="CR"></div><div id="pdf-print"></div>
@@ -855,7 +855,9 @@ function closeModal(){document.getElementById('MR').innerHTML='';}
 function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2200);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeCtx();}if((e.metaKey||e.ctrlKey)&&e.key==='s'&&VIEW==='mom'){e.preventDefault();saveMom();}});
 document.getElementById('btn-new-folder').addEventListener('click',()=>openNewFolder(null));
-document.getElementById('sb-toggle').addEventListener('click',()=>{var sb=document.getElementById('sidebar');sb.classList.toggle('collapsed');});
+var _sbToggle=()=>{document.getElementById('sidebar').classList.toggle('collapsed');};
+document.getElementById('sb-toggle').addEventListener('click',_sbToggle);
+document.getElementById('sb-close').addEventListener('click',_sbToggle);
 document.getElementById('nav-home').addEventListener('click',goHome);
 loadExp();
 if(window.innerWidth<=700)document.getElementById('sidebar').classList.add('collapsed');
