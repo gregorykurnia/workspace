@@ -84,7 +84,13 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .home-view-all{font-size:13px;color:#4F46E5;cursor:pointer;font-weight:500;background:none;border:none;font-family:inherit;padding:0}
 .home-view-all:hover{text-decoration:underline}
 .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.sub-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.sub-search{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;flex:1;max-width:280px}
+.sub-search input{border:none;outline:none;font-family:inherit;font-size:13px;color:#374151;width:100%;background:transparent}
+.sub-search input::placeholder{color:#9CA3AF}
+.sub-view-btn{width:34px;height:34px;border:1px solid #E5E7EB;border-radius:7px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6B7280;transition:background .1s,color .1s;flex-shrink:0}
+.sub-view-btn:hover,.sub-view-btn.on{background:#F3F4F6;color:#111827}
 .fc{background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 18px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;position:relative}
 .fc:hover{border-color:#C7D2FE;box-shadow:0 2px 12px rgba(0,0,0,.06);transform:translateY(-1px)}
 .fc.lkd{border-color:#FCD34D;background:#FFFBEB}.fc.lkd:hover{border-color:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
@@ -469,7 +475,7 @@ function bindMainEvents(){
   ca.querySelectorAll('.ro-menu').forEach(function(el){el.addEventListener('click',function(e){e.stopPropagation();});});
   var nb=ca.querySelector('[data-newmom]');if(nb)nb.addEventListener('click',newMom);
   var ab=ca.querySelector('[data-adddoc]');if(ab)ab.addEventListener('click',openAddDoc);
-  var sb=ca.querySelector('[data-newsub]');if(sb)sb.addEventListener('click',()=>openNewFolder(sb.dataset.newsub));
+  ca.querySelectorAll('[data-newsub]').forEach(sb=>sb.addEventListener('click',e=>{e.stopPropagation();openNewFolder(sb.dataset.newsub);}));
   var afc=ca.querySelector('[data-addfolder]');if(afc)afc.addEventListener('click',()=>openNewFolder(null));
   var fb=ca.querySelector('#folder-back');if(fb)fb.addEventListener('click',()=>{var f=cf();if(f&&f.parent){var par=gf(f.parent);if(par)goTo(pathTo(par.id));else goHome();}else goHome();});
   // search + sort
@@ -544,20 +550,17 @@ function homeHTML(){
 }
 function fcard(f,big){
   var n=cnt(f.id),lkd=!!f.pw,meta=lkd&&!UF.has(f.id)?'Password protected':n+' item'+(n!==1?'s':'');
-  if(big){
-    var palette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
-    var ci=Math.abs(f.id.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0))%palette.length;
-    var ibg=palette[ci];
-    return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'">'+
-      '<div class="fc-top">'+
-        '<div class="fc-icon-wrap" style="background:'+ibg+'">'+(f.icon||'&#128193;')+(lkd?'<span style="font-size:11px">&#128274;</span>':'')+'</div>'+
-        '<div style="display:flex;align-items:center;gap:6px"><div class="fc-active-dot"></div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div>'+
-      '</div>'+
-      '<div class="fc-name">'+esc(f.name)+'</div>'+
-      '<div class="fc-meta">'+meta+'</div>'+
-    '</div>';
-  }
-  return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'"><div class="fc-top"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px">'+(f.icon||'&#128193;')+'</span>'+(lkd?'<span style="font-size:12px">&#128274;</span>':'')+'</div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div><div class="fc-name">'+esc(f.name)+'</div><div class="fc-meta">'+meta+'</div></div>';
+  var palette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
+  var ci=Math.abs(f.id.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0))%palette.length;
+  var ibg=palette[ci];
+  return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'">'+
+    '<div class="fc-top">'+
+      '<div class="fc-icon-wrap" style="background:'+ibg+'">'+(f.icon||'&#128193;')+(lkd?'<span style="font-size:11px">&#128274;</span>':'')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:6px">'+(big?'<div class="fc-active-dot"></div>':'')+'<button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div>'+
+    '</div>'+
+    '<div class="fc-name">'+esc(f.name)+'</div>'+
+    '<div class="fc-meta">'+meta+'</div>'+
+  '</div>';
 }
 // FOLDER VIEW
 function folderHTML(){
@@ -586,9 +589,22 @@ function folderHTML(){
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
 function subHTML(s,fid){
-  var h='<div class="tab-actions"><button class="btn pr sm" data-newsub="'+fid+'">+ New Subfolder</button></div>';
+  var iSrch='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#9CA3AF"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  var iGrid='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>';
+  var iList='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  var iFldr='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  var h='<div class="sub-toolbar">'+
+    '<div class="sub-search">'+iSrch+'<input type="text" placeholder="Search subfolders..." readonly></div>'+
+    '<div style="display:flex;gap:4px">'+
+      '<button class="sub-view-btn on">'+iGrid+'</button>'+
+      '<button class="sub-view-btn">'+iList+'</button>'+
+    '</div>'+
+    '<div style="flex:1"></div>'+
+    '<button class="btn dk" style="display:flex;align-items:center;gap:6px;padding:8px 14px" data-newsub="'+fid+'">'+iFldr+' New subfolder</button>'+
+  '</div>';
   if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Break this space into sections</div></div>';
-  return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+'</div>';
+  var addCard='<div class="add-c" data-newsub="'+fid+'" style="min-height:120px"><div class="add-c-plus" style="width:36px;height:36px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:1;color:#6B7280">+</div><div class="add-c-lbl">New folder</div></div>';
+  return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+addCard+'</div>';
 }
 function momCardHTML(m){
   return '<div class="mc" data-openmom="'+m.id+'"><div class="mc-top"><div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0"><button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button><div class="mc-title">'+esc(m.title||'Untitled')+'</div></div><div style="display:flex;align-items:center;gap:4px"><div class="mc-date">'+fmtDate(m.date)+'</div><button class="ib" data-renamemom="'+m.id+'" title="Rename" style="font-size:12px;padding:2px 6px;opacity:0.6">&#9999;</button><button class="ib" data-delmom="'+m.id+'" title="Delete" style="font-size:12px;padding:2px 6px;opacity:0.6;color:#DC2626;border-color:#FECACA">&#128465;</button></div></div><div class="mc-prev">'+momPreview(m.content)+'</div>'+(m.tags&&m.tags.length?'<div class="mc-tags">'+m.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div class="mc-actions">'+(m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="font-size:12px;padding:3px 8px;text-decoration:none">&#128196; Google Doc</a>':'')+'<button class="ib" data-movemom="'+m.id+'" style="font-size:12px;padding:3px 8px">&#128194; Move</button></div></div>';
