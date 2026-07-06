@@ -118,10 +118,13 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .si-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .si-meta{font-size:11px;color:#9CA3AF;margin-top:2px}
 .fv{max-width:900px}
-.fv-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px}
-.fv-tr{display:flex;align-items:center;gap:12px}
-.fv-icon{font-size:32px}.fv-name{font-size:22px;font-weight:700}
-.fv-meta{font-size:12px;color:#9CA3AF;margin-top:3px}
+.fv-head{margin-bottom:24px}
+.fv-banner{background:linear-gradient(120deg,#fce7f3 0%,#ede9fe 100%);border-radius:14px;padding:18px 20px 22px;margin-bottom:24px}
+.fv-banner-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.fv-tr{display:flex;align-items:center;gap:14px}
+.fv-icon-box{width:52px;height:52px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.fv-icon{font-size:32px}.fv-name{font-size:22px;font-weight:700;color:#111827}
+.fv-meta{font-size:12px;color:#6B7280;margin-top:4px}
 .tab-bar{display:flex;border-bottom:1px solid #E5E7EB;margin-bottom:20px;gap:4px}
 .tab{display:flex;align-items:center;gap:7px;padding:10px 16px;font-size:14px;font-weight:500;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}
 .tab:hover{color:#374151}.tab.on{color:#111827;border-bottom-color:#111827;font-weight:600}
@@ -571,7 +574,10 @@ function folderHTML(){
   var iStar='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
   var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
-  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><button class="back-btn" id="folder-back">'+iBack+' Back</button><div style="width:48px;height:48px;background:'+ibg+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+(f.icon||'📁')+'</div><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' Document'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' File'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" style="display:flex;align-items:center;gap:6px" data-delfolder="'+f.id+'">'+iTrash+' Delete</button></div>'+
+  return '<div class="fv"><div class="fv-banner">'+
+    '<div class="fv-banner-top"><button class="back-btn" id="folder-back">'+iBack+' Back</button><button class="btn da sm" style="display:flex;align-items:center;gap:6px" data-delfolder="'+f.id+'">'+iTrash+' Delete</button></div>'+
+    '<div class="fv-tr"><div class="fv-icon-box">'+(f.icon||'📁')+'</div><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' Document'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' File'+(ds.length!==1?'s':'')+'</div></div></div>'+
+    '</div>'+
     '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
