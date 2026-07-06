@@ -50,11 +50,15 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .ti .mb{opacity:0;background:none;border:none;cursor:pointer;font-size:14px;color:#6B7280;padding:1px 4px;border-radius:4px;font-family:inherit;flex-shrink:0;line-height:1}
 .ti:hover .mb{opacity:1}.ti .mb:hover{background:#F3F4F6;color:#374151}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-#topbar{background:#fff;border-bottom:1px solid #EAECF0;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-#bc{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
-.bc-i{color:#6B7280;cursor:pointer;transition:color .1s}.bc-i:hover{color:#534AB7}
-.bc-i.cur{color:#1C1C2E;font-weight:600}.bc-s{color:#D0D5DD;font-size:11px}
-#ta{display:flex;gap:8px;flex-shrink:0}
+#topbar{background:#fff;border-bottom:1px solid #EAECF0;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#bc{display:flex;align-items:center;gap:5px;font-size:13px;flex-wrap:wrap}
+.bc-i{color:#9CA3AF;cursor:pointer;transition:color .1s}.bc-i:hover{color:#374151}
+.bc-i.cur{color:#111827;font-weight:600}.bc-s{color:#D1D5DB;font-size:12px;margin:0 1px}
+#ta{display:flex;gap:6px;flex-shrink:0}
+.tb-divider{width:1px;height:18px;background:#E5E7EB;flex-shrink:0;margin:0 4px}
+.tb-date-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:20px;font-size:12px;font-weight:500;color:#374151;white-space:nowrap}
+.tb-icon-btn{background:none;border:none;cursor:pointer;font-size:15px;color:#9CA3AF;padding:6px;border-radius:6px;line-height:1;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center}
+.tb-icon-btn:hover{background:#F3F4F6;color:#374151}
 #ca{flex:1;overflow-y:auto;padding:24px}
 #ca::-webkit-scrollbar{width:6px}
 #ca::-webkit-scrollbar-thumb{background:#DDE0E8;border-radius:3px}
@@ -251,7 +255,19 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   </div>
 </div>
 <div id="main">
-  <div id="topbar"><div style="display:flex;align-items:center;gap:10px"><button id="sb-toggle" title="Toggle sidebar">&#9776;</button><div id="bc"></div></div><div id="ta"></div></div>
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="sb-toggle" title="Toggle sidebar">&#9776;</button>
+      <div class="tb-divider"></div>
+      <div id="bc"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div id="ta"></div>
+      <div class="tb-date-chip" id="tb-date"></div>
+      <button class="tb-icon-btn" title="Notifications">&#128276;</button>
+      <button class="tb-icon-btn" title="Settings">&#9881;&#65039;</button>
+    </div>
+  </div>
   <div id="ca"><div class="loading"><div class="spinner"></div><span>Connecting to cloud...</span></div></div>
 </div>
 <div id="MR"></div><div id="CR"></div><div id="pdf-print"></div>
@@ -376,12 +392,16 @@ function buildNode(par,f,d){
 }
 function renderBC(){
   var el=document.getElementById('bc');
-  var h='<span class="bc-i'+(VIEW==='home'&&!PATH.length?' cur':'')+'" id="bc-home">&#127968; Home</span>';
+  var h='<span class="bc-i" id="bc-home">Workbase</span>';
+  if(VIEW==='home'&&!PATH.length){h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">Home</span>';}
   PATH.forEach((id,i)=>{var f=gf(id);if(!f)return;var cur=i===PATH.length-1&&VIEW!=='mom';h+='<span class="bc-s">&#8250;</span><span class="bc-i'+(cur?' cur':'')+'" data-bcid="'+id+'">'+esc(f.name)+(f.pw?' &#128274;':'')+'</span>';});
-  if(VIEW==='mom'&&EMOM)h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">&#128221; '+esc(EMOM.title||'MoM')+'</span>';
+  if(VIEW==='mom'&&EMOM)h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">'+esc(EMOM.title||'MoM')+'</span>';
   el.innerHTML=h;
   var hb=document.getElementById('bc-home');if(hb)hb.addEventListener('click',goHome);
   el.querySelectorAll('[data-bcid]').forEach(b=>b.addEventListener('click',()=>goId(b.dataset.bcid)));
+  // populate date chip
+  var dc=document.getElementById('tb-date');
+  if(dc){var now=new Date();var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];dc.innerHTML='&#128197; '+days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()];}
 }
 function renderTB(){
   var el=document.getElementById('ta');el.innerHTML='';
