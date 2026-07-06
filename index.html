@@ -69,22 +69,39 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .btn.gr{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0}.btn.gr:hover{background:#D1FAE5}
 .btn.sm{padding:5px 10px;font-size:12px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.home{max-width:800px}
-.h-greet{font-size:24px;font-weight:700;margin-bottom:4px}
-.h-sub{font-size:14px;color:#6B7280;margin-bottom:20px}
-.stats{display:flex;gap:12px;margin-bottom:24px}
-.stat{background:#fff;border:1px solid #EAECF0;border-radius:10px;padding:16px 20px;flex:1}
-.stat-n{font-size:26px;font-weight:700;color:#534AB7}.stat-l{font-size:12px;color:#6B7280;margin-top:2px}
-.sec-l{font-size:13px;font-weight:600;margin-bottom:12px}
-.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.home{max-width:960px}
+.h-greet{font-size:34px;font-weight:800;margin-bottom:28px;letter-spacing:-.5px;color:#111827}
+.h-sub{display:none}
+.stats{display:none}
+.stat{display:none}
+.stat-n{display:none}.stat-l{display:none}
+.sec-l{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#9CA3AF;margin-bottom:0}
+.home-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.home-view-all{font-size:13px;color:#4F46E5;cursor:pointer;font-weight:500;background:none;border:none;font-family:inherit;padding:0}
+.home-view-all:hover{text-decoration:underline}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-.fc{background:#fff;border:1px solid #EAECF0;border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;position:relative}
-.fc:hover{border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.08);transform:translateY(-1px)}
+.fc{background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px 18px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;position:relative}
+.fc:hover{border-color:#C7D2FE;box-shadow:0 2px 12px rgba(0,0,0,.06);transform:translateY(-1px)}
 .fc.lkd{border-color:#FCD34D;background:#FFFBEB}.fc.lkd:hover{border-color:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
-.fc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.fc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.fc-icon-wrap{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.fc-active-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0}
 .fc-mb{opacity:0;background:#F4F4F7;border:1px solid #E5E7EB;border-radius:5px;cursor:pointer;font-size:13px;padding:3px 6px;color:#6B7280;font-family:inherit;transition:opacity .1s}
 .fc:hover .fc-mb{opacity:1}.fc-mb:hover{background:#EEEEF3!important}
-.fc-name{font-size:13px;font-weight:600}.fc-meta{font-size:11px;color:#9CA3AF;margin-top:3px}
+.fc-name{font-size:14px;font-weight:700;color:#111827;margin-bottom:4px}.fc-meta{font-size:12px;color:#9CA3AF}
+.ro-list{display:flex;flex-direction:column;background:#fff;border:1px solid #EAECF0;border-radius:12px;overflow:hidden}
+.ro-item{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #F3F4F6;cursor:pointer;transition:background .1s}
+.ro-item:last-child{border-bottom:none}
+.ro-item:hover{background:#F9FAFB}
+.ro-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ro-info{flex:1;min-width:0}
+.ro-name{font-size:13px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ro-path{font-size:11px;color:#9CA3AF;margin-top:2px}
+.ro-badge{padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap}
+.ro-time{font-size:12px;color:#9CA3AF;white-space:nowrap;flex-shrink:0;margin:0 6px}
+.ro-menu{font-size:16px;color:#C4C9D4;cursor:pointer;padding:4px 6px;border-radius:4px;flex-shrink:0;background:none;border:none;font-family:inherit;line-height:1;transition:color .1s,background .1s}
+.ro-menu:hover{background:#F3F4F6;color:#374151}
 .add-c{background:#fff;border:1px dashed #D0D5DD;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;gap:6px}
 .add-c:hover{border-color:#534AB7;background:#F8F7FF}
 .add-c-plus{font-size:24px;opacity:.35;color:#534AB7}.add-c-lbl{font-size:12px;color:#9CA3AF}
@@ -416,6 +433,7 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-delfolder]').forEach(el=>el.addEventListener('click',()=>askDeleteFolder(el.dataset.delfolder)));
   ca.querySelectorAll('[data-starmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var m=M.find(v=>v.id===el.dataset.starmom);if(m){m.starred=!m.starred;sM(m);}}));
   ca.querySelectorAll('[data-stardoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var d=D.find(v=>v.id===el.dataset.stardoc);if(d){d.starred=!d.starred;sD(d);}}));
+  ca.querySelectorAll('.ro-menu').forEach(function(el){el.addEventListener('click',function(e){e.stopPropagation();});});
   var nb=ca.querySelector('[data-newmom]');if(nb)nb.addEventListener('click',newMom);
   var ab=ca.querySelector('[data-adddoc]');if(ab)ab.addEventListener('click',openAddDoc);
   var sb=ca.querySelector('[data-newsub]');if(sb)sb.addEventListener('click',()=>openNewFolder(sb.dataset.newsub));
@@ -450,13 +468,63 @@ function applyDocFilter(){
 // HOME
 function homeHTML(){
   var r=kids(null);
-  return '<div class="home"><div class="h-greet">Good day, Greg &#128075;</div><div class="h-sub">Your workspace — everything in one place, nothing gets lost.</div>'+
-    '<div class="stats"><div class="stat"><div class="stat-n">'+F.length+'</div><div class="stat-l">Total Folders</div></div><div class="stat"><div class="stat-n">'+M.length+'</div><div class="stat-l">Meeting Notes</div></div><div class="stat"><div class="stat-n">'+D.length+'</div><div class="stat-l">Documents</div></div></div>'+
-    '<div class="sec-l">Workspaces</div><div class="fg">'+r.map(f=>fcard(f,true)).join('')+'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New Folder</div></div></div></div>';
+  var iconPalette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
+  // Recently opened: merge moms + docs sorted by date desc
+  var recent=[];
+  M.forEach(function(m){recent.push({type:'mom',id:m.id,name:m.title||'Untitled',folderId:m.folderId,date:m.date||0,obj:m});});
+  D.forEach(function(d){recent.push({type:'doc',id:d.id,name:d.name||'Untitled',folderId:d.folderId,date:d.added||0,obj:d});});
+  recent.sort(function(a,b){return b.date-a.date;});
+  recent=recent.slice(0,5);
+  var recentHTML='';
+  if(recent.length){
+    var rows=recent.map(function(item){
+      var path=item.folderId?folderLabel(item.folderId):'';
+      var badgeText,badgeStyle,iconBg,iconChar;
+      if(item.type==='mom'){
+        badgeText='Note';badgeStyle='background:#EEF2FF;color:#4F46E5';iconBg='#EEF2FF';iconChar='&#128221;';
+      } else {
+        var d=item.obj;
+        if(d.cloudType==='image'||d.type==='image'){badgeText='Image';badgeStyle='background:#FEF3C7;color:#D97706';iconBg='#FEF3C7';iconChar='&#128247;';}
+        else if(d.format==='pdf'||d.type==='pdf'){badgeText='PDF';badgeStyle='background:#FEE2E2;color:#DC2626';iconBg='#FEE2E2';iconChar='&#128196;';}
+        else if(d.cloudType==='video'){badgeText='Video';badgeStyle='background:#F5F3FF;color:#7C3AED';iconBg='#F5F3FF';iconChar='&#127916;';}
+        else{badgeText='Doc';badgeStyle='background:#ECFDF5;color:#059669';iconBg='#ECFDF5';iconChar='&#128196;';}
+      }
+      var clickAttr=item.type==='mom'?' data-openmom="'+item.id+'"':(item.obj.url?' data-openurl="'+esc(item.obj.url)+'"':'');
+      return '<div class="ro-item"'+clickAttr+'>'+
+        '<div class="ro-icon" style="background:'+iconBg+'">'+iconChar+'</div>'+
+        '<div class="ro-info"><div class="ro-name">'+esc(item.name)+'</div>'+(path?'<div class="ro-path">'+esc(path)+'</div>':'')+'</div>'+
+        '<span class="ro-badge" style="'+badgeStyle+'">'+badgeText+'</span>'+
+        '<span class="ro-time">'+fmtDate(item.date)+'</span>'+
+        '<button class="ro-menu">&#8942;</button>'+
+      '</div>';
+    }).join('');
+    recentHTML='<div style="margin-top:32px">'+
+      '<div class="home-sec-head"><span class="sec-l">Recently Opened</span><button class="home-view-all">View all</button></div>'+
+      '<div class="ro-list">'+rows+'</div></div>';
+  }
+  return '<div class="home">'+
+    '<div class="h-greet">My workspace</div>'+
+    '<div><div class="home-sec-head"><span class="sec-l">Active Folders</span><button class="home-view-all">View all</button></div>'+
+    '<div class="fg">'+r.map(function(f){return fcard(f,true);}).join('')+'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New folder</div></div></div></div>'+
+    recentHTML+
+  '</div>';
 }
 function fcard(f,big){
   var n=cnt(f.id),lkd=!!f.pw,meta=lkd&&!UF.has(f.id)?'Password protected':n+' item'+(n!==1?'s':'');
-  return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'"><div class="fc-top"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:'+(big?'26px':'20px')+'">'+(f.icon||'&#128193;')+'</span>'+(lkd?'<span style="font-size:12px">&#128274;</span>':'')+'</div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div><div class="fc-name">'+esc(f.name)+'</div><div class="fc-meta">'+meta+'</div></div>';
+  if(big){
+    var palette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
+    var ci=Math.abs(f.id.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0))%palette.length;
+    var ibg=palette[ci];
+    return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'">'+
+      '<div class="fc-top">'+
+        '<div class="fc-icon-wrap" style="background:'+ibg+'">'+(f.icon||'&#128193;')+(lkd?'<span style="font-size:11px">&#128274;</span>':'')+'</div>'+
+        '<div style="display:flex;align-items:center;gap:6px"><div class="fc-active-dot"></div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div>'+
+      '</div>'+
+      '<div class="fc-name">'+esc(f.name)+'</div>'+
+      '<div class="fc-meta">'+meta+'</div>'+
+    '</div>';
+  }
+  return '<div class="fc'+(lkd?' lkd':'')+'" data-goto="'+f.id+'"><div class="fc-top"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px">'+(f.icon||'&#128193;')+'</span>'+(lkd?'<span style="font-size:12px">&#128274;</span>':'')+'</div><button class="fc-mb" data-ctx="'+f.id+'">&#8943;</button></div><div class="fc-name">'+esc(f.name)+'</div><div class="fc-meta">'+meta+'</div></div>';
 }
 // FOLDER VIEW
 function folderHTML(){
