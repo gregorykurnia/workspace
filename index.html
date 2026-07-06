@@ -119,12 +119,12 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .si-meta{font-size:11px;color:#9CA3AF;margin-top:2px}
 .fv{max-width:900px}
 .fv-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px}
-.fv-tr{display:flex;align-items:center;gap:10px}
+.fv-tr{display:flex;align-items:center;gap:12px}
 .fv-icon{font-size:32px}.fv-name{font-size:22px;font-weight:700}
 .fv-meta{font-size:12px;color:#9CA3AF;margin-top:3px}
-.tab-bar{display:flex;border-bottom:2px solid #EAECF0;margin-bottom:20px}
-.tab{padding:10px 18px;font-size:13px;font-weight:500;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
-.tab:hover{color:#374151}.tab.on{color:#534AB7;border-bottom-color:#534AB7;font-weight:600}
+.tab-bar{display:flex;border-bottom:1px solid #E5E7EB;margin-bottom:20px;gap:4px}
+.tab{display:flex;align-items:center;gap:7px;padding:10px 16px;font-size:14px;font-weight:500;color:#6B7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#374151}.tab.on{color:#111827;border-bottom-color:#111827;font-weight:600}
 .chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600;background:#EEF0FF;color:#534AB7;margin-left:4px}
 .tab-actions{display:flex;justify-content:flex-end;margin-bottom:14px}
 .search-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
@@ -563,8 +563,16 @@ function folderHTML(){
   var f=cf();if(!f)return'';
   var s=kids(f.id),ms=momsOf(f.id),ds=docsOf(f.id),t=TAB;
   var starCount=ms.filter(m=>m.starred).length+ds.filter(d=>d.starred).length;
-  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><button class="back-btn" id="folder-back">&#8592; Back</button><span class="fv-icon">'+(f.icon||'&#128193;')+'</span><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' MoM'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' doc'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" data-delfolder="'+f.id+'">&#128465; Delete</button></div>'+
-    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">&#128193; Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">&#128221; Minutes of Meeting'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">&#128206; Documents'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">&#9733; Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
+  var palette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
+  var ci=Math.abs(f.id.split('').reduce((a,c)=>a+c.charCodeAt(0),0))%palette.length;
+  var ibg=palette[ci];
+  var iFldr='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  var iDoc='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+  var iStar='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+  var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
+  return '<div class="fv"><div class="fv-head"><div class="fv-tr"><button class="back-btn" id="folder-back">'+iBack+' Back</button><div style="width:48px;height:48px;background:'+ibg+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+(f.icon||'📁')+'</div><div><div class="fv-name">'+esc(f.name)+(f.pw?' <span style="font-size:16px;opacity:.6">&#128274;</span>':'')+'</div><div class="fv-meta">Created '+fmtDate(f.created)+' &nbsp;&#183;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ms.length+' Document'+(ms.length!==1?'s':'')+' &nbsp;&#183;&nbsp; '+ds.length+' File'+(ds.length!==1?'s':'')+'</div></div></div><button class="btn da sm" style="display:flex;align-items:center;gap:6px" data-delfolder="'+f.id+'">'+iTrash+' Delete</button></div>'+
+    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
 function subHTML(s,fid){
@@ -675,7 +683,7 @@ function openMom(id){var m=M.find(v=>v.id===id);if(!m)return;EMOM=m;VIEW='mom';i
 function momEdHTML(){
   var m=EMOM;if(!m)return'';
   var fld=gf(m.folderId),dv=m.date?new Date(m.date).toISOString().split('T')[0]:'';
-  return '<div class="me"><div class="me-top"><button class="back-btn" id="mom-back">&#8592; Back</button><div class="me-meta">Minutes of Meeting &middot; '+esc(fld?fld.name:'')+'</div></div>'+
+  return '<div class="me"><div class="me-top"><button class="back-btn" id="mom-back">&#8592; Back</button><div class="me-meta">Documents &middot; '+esc(fld?fld.name:'')+'</div></div>'+
     '<div class="fr"><input class="inp-big" type="text" id="mt" value="'+esc(m.title)+'" placeholder="Meeting title..."></div>'+
     '<div class="fr"><label>Date</label><input type="date" id="md" value="'+dv+'"></div>'+
     '<div class="fr"><label>Tags <span style="font-weight:400;color:#9CA3AF">(comma separated)</span></label><input type="text" id="mg" value="'+esc((m.tags||[]).join(', '))+'" placeholder="e.g. client call, urgent"></div>'+
