@@ -116,13 +116,22 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .add-c:hover{border-color:#534AB7;background:#F8F7FF}
 .add-c-plus{font-size:24px;opacity:.35;color:#534AB7}.add-c-lbl{font-size:12px;color:#9CA3AF}
 .starred-section{background:#fff;border:1px solid #FDE68A;border-radius:10px;padding:16px;margin-bottom:20px}
-.starred-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.si{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;cursor:pointer;transition:all .1s}
-.si:hover{border-color:#F59E0B;box-shadow:0 0 0 2px rgba(245,158,11,.1)}
+.starred-list{display:flex;flex-direction:column;gap:2px}
+.si{display:flex;align-items:center;gap:10px;padding:8px 12px;background:transparent;border-radius:8px;cursor:pointer;transition:background .12s}
+.si:hover{background:#F3F4F6}
 .si-icon{font-size:17px;flex-shrink:0}
+.si-ic-box{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .si-info{flex:1;min-width:0}
-.si-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.si-meta{font-size:11px;color:#9CA3AF;margin-top:2px}
+.si-name{font-size:13px;font-weight:500;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.si-meta{font-size:11px;color:#9CA3AF;margin-top:1px}
+.si-tag{display:inline-block;font-size:11px;font-weight:500;border-radius:20px;padding:1px 8px;flex-shrink:0}
+.si-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.si-act{display:flex;gap:4px;align-items:center;opacity:0;transition:opacity .15s}
+.si:hover .si-act{opacity:1}
+.si-act .ib{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.si-act .ib.del:hover{background:#FEF2F2;border-color:#FECACA;color:#EF4444}
+.si-date{font-size:11px;color:#9CA3AF;flex-shrink:0;min-width:40px;text-align:right}
+.si-footer{text-align:center;font-size:12px;color:#9CA3AF;font-style:italic;margin-top:24px;padding-bottom:8px}
 .fv{max-width:900px}
 .fv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 .fv-tr{display:flex;align-items:center;gap:12px}
@@ -763,10 +772,66 @@ function starredTabHTML(fid){
   var sm=momsOf(fid).filter(m=>m.starred).sort((a,b)=>b.date-a.date);
   var sd=docsOf(fid).filter(d=>d.starred);
   if(!sm.length&&!sd.length)return'<div class="empty"><div class="empty-ic">&#9733;</div><div class="empty-t">No starred items yet</div><div class="empty-s">Star any MoM or document to pin it here</div></div>';
-  return'<div class="starred-list">'+
-    sm.map(m=>'<div class="si" data-openmom="'+m.id+'"><div class="si-icon">&#128221;</div><div class="si-info"><div class="si-name">'+esc(m.title||'Untitled')+'</div><div class="si-meta">MoM &nbsp;&#183;&nbsp; '+fmtDate(m.date)+'</div></div><button class="star-btn on" data-starmom="'+m.id+'">&#9733;</button></div>').join('')+
-    sd.map(d=>{var isImg=d.cloudType==='image'&&d.url&&d.format!=='pdf';var ca=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':d.url?'data-openurl="'+esc(d.url)+'"':'';return'<div class="si" '+ca+'><div class="si-icon">'+docIco(d)+'</div><div class="si-info"><div class="si-name">'+esc(d.name)+'</div><div class="si-meta">Doc &nbsp;&#183;&nbsp; '+fmtDate(d.added)+'</div></div><button class="star-btn on" data-stardoc="'+d.id+'">&#9733;</button></div>';}).join('')+
-  '</div>';
+  var iNotes='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+  var iPDF='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>';
+  var iImg='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+  var iSheet='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>';
+  var iFile='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  var iLink='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
+  var iDl='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  var iMove='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>';
+  var iTrash='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+  function docIcBox(d){
+    var tp=d.format==='pdf'||d.type==='pdf'?'pdf':d.cloudType==='image'?'image':d.type==='spreadsheet'?'spreadsheet':'other';
+    if(tp==='pdf')return'<div class="si-ic-box" style="background:#EFF6FF;color:#3B82F6">'+iPDF+'</div>';
+    if(tp==='image')return'<div class="si-ic-box" style="background:#FFF7ED;color:#F97316">'+iImg+'</div>';
+    if(tp==='spreadsheet')return'<div class="si-ic-box" style="background:#F0FDF4;color:#22C55E">'+iSheet+'</div>';
+    return'<div class="si-ic-box" style="background:#F5F3FF;color:#8B5CF6">'+iFile+'</div>';
+  }
+  function docTag(d){
+    var tp=d.format==='pdf'||d.type==='pdf'?'pdf':d.cloudType==='image'?'image':d.type==='spreadsheet'?'spreadsheet':d.type||'file';
+    var map={pdf:{bg:'#EFF6FF',cl:'#3B82F6',lbl:'PDF'},image:{bg:'#FFF7ED',cl:'#F97316',lbl:'Image'},spreadsheet:{bg:'#F0FDF4',cl:'#22C55E',lbl:'Sheet'},link:{bg:'#F0FDF4',cl:'#16A34A',lbl:'Link'}};
+    var s=map[tp]||{bg:'#F5F3FF',cl:'#8B5CF6',lbl:(tp||'File').charAt(0).toUpperCase()+(tp||'File').slice(1)};
+    return'<span class="si-tag" style="background:'+s.bg+';color:'+s.cl+'">'+s.lbl+'</span>';
+  }
+  var total=sm.length+sd.length;
+  var h='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#9CA3AF;font-weight:600;margin-bottom:10px">'+total+' Starred Item'+(total!==1?'s':'')+'</div>';
+  h+='<div class="starred-list">';
+  h+=sm.map(m=>
+    '<div class="si" data-openmom="'+m.id+'">'+
+      '<div class="si-ic-box" style="background:#EEF2FF;color:#4F46E5">'+iNotes+'</div>'+
+      '<div class="si-info"><div class="si-name">'+esc(m.title||'Untitled')+'</div><div class="si-meta">Added '+fmtDate(m.date)+'</div></div>'+
+      '<div class="si-right">'+
+        '<span class="si-tag" style="background:#EEF2FF;color:#4F46E5">Notes</span>'+
+        '<div class="si-act">'+
+          '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
+          '<button class="ib del" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>'+
+        '</div>'+
+        '<span class="si-date">'+fmtDate(m.date)+'</span>'+
+        '<button class="star-btn on" data-starmom="'+m.id+'">&#9733;</button>'+
+      '</div>'+
+    '</div>'
+  ).join('');
+  h+=sd.map(d=>{
+    var isImg=d.cloudType==='image'&&d.url&&d.format!=='pdf';
+    var ca=isImg?'data-lightbox="'+esc(d.url)+'" data-lbname="'+esc(d.name)+'"':d.url?'data-openurl="'+esc(d.url)+'"':'';
+    return'<div class="si" '+ca+'>'+
+      docIcBox(d)+
+      '<div class="si-info"><div class="si-name">'+esc(d.name)+'</div><div class="si-meta">Added '+fmtDate(d.added)+'</div></div>'+
+      '<div class="si-right">'+
+        docTag(d)+
+        '<div class="si-act">'+
+          (d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
+          (d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">'+iDl+'</button>':'')+
+          '<button class="ib del" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>'+
+        '</div>'+
+        '<span class="si-date">'+fmtDate(d.added)+'</span>'+
+        '<button class="star-btn on" data-stardoc="'+d.id+'">&#9733;</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  h+='</div><div class="si-footer">Starred items are synced across your workspace for quick access.</div>';
+  return h;
 }
 // MOM EDITOR
 function newMom(){var f=cf();if(!f)return;var m={id:uid(),folderId:f.id,title:'Meeting Notes',date:Date.now(),content:'',tags:[],starred:false};if(MOM_FOLDER)m.momFolderId=MOM_FOLDER;sM(m);EMOM=m;VIEW='mom';render();}
