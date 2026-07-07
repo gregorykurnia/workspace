@@ -10,7 +10,12 @@ git push
 Do not wait for me to ask. Every change = immediate push to GitHub. Vercel auto-deploys from there.
 
 ## Project structure
-Single file: `index.html` — this is the entire app. No framework, no build step, no node_modules.
+- `index.html` — HTML + CSS + script tags only (~318 lines)
+- `js/app.js` — all app logic (~884 lines)
+- `js/auth.js` — Firebase Auth + login screen (added separately)
+- `js/rbac.js` — role-based access control (added separately)
+
+No framework, no build step, no node_modules.
 
 ## Tech stack
 - Pure HTML/CSS/JS — single file
@@ -39,9 +44,11 @@ docs    — { id, folderId, name, type, url, cloudType, format, note, added, sta
 
 ## CRITICAL rules — read before touching anything
 
-### 1. Always full rewrite, never patch
-When making changes, rewrite the entire `index.html` from scratch incorporating the change.
-Patching with sed/string replacement causes JS syntax errors from quote escaping.
+### 1. Edit specific files, not full rewrites
+- Edit `js/app.js` directly for app logic changes (use Edit tool, not full rewrite)
+- Edit `index.html` directly for HTML/CSS changes
+- New features go in new files under `js/` and get a `<script src>` tag in index.html
+- Full rewrites are no longer needed or safe
 
 ### 2. Use addEventListener only
 The script uses `type="module"` pattern (now compat but same rule applies).
