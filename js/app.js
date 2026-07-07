@@ -687,7 +687,7 @@ function bindMomEditor(){
       else hs.value='0';
     }
     var tc=document.getElementById('tt-tbl-controls');
-    if(tc)tc.style.display=_editor.isActive('table')?'inline-flex':'none';
+    if(tc)tc.style.display=(_editor.isActive('tableCell')||_editor.isActive('tableHeader'))?'inline-flex':'none';
   }
   _editor.on('selectionUpdate',updateTB);
   _editor.on('transaction',updateTB);
