@@ -67,6 +67,7 @@ async function uploadCL(file,onProg){
 }
 function uid(){return '_'+Math.random().toString(36).slice(2,10);}
 function destroyEditor(){if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
+function _tovBtn(bg,cl){return'background:'+bg+';color:'+cl+';border:none;border-radius:7px;padding:6px 11px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:32px;'}
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
 function gf(id){return F.find(f=>f.id===id);}
@@ -690,13 +691,17 @@ function bindMomEditor(){
     var table=cell.closest('table');if(!table){ov.innerHTML='';return;}
     var er=document.getElementById('tiptap-editor').getBoundingClientRect();
     var tr=table.getBoundingClientRect();
-    var t=tr.top-er.top,l=tr.left-er.left,w=tr.width,h=tr.height;
-    var bs='position:absolute;pointer-events:auto;border:none;border-radius:50%;width:22px;height:22px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.18);';
-    ov.innerHTML=
-      '<button style="'+bs+'top:'+(t+h/2-22)+'px;left:'+(l+w+6)+'px;background:#534AB7;color:#fff" data-tov="addRow" title="Add row">+</button>'+
-      '<button style="'+bs+'top:'+(t+h/2+4)+'px;left:'+(l+w+6)+'px;background:#fff;color:#EF4444;border:1.5px solid #FECACA" data-tov="delRow" title="Delete row">−</button>'+
-      '<button style="'+bs+'top:'+(t+h+6)+'px;left:'+(l+w/2-22)+'px;background:#534AB7;color:#fff" data-tov="addCol" title="Add column">+</button>'+
-      '<button style="'+bs+'top:'+(t+h+6)+'px;left:'+(l+w/2+4)+'px;background:#fff;color:#EF4444;border:1.5px solid #FECACA" data-tov="delCol" title="Delete column">−</button>';
+    var t=tr.top-er.top,l=tr.left-er.left,h=tr.height;
+    var barTop=t+h+8;
+    ov.innerHTML='<div style="position:absolute;top:'+barTop+'px;left:'+l+'px;pointer-events:auto;display:flex;align-items:center;gap:4px;background:#1A1D2E;border-radius:10px;padding:5px 8px;box-shadow:0 4px 16px rgba(0,0,0,.25)">'+
+      '<button data-tov="addRow" style="'+_tovBtn('#534AB7','#fff')+'">+ Row</button>'+
+      '<button data-tov="delRow" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Row</button>'+
+      '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
+      '<button data-tov="addCol" style="'+_tovBtn('#534AB7','#fff')+'">+ Col</button>'+
+      '<button data-tov="delCol" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Col</button>'+
+      '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
+      '<button data-tov="delTable" style="'+_tovBtn('#EF4444','#fff')+'">🗑 Delete table</button>'+
+    '</div>';
     ov.querySelectorAll('[data-tov]').forEach(function(btn){
       btn.addEventListener('mousedown',function(e){
         e.preventDefault();var c=btn.dataset.tov;
@@ -704,6 +709,7 @@ function bindMomEditor(){
         else if(c==='delRow')_editor.chain().focus().deleteRow().run();
         else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
         else if(c==='delCol')_editor.chain().focus().deleteColumn().run();
+        else if(c==='delTable')_editor.chain().focus().deleteTable().run();
       });
     });
   }
