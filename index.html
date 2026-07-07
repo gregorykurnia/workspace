@@ -271,8 +271,16 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 .auth-sub{font-size:13px;color:#9CA3AF;text-align:center;margin-bottom:28px}
 .auth-err{font-size:12px;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
 .auth-err.on{display:block}
-#sb-signout{background:#F3F4F6;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;font-family:inherit;transition:all .15s;flex-shrink:0;display:flex;align-items:center;gap:5px}
-#sb-signout:hover{background:#FEF2F2;border-color:#FECACA;color:#DC2626}
+#user-popup{position:fixed;bottom:70px;left:12px;width:236px;background:#fff;border:1px solid #E5E7EB;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:999;overflow:hidden;animation:popIn .12s ease}
+@keyframes popIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.up-head{padding:14px 16px;border-bottom:1px solid #F3F4F6}
+.up-name{font-size:13px;font-weight:600;color:#111827}
+.up-email{font-size:11px;color:#9CA3AF;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up-role{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:6px;background:#EEF2FF;color:#4F46E5}
+.up-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:#374151;cursor:pointer;transition:background .1s}
+.up-item:hover{background:#F9FAFB}
+.up-item.danger{color:#DC2626}.up-item.danger:hover{background:#FEF2F2}
+.up-divider{height:1px;background:#F3F4F6}
 .auth-ok{font-size:12px;color:#059669;background:#F0FDF4;border:1px solid #A7F3D0;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
 .auth-ok.on{display:block}
 </style>
@@ -311,13 +319,10 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   <div class="sb-foot">
     <div class="sb-nav-item"><span class="sni">&#9881;</span>Settings</div>
     <div class="sb-nav-item"><span class="sni">&#128465;</span>Trash</div>
-    <div class="sb-user">
+    <div class="sb-user" id="sb-user-btn" style="cursor:pointer">
       <div class="sb-avatar" id="sb-av">GK</div>
       <div style="flex:1;min-width:0"><div class="sb-user-name" id="sb-uname">Gregory K.</div><div class="sb-user-role" id="sb-urole">Professional</div></div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-        <button id="sb-changepw" title="Change password" style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:11px;font-family:inherit;padding:2px 4px;border-radius:4px;transition:color .15s;text-align:right">Change pw</button>
-        <button id="sb-signout" title="Sign out"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
-      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
   </div>
 </div>
