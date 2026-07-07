@@ -581,26 +581,40 @@ function momEdHTML(){
       '</div>'+
     '</div>'+
     '<div id="tt-toolbar">'+
-      '<select id="tt-heading"><option value="0">Normal</option><option value="1">H1</option><option value="2">H2</option><option value="3">H3</option></select>'+
-      '<span class="tt-sep"></span>'+
-      '<button type="button" class="tt-btn" data-cmd="bold"><b>B</b></button>'+
-      '<button type="button" class="tt-btn" data-cmd="italic"><i>I</i></button>'+
-      '<button type="button" class="tt-btn" data-cmd="underline"><u>U</u></button>'+
-      '<button type="button" class="tt-btn" data-cmd="strike"><s>S</s></button>'+
-      '<span class="tt-sep"></span>'+
-      '<button type="button" class="tt-btn" data-cmd="bulletList">• List</button>'+
-      '<button type="button" class="tt-btn" data-cmd="orderedList">1. List</button>'+
-      '<span class="tt-sep"></span>'+
-      '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
-      '<span class="tt-sep"></span>'+
-      '<label class="tt-color-wrap" title="Text color"><input type="color" id="tt-color" value="#111827"><span>A</span></label>'+
-      '<label class="tt-color-wrap tt-hl-wrap" title="Highlight"><input type="color" id="tt-highlight" value="#FEF08A"><span style="background:#FEF08A">H</span></label>'+
-      '<span class="tt-sep"></span>'+
-      '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
-      '<button type="button" class="tt-btn tt-tbl" data-cmd="addRow">+Row</button>'+
-      '<button type="button" class="tt-btn tt-tbl" data-cmd="delRow">−Row</button>'+
-      '<button type="button" class="tt-btn tt-tbl" data-cmd="addCol">+Col</button>'+
-      '<button type="button" class="tt-btn tt-tbl" data-cmd="delCol">−Col</button>'+
+      '<div class="tt-row">'+
+        '<select id="tt-font"><option value="">Inter</option><option value="Arial, sans-serif">Arial</option><option value="Georgia, serif">Georgia</option><option value="\'Times New Roman\', serif">Times New Roman</option><option value="\'Courier New\', monospace">Courier New</option><option value="Trebuchet MS, sans-serif">Trebuchet</option></select>'+
+        '<select id="tt-size"><option value="">Size</option><option value="10px">10</option><option value="11px">11</option><option value="12px">12</option><option value="13px">13</option><option value="14px">14</option><option value="15px">15</option><option value="16px">16</option><option value="18px">18</option><option value="20px">20</option><option value="24px">24</option><option value="28px">28</option><option value="32px">32</option><option value="36px">36</option><option value="48px">48</option></select>'+
+        '<select id="tt-heading"><option value="0">Normal</option><option value="1">H1</option><option value="2">H2</option><option value="3">H3</option></select>'+
+        '<span class="tt-sep"></span>'+
+        '<button type="button" class="tt-btn" data-cmd="bold"><b>B</b></button>'+
+        '<button type="button" class="tt-btn" data-cmd="italic"><i>I</i></button>'+
+        '<button type="button" class="tt-btn" data-cmd="underline"><u>U</u></button>'+
+        '<button type="button" class="tt-btn" data-cmd="strike"><s>S</s></button>'+
+        '<span class="tt-sep"></span>'+
+        '<label class="tt-color-wrap" title="Text color"><input type="color" id="tt-color" value="#111827"><span>A</span></label>'+
+        '<label class="tt-color-wrap tt-hl-wrap" title="Highlight"><input type="color" id="tt-highlight" value="#FEF08A"><span style="background:#FEF08A">H</span></label>'+
+        '<span class="tt-sep"></span>'+
+        '<button type="button" class="tt-btn" data-cmd="alignLeft" title="Align left">&#8676;</button>'+
+        '<button type="button" class="tt-btn" data-cmd="alignCenter" title="Align center">&#8596;</button>'+
+        '<button type="button" class="tt-btn" data-cmd="alignRight" title="Align right">&#8677;</button>'+
+      '</div>'+
+      '<div class="tt-row">'+
+        '<button type="button" class="tt-btn" data-cmd="bulletList">• List</button>'+
+        '<button type="button" class="tt-btn" data-cmd="orderedList">1. List</button>'+
+        '<button type="button" class="tt-btn" data-cmd="blockquote">❝ Quote</button>'+
+        '<span class="tt-sep"></span>'+
+        '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
+        '<span class="tt-sep"></span>'+
+        '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
+        '<button type="button" class="tt-btn" data-cmd="addRow">+Row</button>'+
+        '<button type="button" class="tt-btn" data-cmd="delRow">−Row</button>'+
+        '<button type="button" class="tt-btn" data-cmd="addCol">+Col</button>'+
+        '<button type="button" class="tt-btn" data-cmd="delCol">−Col</button>'+
+        '<span class="tt-sep"></span>'+
+        '<button type="button" class="tt-btn" data-cmd="undo" title="Undo">↩</button>'+
+        '<button type="button" class="tt-btn" data-cmd="redo" title="Redo">↪</button>'+
+        '<button type="button" class="tt-btn" data-cmd="clear" title="Clear formatting" style="font-size:11px">Clear fmt</button>'+
+      '</div>'+
     '</div>'+
     '<div id="tiptap-editor" style="margin-bottom:20px"></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
@@ -635,7 +649,7 @@ function bindMomEditor(){
   var initialHTML=EMOM?deltaToHTML(EMOM.content):'';
   _editor=new TT.Editor({
     element:document.getElementById('tiptap-editor'),
-    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true})],
+    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true}),TT.FontFamily,TT.TextAlign.configure({types:['heading','paragraph']}),TT.FontSize],
     content:initialHTML,
     editorProps:{attributes:{class:'tiptap',spellcheck:'true'}},
     onUpdate:function(){if(EMOM&&_editor)EMOM.content=_editor.getHTML();}
@@ -674,6 +688,13 @@ function bindMomEditor(){
         else if(c==='bulletList')_editor.chain().focus().toggleBulletList().run();
         else if(c==='orderedList')_editor.chain().focus().toggleOrderedList().run();
         else if(c==='link'){var u=prompt('Enter URL (leave blank to remove link):');if(u)_editor.chain().focus().setLink({href:u}).run();else _editor.chain().focus().unsetLink().run();}
+        else if(c==='blockquote')_editor.chain().focus().toggleBlockquote().run();
+        else if(c==='alignLeft')_editor.chain().focus().setTextAlign('left').run();
+        else if(c==='alignCenter')_editor.chain().focus().setTextAlign('center').run();
+        else if(c==='alignRight')_editor.chain().focus().setTextAlign('right').run();
+        else if(c==='undo')_editor.chain().focus().undo().run();
+        else if(c==='redo')_editor.chain().focus().redo().run();
+        else if(c==='clear')_editor.chain().focus().clearNodes().unsetAllMarks().run();
         else if(c==='insertTable')_editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run();
         else if(c==='addRow')_editor.chain().focus().addRowAfter().run();
         else if(c==='delRow')_editor.chain().focus().deleteRow().run();
@@ -691,6 +712,10 @@ function bindMomEditor(){
     if(tc)tc.addEventListener('input',function(){_editor.chain().focus().setColor(this.value).run();});
     var th=document.getElementById('tt-highlight');
     if(th)th.addEventListener('input',function(){_editor.chain().focus().setHighlight({color:this.value}).run();});
+    var tf=document.getElementById('tt-font');
+    if(tf)tf.addEventListener('change',function(){if(this.value)_editor.chain().focus().setFontFamily(this.value).run();else _editor.chain().focus().unsetFontFamily().run();});
+    var ts=document.getElementById('tt-size');
+    if(ts)ts.addEventListener('change',function(){if(this.value)_editor.chain().focus().setFontSize(this.value).run();else _editor.chain().focus().unsetFontSize().run();});
   }
   document.getElementById('mom-back').addEventListener('click',backMom);
   document.getElementById('mom-save').addEventListener('click',saveMom);

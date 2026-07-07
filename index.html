@@ -171,7 +171,9 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .me-field label{font-size:12px;color:#6B7280;font-weight:500;margin:0}
 .me-field input,.me-field textarea{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 14px;font-size:13px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s}
 .me-field input:focus,.me-field textarea:focus{border-color:#6366F1;background:#fff}
-#tt-toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;border:1px solid #EAECF0;border-bottom:none;border-radius:8px 8px 0 0;background:#FAFAFA;flex-wrap:wrap}
+#tt-toolbar{display:flex;flex-direction:column;gap:0;border:1px solid #EAECF0;border-bottom:none;border-radius:8px 8px 0 0;background:#FAFAFA;overflow:hidden}
+.tt-row{display:flex;align-items:center;gap:2px;padding:5px 8px;flex-wrap:wrap}
+.tt-row+.tt-row{border-top:1px solid #F3F4F6}
 #tt-heading{border:1px solid #E5E7EB;border-radius:5px;padding:4px 6px;font-size:12px;background:#fff;color:#374151;font-family:inherit;cursor:pointer;outline:none}
 .tt-btn{background:none;border:1px solid transparent;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:13px;color:#374151;font-family:inherit;transition:all .12s;line-height:1.4;min-width:28px}
 .tt-btn:hover{background:#F3F4F6;border-color:#E5E7EB}.tt-btn.active{background:#EEF2FF;color:#4F46E5;border-color:#C7D2FE}
@@ -190,6 +192,8 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .tiptap h3{font-size:15px;font-weight:600;color:#374151}
 .tiptap ul,.tiptap ol{padding-left:20px}
 .tiptap a{color:#4F46E5;text-decoration:underline}
+.tiptap blockquote{border-left:3px solid #D1D5DB;padding-left:14px;color:#6B7280;font-style:italic;margin:4px 0}
+#tt-font,#tt-size{border:1px solid #E5E7EB;border-radius:5px;padding:4px 5px;font-size:12px;background:#fff;color:#374151;font-family:inherit;cursor:pointer;outline:none;max-width:130px}
 .tiptap table{border-collapse:collapse;width:100%;margin:4px 0}
 .tiptap td,.tiptap th{border:1px solid #E5E7EB;padding:7px 10px;font-size:13px;text-align:left;position:relative}
 .tiptap th{background:#F9FAFB;font-weight:600}
@@ -387,7 +391,11 @@ import Link from'https://esm.sh/@tiptap/extension-link@2';
 import TextStyle from'https://esm.sh/@tiptap/extension-text-style@2';
 import Color from'https://esm.sh/@tiptap/extension-color@2';
 import Highlight from'https://esm.sh/@tiptap/extension-highlight@2';
-window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link,TextStyle,Color,Highlight};
+import FontFamily from'https://esm.sh/@tiptap/extension-font-family@2';
+import TextAlign from'https://esm.sh/@tiptap/extension-text-align@2';
+import{Extension}from'https://esm.sh/@tiptap/core@2';
+const FontSize=Extension.create({name:'fontSize',addOptions(){return{types:['textStyle']}},addGlobalAttributes(){return[{types:this.options.types,attributes:{fontSize:{default:null,parseHTML:el=>el.style.fontSize||null,renderHTML:attrs=>{if(!attrs.fontSize)return{};return{style:'font-size:'+attrs.fontSize}}}}}]},addCommands(){return{setFontSize:s=>({chain:c})=>c().setMark('textStyle',{fontSize:s}).run(),unsetFontSize:()=>({chain:c})=>c().setMark('textStyle',{fontSize:null}).removeEmptyTextStyle().run()}}});
+window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link,TextStyle,Color,Highlight,FontFamily,TextAlign,FontSize};
 </script>
 </body>
 </html>
