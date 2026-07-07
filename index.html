@@ -176,6 +176,11 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .tt-btn{background:none;border:1px solid transparent;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:13px;color:#374151;font-family:inherit;transition:all .12s;line-height:1.4;min-width:28px}
 .tt-btn:hover{background:#F3F4F6;border-color:#E5E7EB}.tt-btn.active{background:#EEF2FF;color:#4F46E5;border-color:#C7D2FE}
 .tt-sep{display:inline-block;width:1px;height:18px;background:#E5E7EB;margin:0 3px;vertical-align:middle;flex-shrink:0}
+.tt-color-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;cursor:pointer;border-radius:5px;border:1px solid transparent;transition:all .12s}
+.tt-color-wrap:hover{background:#F3F4F6;border-color:#E5E7EB}
+.tt-color-wrap input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
+.tt-color-wrap span{font-size:13px;font-weight:700;color:#374151;pointer-events:none;line-height:1}
+.tt-hl-wrap span{border-radius:2px;padding:1px 3px}
 .tiptap{border:1px solid #EAECF0;border-radius:0 0 8px 8px;padding:16px;min-height:260px;font-size:14px;line-height:1.7;color:#374151;outline:none;font-family:'Inter',sans-serif}
 .tiptap:focus{border-color:#6366F1}
 .tiptap>*+*{margin-top:6px}
@@ -379,7 +384,10 @@ import TableHeader from'https://esm.sh/@tiptap/extension-table-header@2';
 import TableCell from'https://esm.sh/@tiptap/extension-table-cell@2';
 import Underline from'https://esm.sh/@tiptap/extension-underline@2';
 import Link from'https://esm.sh/@tiptap/extension-link@2';
-window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link};
+import TextStyle from'https://esm.sh/@tiptap/extension-text-style@2';
+import Color from'https://esm.sh/@tiptap/extension-color@2';
+import Highlight from'https://esm.sh/@tiptap/extension-highlight@2';
+window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link,TextStyle,Color,Highlight};
 </script>
 </body>
 </html>

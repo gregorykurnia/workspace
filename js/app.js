@@ -593,6 +593,9 @@ function momEdHTML(){
       '<span class="tt-sep"></span>'+
       '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
       '<span class="tt-sep"></span>'+
+      '<label class="tt-color-wrap" title="Text color"><input type="color" id="tt-color" value="#111827"><span>A</span></label>'+
+      '<label class="tt-color-wrap tt-hl-wrap" title="Highlight"><input type="color" id="tt-highlight" value="#FEF08A"><span style="background:#FEF08A">H</span></label>'+
+      '<span class="tt-sep"></span>'+
       '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
       '<button type="button" class="tt-btn tt-tbl" data-cmd="addRow">+Row</button>'+
       '<button type="button" class="tt-btn tt-tbl" data-cmd="delRow">−Row</button>'+
@@ -632,7 +635,7 @@ function bindMomEditor(){
   var initialHTML=EMOM?deltaToHTML(EMOM.content):'';
   _editor=new TT.Editor({
     element:document.getElementById('tiptap-editor'),
-    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false})],
+    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true})],
     content:initialHTML,
     editorProps:{attributes:{class:'tiptap',spellcheck:'true'}},
     onUpdate:function(){if(EMOM&&_editor)EMOM.content=_editor.getHTML();}
@@ -684,6 +687,10 @@ function bindMomEditor(){
       if(v===0)_editor.chain().focus().setParagraph().run();
       else _editor.chain().focus().setHeading({level:v}).run();
     });
+    var tc=document.getElementById('tt-color');
+    if(tc)tc.addEventListener('input',function(){_editor.chain().focus().setColor(this.value).run();});
+    var th=document.getElementById('tt-highlight');
+    if(th)th.addEventListener('input',function(){_editor.chain().focus().setHighlight({color:this.value}).run();});
   }
   document.getElementById('mom-back').addEventListener('click',backMom);
   document.getElementById('mom-save').addEventListener('click',saveMom);
