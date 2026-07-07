@@ -59,6 +59,37 @@ document.getElementById('auth-forgot').addEventListener('click', function() {
     err.className = 'auth-err on';
   });
 });
+document.getElementById('sb-changepw').addEventListener('click', function() {
+  modal(
+    '<div class="m-title">Change Password</div>' +
+    '<div class="fr"><label>Current password</label><input type="password" id="cp-cur" placeholder="••••••••"></div>' +
+    '<div class="fr"><label>New password</label><input type="password" id="cp-new" placeholder="••••••••"></div>' +
+    '<div class="fr"><label>Confirm new password</label><input type="password" id="cp-con" placeholder="••••••••"><div class="e-msg" id="cp-err"></div></div>' +
+    '<div class="m-foot"><button class="btn se" id="cp-cancel">Cancel</button><button class="btn pr" id="cp-save">Save</button></div>'
+  );
+  document.getElementById('cp-cancel').addEventListener('click', closeModal);
+  document.getElementById('cp-save').addEventListener('click', function() {
+    var cur = document.getElementById('cp-cur').value;
+    var nw = document.getElementById('cp-new').value;
+    var con = document.getElementById('cp-con').value;
+    var err = document.getElementById('cp-err');
+    err.className = 'e-msg';
+    if (!cur || !nw || !con) { err.textContent = 'All fields required.'; err.className = 'e-msg on'; return; }
+    if (nw !== con) { err.textContent = 'New passwords do not match.'; err.className = 'e-msg on'; return; }
+    if (nw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.className = 'e-msg on'; return; }
+    var user = auth.currentUser;
+    var credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+    user.reauthenticateWithCredential(credential).then(function() {
+      return user.updatePassword(nw);
+    }).then(function() {
+      closeModal();
+      toast('Password changed successfully.');
+    }).catch(function(e) {
+      var msg = e.code === 'auth/wrong-password' ? 'Current password is wrong.' : e.message;
+      err.textContent = msg; err.className = 'e-msg on';
+    });
+  });
+});
 document.getElementById('sb-signout').addEventListener('click', function() {
   auth.signOut().then(function() { window.location.reload(); });
 });
