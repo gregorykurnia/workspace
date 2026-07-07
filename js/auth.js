@@ -13,7 +13,9 @@ function doSignIn() {
   }
   btn.textContent = 'Signing in...';
   btn.disabled = true;
-  auth.signInWithEmailAndPassword(em, pw).catch(function(e) {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function() {
+    return auth.signInWithEmailAndPassword(em, pw);
+  }).catch(function(e) {
     var msg = (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
       ? 'Wrong email or password.' : e.message;
     err.textContent = msg;
