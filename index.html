@@ -271,8 +271,10 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 .auth-sub{font-size:13px;color:#9CA3AF;text-align:center;margin-bottom:28px}
 .auth-err{font-size:12px;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
 .auth-err.on{display:block}
-#sb-signout{background:none;border:none;cursor:pointer;color:#9CA3AF;padding:4px 6px;border-radius:4px;line-height:1;transition:color .15s;flex-shrink:0;display:flex;align-items:center}
-#sb-signout:hover{color:#374151}
+#sb-signout{background:#F3F4F6;border:1px solid #E5E7EB;cursor:pointer;color:#6B7280;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;font-family:inherit;transition:all .15s;flex-shrink:0;display:flex;align-items:center;gap:5px}
+#sb-signout:hover{background:#FEF2F2;border-color:#FECACA;color:#DC2626}
+.auth-ok{font-size:12px;color:#059669;background:#F0FDF4;border:1px solid #A7F3D0;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
+.auth-ok.on{display:block}
 </style>
 </head>
 <body>
@@ -284,7 +286,9 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
     <div class="auth-err" id="auth-err"></div>
     <div class="fr"><label>Email</label><input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
     <div class="fr"><label>Password</label><input type="password" id="auth-pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+    <div class="auth-ok" id="auth-ok"></div>
     <button class="btn pr" id="auth-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px">Sign in</button>
+    <div style="text-align:center;margin-top:14px"><button id="auth-forgot" style="background:none;border:none;color:#9CA3AF;font-size:12px;cursor:pointer;font-family:inherit;transition:color .15s">Forgot password?</button></div>
   </div>
 </div>
 <div id="sidebar">
@@ -310,7 +314,7 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
     <div class="sb-user">
       <div class="sb-avatar" id="sb-av">GK</div>
       <div style="flex:1;min-width:0"><div class="sb-user-name" id="sb-uname">Gregory K.</div><div class="sb-user-role" id="sb-urole">Professional</div></div>
-      <button id="sb-signout" title="Sign out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+      <button id="sb-signout" title="Sign out"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
     </div>
   </div>
 </div>

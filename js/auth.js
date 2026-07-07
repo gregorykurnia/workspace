@@ -41,6 +41,24 @@ document.getElementById('auth-btn').addEventListener('click', doSignIn);
 document.getElementById('auth-pw').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doSignIn();
 });
+document.getElementById('auth-forgot').addEventListener('click', function() {
+  var em = document.getElementById('auth-email').value.trim();
+  var err = document.getElementById('auth-err');
+  var ok = document.getElementById('auth-ok');
+  err.className = 'auth-err'; ok.className = 'auth-ok';
+  if (!em) {
+    err.textContent = 'Enter your email above first.';
+    err.className = 'auth-err on';
+    return;
+  }
+  auth.sendPasswordResetEmail(em).then(function() {
+    ok.textContent = 'Reset link sent! Check your inbox.';
+    ok.className = 'auth-ok on';
+  }).catch(function(e) {
+    err.textContent = e.message;
+    err.className = 'auth-err on';
+  });
+});
 document.getElementById('sb-signout').addEventListener('click', function() {
   auth.signOut().then(function() { window.location.reload(); });
 });
