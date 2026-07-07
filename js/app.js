@@ -599,22 +599,27 @@ function momEdHTML(){
         '<button type="button" class="tt-btn" data-cmd="alignRight" title="Align right">&#8677;</button>'+
       '</div>'+
       '<div class="tt-row">'+
-        '<button type="button" class="tt-btn" data-cmd="bulletList">• List</button>'+
-        '<button type="button" class="tt-btn" data-cmd="orderedList">1. List</button>'+
+        '<button type="button" class="tt-btn" data-cmd="bulletList">Bullet</button>'+
+        '<button type="button" class="tt-btn" data-cmd="orderedList">Number</button>'+
         '<button type="button" class="tt-btn" data-cmd="blockquote">❝ Quote</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
-        '<button type="button" class="tt-btn" data-cmd="addRow">+Row</button>'+
-        '<button type="button" class="tt-btn" data-cmd="delRow">−Row</button>'+
-        '<button type="button" class="tt-btn" data-cmd="addCol">+Col</button>'+
-        '<button type="button" class="tt-btn" data-cmd="delCol">−Col</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="undo" title="Undo">↩</button>'+
         '<button type="button" class="tt-btn" data-cmd="redo" title="Redo">↪</button>'+
         '<button type="button" class="tt-btn" data-cmd="clear" title="Clear formatting" style="font-size:11px">Clear fmt</button>'+
       '</div>'+
+    '</div>'+
+    '<div id="tt-table-menu" style="display:none">'+
+      '<button type="button" class="tt-tm-btn" data-tc="addRow">+ Row</button>'+
+      '<button type="button" class="tt-tm-btn" data-tc="addCol">+ Col</button>'+
+      '<span class="tt-tm-sep"></span>'+
+      '<button type="button" class="tt-tm-btn" data-tc="delRow">− Row</button>'+
+      '<button type="button" class="tt-tm-btn" data-tc="delCol">− Col</button>'+
+      '<span class="tt-tm-sep"></span>'+
+      '<button type="button" class="tt-tm-btn danger" data-tc="delTable">✕ Table</button>'+
     '</div>'+
     '<div id="tiptap-editor" style="margin-bottom:20px"></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
@@ -676,6 +681,20 @@ function bindMomEditor(){
   }
   _editor.on('selectionUpdate',updateTB);
   _editor.on('transaction',updateTB);
+  var tblMenu=document.getElementById('tt-table-menu');
+  if(tblMenu&&TT.BubbleMenu){
+    new TT.BubbleMenu({editor:_editor,element:tblMenu,shouldShow:function({editor}){return editor.isActive('table');},tippyOptions:{placement:'bottom-start',offset:[0,6]}});
+    tblMenu.querySelectorAll('[data-tc]').forEach(function(btn){
+      btn.addEventListener('click',function(e){
+        e.preventDefault();var c=btn.dataset.tc;
+        if(c==='addRow')_editor.chain().focus().addRowAfter().run();
+        else if(c==='delRow')_editor.chain().focus().deleteRow().run();
+        else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
+        else if(c==='delCol')_editor.chain().focus().deleteColumn().run();
+        else if(c==='delTable')_editor.chain().focus().deleteTable().run();
+      });
+    });
+  }
   var tb=document.getElementById('tt-toolbar');
   if(tb){
     tb.querySelectorAll('.tt-btn[data-cmd]').forEach(function(btn){
