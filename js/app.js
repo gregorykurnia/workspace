@@ -606,6 +606,14 @@ function momEdHTML(){
         '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
+        '<span id="tt-tbl-controls" style="display:none;align-items:center;gap:2px">'+
+          '<span class="tt-sep"></span>'+
+          '<button type="button" class="tt-btn" data-cmd="addRow">+Row</button>'+
+          '<button type="button" class="tt-btn" data-cmd="delRow">−Row</button>'+
+          '<button type="button" class="tt-btn" data-cmd="addCol">+Col</button>'+
+          '<button type="button" class="tt-btn" data-cmd="delCol">−Col</button>'+
+          '<button type="button" class="tt-btn" data-cmd="delTable" style="color:#EF4444">✕ Table</button>'+
+        '</span>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="undo" title="Undo">↩</button>'+
         '<button type="button" class="tt-btn" data-cmd="redo" title="Redo">↪</button>'+
@@ -678,23 +686,11 @@ function bindMomEditor(){
       else if(_editor.isActive('heading',{level:3}))hs.value='3';
       else hs.value='0';
     }
+    var tc=document.getElementById('tt-tbl-controls');
+    if(tc)tc.style.display=_editor.isActive('table')?'inline-flex':'none';
   }
   _editor.on('selectionUpdate',updateTB);
   _editor.on('transaction',updateTB);
-  var tblMenu=document.getElementById('tt-table-menu');
-  if(tblMenu&&TT.BubbleMenu){
-    new TT.BubbleMenu({editor:_editor,element:tblMenu,shouldShow:function({editor}){return editor.isActive('table');},tippyOptions:{placement:'bottom-start',offset:[0,6]}});
-    tblMenu.querySelectorAll('[data-tc]').forEach(function(btn){
-      btn.addEventListener('click',function(e){
-        e.preventDefault();var c=btn.dataset.tc;
-        if(c==='addRow')_editor.chain().focus().addRowAfter().run();
-        else if(c==='delRow')_editor.chain().focus().deleteRow().run();
-        else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
-        else if(c==='delCol')_editor.chain().focus().deleteColumn().run();
-        else if(c==='delTable')_editor.chain().focus().deleteTable().run();
-      });
-    });
-  }
   var tb=document.getElementById('tt-toolbar');
   if(tb){
     tb.querySelectorAll('.tt-btn[data-cmd]').forEach(function(btn){
