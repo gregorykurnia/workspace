@@ -606,14 +606,6 @@ function momEdHTML(){
         '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
-        '<span id="tt-tbl-controls" style="display:none;align-items:center;gap:2px">'+
-          '<span class="tt-sep"></span>'+
-          '<button type="button" class="tt-btn" data-cmd="addRow">+Row</button>'+
-          '<button type="button" class="tt-btn" data-cmd="delRow">−Row</button>'+
-          '<button type="button" class="tt-btn" data-cmd="addCol">+Col</button>'+
-          '<button type="button" class="tt-btn" data-cmd="delCol">−Col</button>'+
-          '<button type="button" class="tt-btn" data-cmd="delTable" style="color:#EF4444">✕ Table</button>'+
-        '</span>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="undo" title="Undo">↩</button>'+
         '<button type="button" class="tt-btn" data-cmd="redo" title="Redo">↪</button>'+
@@ -629,7 +621,7 @@ function momEdHTML(){
       '<span class="tt-tm-sep"></span>'+
       '<button type="button" class="tt-tm-btn danger" data-tc="delTable">✕ Table</button>'+
     '</div>'+
-    '<div id="tiptap-editor" style="margin-bottom:20px"></div>'+
+    '<div style="position:relative;margin-bottom:20px"><div id="tiptap-editor"></div><div id="tt-tov" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
       '<button class="btn dk" id="mom-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>'+
       '<button class="btn se" id="mom-cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</button>'+
@@ -686,8 +678,34 @@ function bindMomEditor(){
       else if(_editor.isActive('heading',{level:3}))hs.value='3';
       else hs.value='0';
     }
-    var tc=document.getElementById('tt-tbl-controls');
-    if(tc)tc.style.display=(_editor.isActive('tableCell')||_editor.isActive('tableHeader'))?'inline-flex':'none';
+    updateTableOverlay();
+  }
+  function updateTableOverlay(){
+    var ov=document.getElementById('tt-tov');if(!ov)return;
+    if(!(_editor.isActive('tableCell')||_editor.isActive('tableHeader'))){ov.innerHTML='';return;}
+    var sel=window.getSelection();if(!sel||!sel.anchorNode){ov.innerHTML='';return;}
+    var cell=sel.anchorNode.nodeType===3?sel.anchorNode.parentElement:sel.anchorNode;
+    while(cell&&cell.nodeName!=='TD'&&cell.nodeName!=='TH'&&cell!==document.body)cell=cell.parentElement;
+    if(!cell||(cell.nodeName!=='TD'&&cell.nodeName!=='TH')){ov.innerHTML='';return;}
+    var table=cell.closest('table');if(!table){ov.innerHTML='';return;}
+    var er=document.getElementById('tiptap-editor').getBoundingClientRect();
+    var tr=table.getBoundingClientRect();
+    var t=tr.top-er.top,l=tr.left-er.left,w=tr.width,h=tr.height;
+    var bs='position:absolute;pointer-events:auto;border:none;border-radius:50%;width:22px;height:22px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.18);';
+    ov.innerHTML=
+      '<button style="'+bs+'top:'+(t+h/2-22)+'px;left:'+(l+w+6)+'px;background:#534AB7;color:#fff" data-tov="addRow" title="Add row">+</button>'+
+      '<button style="'+bs+'top:'+(t+h/2+4)+'px;left:'+(l+w+6)+'px;background:#fff;color:#EF4444;border:1.5px solid #FECACA" data-tov="delRow" title="Delete row">−</button>'+
+      '<button style="'+bs+'top:'+(t+h+6)+'px;left:'+(l+w/2-22)+'px;background:#534AB7;color:#fff" data-tov="addCol" title="Add column">+</button>'+
+      '<button style="'+bs+'top:'+(t+h+6)+'px;left:'+(l+w/2+4)+'px;background:#fff;color:#EF4444;border:1.5px solid #FECACA" data-tov="delCol" title="Delete column">−</button>';
+    ov.querySelectorAll('[data-tov]').forEach(function(btn){
+      btn.addEventListener('mousedown',function(e){
+        e.preventDefault();var c=btn.dataset.tov;
+        if(c==='addRow')_editor.chain().focus().addRowAfter().run();
+        else if(c==='delRow')_editor.chain().focus().deleteRow().run();
+        else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
+        else if(c==='delCol')_editor.chain().focus().deleteColumn().run();
+      });
+    });
   }
   _editor.on('selectionUpdate',updateTB);
   _editor.on('transaction',updateTB);
