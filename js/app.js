@@ -298,7 +298,7 @@ function folderHTML(){
       '</div>'+
       '<button style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;color:#EF4444;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-delfolder="'+f.id+'">'+iTrash+' Delete</button>'+
     '</div>'+
-    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div>'+(CURR_USER_ROLE==='admin'?'<div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div>':'')+'</div>'+
+    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
 function subHTML(s,fid){
