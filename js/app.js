@@ -3,6 +3,7 @@ const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
 var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_quill=null;
+var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
 function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
 function buildHash(){
@@ -83,7 +84,7 @@ async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder
 async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){VIEW='home';PATH=[];EMOM=null;_quill=null;closeCtx();history.pushState(null,'',buildHash());render();}
-function goTo(path){for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
+function goTo(path){if(typeof canSeeFolder==='function'&&!canSeeFolder(path[path.length-1])){toast('You don\'t have access to this folder.');goHome();return;}for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;_quill=null;DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
 function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
 function showCtx(e,fid){
@@ -100,17 +101,18 @@ function showCtx(e,fid){
   h+='<div class="cd"></div>';
   if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">'+iLock+'Lock again</div>';
   h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+iLock+(f.pw?'Change lock':'Set lock')+'</div>';
+  if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct" data-a="access" data-id="'+fid+'">&#128274; Manage Access</div>';
   h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">'+iDel+'Delete</div>';
   el.innerHTML=h;
-  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='del')askDeleteFolder(id);});
+  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);});
   document.getElementById('CR').appendChild(el);el.style.left=Math.min(e.clientX,innerWidth-240)+'px';el.style.top=Math.min(e.clientY,innerHeight-260)+'px';
 }
 function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
 document.addEventListener('click',closeCtx);
 function render(){renderTree();renderBC();renderTB();renderMain();history.replaceState(null,'',buildHash());}
-function renderTree(){var el=document.getElementById('tree');el.innerHTML='';kids(null).forEach(f=>buildNode(el,f,0));}
+function renderTree(){var el=document.getElementById('tree');el.innerHTML='';kids(null).filter(f=>canSeeFolder(f.id)).forEach(f=>buildNode(el,f,0));}
 function buildNode(par,f,d){
-  var ch=kids(f.id),act=PATH[PATH.length-1]===f.id,exp=EXP.has(f.id);
+  var ch=kids(f.id).filter(c=>canSeeFolder(c.id)),act=PATH[PATH.length-1]===f.id,exp=EXP.has(f.id);
   var el=document.createElement('div');el.className='ti'+(act?' on':'');el.style.setProperty('--d',d);
   el.innerHTML='<span class="ic">'+(f.icon||'&#128193;')+'</span><span class="nm">'+esc(f.name)+'</span>'+(f.pw?'<span class="lk">&#128274;</span>':'')+'<span class="cv'+(exp?' op':'')+'" data-tog="'+f.id+'">'+(ch.length?'&#9658;':'')+'</span><button class="mb" data-fid="'+f.id+'">&#8943;</button>';
   el.querySelector('.mb').addEventListener('click',e=>{e.stopPropagation();showCtx(e,f.id);});
@@ -216,7 +218,7 @@ function applyDocFilter(){
 }
 // HOME
 function homeHTML(){
-  var r=kids(null);
+  var r=kids(null).filter(f=>canSeeFolder(f.id));
   var iconPalette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
   // Recently opened: merge moms + docs sorted by date desc
   var recent=[];
