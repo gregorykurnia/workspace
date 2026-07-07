@@ -264,13 +264,22 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   #pdf-print .ptag{display:inline-block;padding:2px 10px;background:#EEF0FF;color:#534AB7;border-radius:4px;font-size:12px;margin-right:6px}
 }
 #pdf-print{display:none}
-#auth-screen{position:fixed;inset:0;background:#F7F8FC;display:flex;align-items:center;justify-content:center;z-index:10000}
-.auth-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.auth-logo{width:44px;height:44px;background:#111827;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;margin:0 auto 20px}
-.auth-title{font-size:22px;font-weight:700;color:#111827;text-align:center;margin-bottom:6px}
-.auth-sub{font-size:13px;color:#9CA3AF;text-align:center;margin-bottom:28px}
-.auth-err{font-size:12px;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
+#auth-screen{position:fixed;inset:0;background:#F3F4F8;display:flex;align-items:center;justify-content:center;z-index:10000}
+.auth-card{background:#fff;border-radius:20px;padding:44px 40px 40px;width:100%;max-width:400px;box-shadow:0 2px 16px rgba(0,0,0,.07)}
+.auth-logo{width:64px;height:64px;background:#111827;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:30px}
+.auth-title{font-size:26px;font-weight:700;color:#111827;text-align:center;margin-bottom:6px;letter-spacing:-.3px}
+.auth-sub{font-size:14px;color:#9CA3AF;text-align:center;margin-bottom:32px}
+.auth-card .fr label{font-size:13px;font-weight:500;color:#374151;margin-bottom:6px}
+.auth-card input{background:#F3F4F6;border:1.5px solid transparent;border-radius:10px;padding:13px 14px;font-size:14px;transition:all .15s}
+.auth-card input:focus{background:#fff;border-color:#534AB7;box-shadow:0 0 0 3px rgba(83,74,183,.12)}
+#auth-btn{background:#534AB7;border-radius:10px;padding:13px;font-size:14px;font-weight:600;gap:8px;transition:background .15s}
+#auth-btn:hover:not(:disabled){background:#443CA0}
+#auth-forgot{background:none;border:none;cursor:pointer;color:#534AB7;font-size:13px;font-weight:500;font-family:inherit;width:100%;text-align:center;padding:6px;margin-top:10px;display:block;transition:color .15s}
+#auth-forgot:hover{color:#443CA0}
+.auth-err{font-size:12px;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:9px 12px;margin-bottom:14px;display:none;text-align:center}
 .auth-err.on{display:block}
+.auth-ok{font-size:12px;color:#059669;background:#F0FDF4;border:1px solid #A7F3D0;border-radius:8px;padding:9px 12px;margin-bottom:14px;display:none;text-align:center}
+.auth-ok.on{display:block}
 #user-popup{position:fixed;bottom:70px;left:12px;width:236px;background:#fff;border:1px solid #E5E7EB;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:999;overflow:hidden;animation:popIn .12s ease}
 @keyframes popIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .up-head{padding:14px 16px;border-bottom:1px solid #F3F4F6}
@@ -281,8 +290,6 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 .up-item:hover{background:#F9FAFB}
 .up-item.danger{color:#DC2626}.up-item.danger:hover{background:#FEF2F2}
 .up-divider{height:1px;background:#F3F4F6}
-.auth-ok{font-size:12px;color:#059669;background:#F0FDF4;border:1px solid #A7F3D0;border-radius:7px;padding:8px 12px;margin-bottom:14px;display:none;text-align:center}
-.auth-ok.on{display:block}
 </style>
 </head>
 <body>
@@ -290,13 +297,13 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
   <div class="auth-card">
     <div class="auth-logo">&#8862;</div>
     <div class="auth-title">Workbase</div>
-    <div class="auth-sub">Sign in to continue</div>
+    <div class="auth-sub">Sign in to your workspace</div>
     <div class="auth-err" id="auth-err"></div>
-    <div class="fr"><label>Email</label><input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email"></div>
-    <div class="fr"><label>Password</label><input type="password" id="auth-pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
     <div class="auth-ok" id="auth-ok"></div>
-    <button class="btn pr" id="auth-btn" style="width:100%;justify-content:center;padding:11px;font-size:14px">Sign in</button>
-    <div style="text-align:center;margin-top:14px"><button id="auth-forgot" style="background:none;border:none;color:#9CA3AF;font-size:12px;cursor:pointer;font-family:inherit;transition:color .15s">Forgot password?</button></div>
+    <div class="fr"><label>Email</label><input type="email" id="auth-email" placeholder="name@company.com" autocomplete="email"></div>
+    <div class="fr"><label>Password</label><input type="password" id="auth-pw" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+    <button class="btn pr" id="auth-btn" style="width:100%;justify-content:center;margin-top:4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign in</button>
+    <button id="auth-forgot">Forgot password?</button>
   </div>
 </div>
 <div id="sidebar">
