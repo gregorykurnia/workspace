@@ -227,6 +227,7 @@ function homeHTML(){
   recent.sort(function(a,b){return b.date-a.date;});
   recent=recent.slice(0,5);
   var recentHTML='';
+  if(CURR_USER_ROLE!=='admin')return'<div class="home"><div class="h-greet">My workspace</div><div><div class="home-sec-head"><span class="sec-l">Active Folders</span></div><div class="fg">'+r.map(function(f){return fcard(f,true);}).join('')+'</div></div></div>';
   if(recent.length){
     var rows=recent.map(function(item){
       var path=item.folderId?folderLabel(item.folderId):'';
@@ -329,7 +330,7 @@ function momCardHTML(m){
     '<div class="mc-title">'+esc(m.title||'Untitled')+'</div>'+
     '<div class="mc-prev" style="display:none">'+momPreview(m.content)+'</div>'+
     '<div class="mc-right">'+
-      (CURR_USER_ROLE==='admin'?'<button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button>':'')+
+      '<button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button>'+
       '<div class="mc-act">'+
         (m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="text-decoration:none;font-size:11px;padding:3px 6px" title="Google Doc">'+iDoc+' Doc</a>':'')+
         '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
@@ -418,7 +419,7 @@ function docCardHTML(d){
     icBox+
     '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(show&&d.note?esc(d.note):(!show?'Password protected':''))+'</div></div>'+
     '<div class="dc-right">'+
-      (CURR_USER_ROLE==='admin'?'<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'">&#9733;</button>':'')+
+      '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'">&#9733;</button>'+
       badge+
       '<div class="dc-act">'+
         (show&&d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
