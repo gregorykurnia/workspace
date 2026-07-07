@@ -17,6 +17,9 @@ auth.onAuthStateChanged(function(user) {
     }
     var ur = document.getElementById('sb-urole');
     if (ur) ur.textContent = CURR_USER_ROLE === 'admin' ? 'Admin' : 'Member';
+    if (CURR_USER_ROLE !== 'admin') {
+      var nb = document.getElementById('btn-new-folder'); if (nb) nb.style.display = 'none';
+    }
     if (typeof render === 'function') render();
   });
 

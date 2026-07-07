@@ -97,7 +97,7 @@ function showCtx(e,fid){
   var iDel='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   var h='<div class="ct" data-a="open" data-id="'+fid+'">'+iOpen+'Open</div>';
   h+='<div class="ct" data-a="rename" data-id="'+fid+'">'+iRename+'Rename</div>';
-  h+='<div class="ct" data-a="sub" data-id="'+fid+'">'+iSub+'Add subfolder</div>';
+  if(CURR_USER_ROLE==='admin')h+='<div class="ct" data-a="sub" data-id="'+fid+'">'+iSub+'Add subfolder</div>';
   h+='<div class="cd"></div>';
   if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">'+iLock+'Lock again</div>';
   h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+iLock+(f.pw?'Change lock':'Set lock')+'</div>';
@@ -222,8 +222,8 @@ function homeHTML(){
   var iconPalette=['#EEF2FF','#F0FDF4','#FEF3C7','#FEE2E2','#F5F3FF','#ECFDF5','#FDF2F8','#EFF6FF'];
   // Recently opened: merge moms + docs sorted by date desc
   var recent=[];
-  M.forEach(function(m){recent.push({type:'mom',id:m.id,name:m.title||'Untitled',folderId:m.folderId,date:m.date||0,obj:m});});
-  D.forEach(function(d){recent.push({type:'doc',id:d.id,name:d.name||'Untitled',folderId:d.folderId,date:d.added||0,obj:d});});
+  M.filter(function(m){return canSeeFolder(m.folderId);}).forEach(function(m){recent.push({type:'mom',id:m.id,name:m.title||'Untitled',folderId:m.folderId,date:m.date||0,obj:m});});
+  D.filter(function(d){return canSeeFolder(d.folderId);}).forEach(function(d){recent.push({type:'doc',id:d.id,name:d.name||'Untitled',folderId:d.folderId,date:d.added||0,obj:d});});
   recent.sort(function(a,b){return b.date-a.date;});
   recent=recent.slice(0,5);
   var recentHTML='';
@@ -256,7 +256,7 @@ function homeHTML(){
   return '<div class="home">'+
     '<div class="h-greet">My workspace</div>'+
     '<div><div class="home-sec-head"><span class="sec-l">Active Folders</span><button class="home-view-all">View all</button></div>'+
-    '<div class="fg">'+r.map(function(f){return fcard(f,true);}).join('')+'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New folder</div></div></div></div>'+
+    '<div class="fg">'+r.map(function(f){return fcard(f,true);}).join('')+(CURR_USER_ROLE==='admin'?'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New folder</div></div>':'')+'</div></div>'+
     recentHTML+
   '</div>';
 }
@@ -297,7 +297,7 @@ function folderHTML(){
       '</div>'+
       '<button style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;color:#EF4444;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-delfolder="'+f.id+'">'+iTrash+' Delete</button>'+
     '</div>'+
-    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
+    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div>'+(CURR_USER_ROLE==='admin'?'<div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div>':'')+'</div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
 function subHTML(s,fid){
@@ -312,10 +312,10 @@ function subHTML(s,fid){
       '<button class="sub-view-btn">'+iList+'</button>'+
     '</div>'+
     '<div style="flex:1"></div>'+
-    '<button class="btn dk" style="display:flex;align-items:center;gap:6px;padding:8px 14px" data-newsub="'+fid+'">'+iFldr+' New subfolder</button>'+
+    (CURR_USER_ROLE==='admin'?'<button class="btn dk" style="display:flex;align-items:center;gap:6px;padding:8px 14px" data-newsub="'+fid+'">'+iFldr+' New subfolder</button>':'')+
   '</div>';
   if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Break this space into sections</div></div>';
-  var addCard='<div class="add-c" data-newsub="'+fid+'" style="min-height:120px"><div class="add-c-plus" style="width:36px;height:36px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:1;color:#6B7280">+</div><div class="add-c-lbl">New folder</div></div>';
+  var addCard=CURR_USER_ROLE==='admin'?'<div class="add-c" data-newsub="'+fid+'" style="min-height:120px"><div class="add-c-plus" style="width:36px;height:36px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:1;color:#6B7280">+</div><div class="add-c-lbl">New folder</div></div>':'';
   return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+addCard+'</div>';
 }
 function momCardHTML(m){
@@ -329,7 +329,7 @@ function momCardHTML(m){
     '<div class="mc-title">'+esc(m.title||'Untitled')+'</div>'+
     '<div class="mc-prev" style="display:none">'+momPreview(m.content)+'</div>'+
     '<div class="mc-right">'+
-      '<button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button>'+
+      (CURR_USER_ROLE==='admin'?'<button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button>':'')+
       '<div class="mc-act">'+
         (m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="text-decoration:none;font-size:11px;padding:3px 6px" title="Google Doc">'+iDoc+' Doc</a>':'')+
         '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
@@ -418,7 +418,7 @@ function docCardHTML(d){
     icBox+
     '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(show&&d.note?esc(d.note):(!show?'Password protected':''))+'</div></div>'+
     '<div class="dc-right">'+
-      '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'">&#9733;</button>'+
+      (CURR_USER_ROLE==='admin'?'<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'">&#9733;</button>':'')+
       badge+
       '<div class="dc-act">'+
         (show&&d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
