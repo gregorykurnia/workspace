@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Workspace</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100vh;overflow:hidden;display:flex}
@@ -172,11 +171,25 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .me-field label{font-size:12px;color:#6B7280;font-weight:500;margin:0}
 .me-field input,.me-field textarea{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 14px;font-size:13px;font-family:inherit;color:#111827;outline:none;transition:border-color .15s}
 .me-field input:focus,.me-field textarea:focus{border-color:#6366F1;background:#fff}
-.ql-toolbar{border-radius:8px 8px 0 0!important;border-color:#EAECF0!important;background:#FAFAFA}
-.ql-container{border-radius:0 0 8px 8px!important;border-color:#EAECF0!important;font-family:'Inter',sans-serif!important;font-size:14px!important}
-.ql-editor{min-height:260px;line-height:1.7;color:#374151;padding:16px!important}
-.ql-editor.ql-blank::before{color:#9CA3AF!important;font-style:normal!important}
-.ql-editor li[data-list=checked]{text-decoration:line-through;opacity:.55}
+#tt-toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;border:1px solid #EAECF0;border-bottom:none;border-radius:8px 8px 0 0;background:#FAFAFA;flex-wrap:wrap}
+#tt-heading{border:1px solid #E5E7EB;border-radius:5px;padding:4px 6px;font-size:12px;background:#fff;color:#374151;font-family:inherit;cursor:pointer;outline:none}
+.tt-btn{background:none;border:1px solid transparent;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:13px;color:#374151;font-family:inherit;transition:all .12s;line-height:1.4;min-width:28px}
+.tt-btn:hover{background:#F3F4F6;border-color:#E5E7EB}.tt-btn.active{background:#EEF2FF;color:#4F46E5;border-color:#C7D2FE}
+.tt-sep{display:inline-block;width:1px;height:18px;background:#E5E7EB;margin:0 3px;vertical-align:middle;flex-shrink:0}
+.tiptap{border:1px solid #EAECF0;border-radius:0 0 8px 8px;padding:16px;min-height:260px;font-size:14px;line-height:1.7;color:#374151;outline:none;font-family:'Inter',sans-serif}
+.tiptap:focus{border-color:#6366F1}
+.tiptap>*+*{margin-top:6px}
+.tiptap p{margin:0}
+.tiptap h1{font-size:22px;font-weight:700;color:#111827}
+.tiptap h2{font-size:18px;font-weight:600;color:#111827}
+.tiptap h3{font-size:15px;font-weight:600;color:#374151}
+.tiptap ul,.tiptap ol{padding-left:20px}
+.tiptap a{color:#4F46E5;text-decoration:underline}
+.tiptap table{border-collapse:collapse;width:100%;margin:4px 0}
+.tiptap td,.tiptap th{border:1px solid #E5E7EB;padding:7px 10px;font-size:13px;text-align:left;position:relative}
+.tiptap th{background:#F9FAFB;font-weight:600}
+.tiptap .selectedCell:after{content:'';position:absolute;inset:0;background:rgba(83,74,183,.08);pointer-events:none}
+.tableWrapper{overflow-x:auto}
 .dl{display:flex;flex-direction:column;gap:6px}
 .dc{background:#fff;border:1px solid #EAECF0;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s,box-shadow .15s}
 .dc:hover{border-color:#D1D5DB;box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -357,5 +370,16 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 <script src="js/auth.js"></script>
 <script src="js/rbac.js"></script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script type="module">
+import{Editor}from'https://esm.sh/@tiptap/core@2';
+import StarterKit from'https://esm.sh/@tiptap/starter-kit@2';
+import Table from'https://esm.sh/@tiptap/extension-table@2';
+import TableRow from'https://esm.sh/@tiptap/extension-table-row@2';
+import TableHeader from'https://esm.sh/@tiptap/extension-table-header@2';
+import TableCell from'https://esm.sh/@tiptap/extension-table-cell@2';
+import Underline from'https://esm.sh/@tiptap/extension-underline@2';
+import Link from'https://esm.sh/@tiptap/extension-link@2';
+window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link};
+</script>
 </body>
 </html>
