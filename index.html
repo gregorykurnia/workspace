@@ -193,6 +193,16 @@ body{font-family:'Inter',sans-serif;background:#F7F8FC;color:#1C1C2E;height:100v
 .tiptap ul,.tiptap ol{padding-left:20px}
 .tiptap a{color:#4F46E5;text-decoration:underline}
 .tiptap blockquote{border-left:3px solid #D1D5DB;padding-left:14px;color:#6B7280;font-style:italic;margin:4px 0}
+.tiptap img{max-width:100%;height:auto;border-radius:4px;cursor:pointer;display:block}
+.tiptap img.ProseMirror-selectednode{outline:2px solid #6366F1;outline-offset:2px}
+.tt-img-wrap{position:relative;display:inline-block;max-width:100%;line-height:0}
+.tt-img-wrap img{display:block}
+.tt-img-wrap.selected .tt-rsz-handle{display:block}
+.tt-rsz-handle{display:none;position:absolute;width:10px;height:10px;background:#6366F1;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);z-index:10}
+.tt-rsz-handle.se{bottom:-5px;right:-5px;cursor:se-resize}
+.tt-rsz-handle.sw{bottom:-5px;left:-5px;cursor:sw-resize}
+.tt-rsz-handle.ne{top:-5px;right:-5px;cursor:ne-resize}
+.tt-rsz-handle.nw{top:-5px;left:-5px;cursor:nw-resize}
 #tt-font,#tt-size{border:1px solid #E5E7EB;border-radius:5px;padding:4px 5px;font-size:12px;background:#fff;color:#374151;font-family:inherit;cursor:pointer;outline:none;max-width:130px}
 .tiptap table{border-collapse:collapse;width:100%;margin:4px 0}
 .tiptap td,.tiptap th{border:1px solid #E5E7EB;padding:7px 10px;font-size:13px;text-align:left;position:relative}
@@ -399,9 +409,11 @@ import Highlight from'https://esm.sh/@tiptap/extension-highlight@2';
 import FontFamily from'https://esm.sh/@tiptap/extension-font-family@2';
 import TextAlign from'https://esm.sh/@tiptap/extension-text-align@2';
 import{BubbleMenu}from'https://esm.sh/@tiptap/extension-bubble-menu@2';
-import{Extension}from'https://esm.sh/@tiptap/core@2';
+import{Extension,Node,mergeAttributes}from'https://esm.sh/@tiptap/core@2';
+import Image from'https://esm.sh/@tiptap/extension-image@2';
 const FontSize=Extension.create({name:'fontSize',addOptions(){return{types:['textStyle']}},addGlobalAttributes(){return[{types:this.options.types,attributes:{fontSize:{default:null,parseHTML:el=>el.style.fontSize||null,renderHTML:attrs=>{if(!attrs.fontSize)return{};return{style:'font-size:'+attrs.fontSize}}}}}]},addCommands(){return{setFontSize:s=>({chain:c})=>c().setMark('textStyle',{fontSize:s}).run(),unsetFontSize:()=>({chain:c})=>c().setMark('textStyle',{fontSize:null}).removeEmptyTextStyle().run()}}});
-window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link,TextStyle,Color,Highlight,FontFamily,TextAlign,FontSize,BubbleMenu};
+const ResizableImage=Image.extend({name:'image',addAttributes(){return{...this.parent?.(),width:{default:null,parseHTML:el=>el.getAttribute('width')||el.style.width||null,renderHTML:attrs=>attrs.width?{width:attrs.width,style:'width:'+attrs.width}:{}},float:{default:null,parseHTML:el=>el.style.float||null,renderHTML:attrs=>attrs.float?{style:'float:'+attrs.float+';margin:'+(attrs.float==='left'?'0 12px 8px 0':'0 0 8px 12px')}:{}}}},addNodeView(){return({node,getPos,editor})=>{const wrap=document.createElement('span');wrap.className='tt-img-wrap';wrap.setAttribute('data-drag-handle','');if(node.attrs.float)wrap.style.cssText='float:'+node.attrs.float+';'+(node.attrs.float==='left'?'margin:0 12px 8px 0':'margin:0 0 8px 12px');const img=document.createElement('img');img.src=node.attrs.src;img.alt=node.attrs.alt||'';if(node.attrs.width)img.style.width=node.attrs.width;['ne','nw','se','sw'].forEach(pos=>{const h=document.createElement('div');h.className='tt-rsz-handle '+pos;h.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();const startX=e.clientX,startW=img.offsetWidth;const onMove=ev=>{const dx=ev.clientX-startX;const newW=Math.max(60,pos.includes('e')?startW+dx:startW-dx)+'px';img.style.width=newW;if(typeof getPos==='function')editor.commands.command(({tr})=>{tr.setNodeMarkup(getPos(),null,{...node.attrs,width:newW});return true;});};const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);});wrap.appendChild(h);});img.addEventListener('click',()=>{wrap.classList.toggle('selected');});document.addEventListener('click',ev=>{if(!wrap.contains(ev.target))wrap.classList.remove('selected');},{capture:true,passive:true});wrap.insertBefore(img,wrap.firstChild);return{dom:wrap,update(n){if(n.type.name!=='image')return false;img.src=n.attrs.src;if(n.attrs.width)img.style.width=n.attrs.width;return true;}};}}});
+window._TT={Editor,StarterKit,Table,TableRow,TableHeader,TableCell,Underline,Link,TextStyle,Color,Highlight,FontFamily,TextAlign,FontSize,BubbleMenu,ResizableImage};
 </script>
 </body>
 </html>

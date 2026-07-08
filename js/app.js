@@ -644,6 +644,7 @@ function momEdHTML(){
         '<button type="button" class="tt-btn" data-cmd="link">Link</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="insertTable">Table</button>'+
+        '<button type="button" class="tt-btn" data-cmd="insertImage" title="Insert image">🖼 Image</button>'+
         '<span class="tt-sep"></span>'+
         '<button type="button" class="tt-btn" data-cmd="undo" title="Undo">↩</button>'+
         '<button type="button" class="tt-btn" data-cmd="redo" title="Redo">↪</button>'+
@@ -692,7 +693,7 @@ function bindMomEditor(){
   var initialHTML=EMOM?deltaToHTML(EMOM.content):'';
   _editor=new TT.Editor({
     element:document.getElementById('tiptap-editor'),
-    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true}),TT.FontFamily,TT.TextAlign.configure({types:['heading','paragraph']}),TT.FontSize],
+    extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true}),TT.FontFamily,TT.TextAlign.configure({types:['heading','paragraph']}),TT.FontSize,TT.ResizableImage.configure({inline:true,allowBase64:true})],
     content:initialHTML,
     editorProps:{attributes:{class:'tiptap',spellcheck:'true'}},
     onUpdate:function(){if(EMOM&&_editor)EMOM.content=_editor.getHTML();}
@@ -778,6 +779,7 @@ function bindMomEditor(){
         else if(c==='redo')_editor.chain().focus().redo().run();
         else if(c==='clear')_editor.chain().focus().clearNodes().unsetAllMarks().run();
         else if(c==='insertTable')_editor.chain().focus().insertTable({rows:3,cols:3,withHeaderRow:true}).run();
+        else if(c==='insertImage')_insertImagePrompt();
         else if(c==='addRow')_editor.chain().focus().addRowAfter().run();
         else if(c==='delRow')_editor.chain().focus().deleteRow().run();
         else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
@@ -809,8 +811,59 @@ function bindMomEditor(){
   var ib=document.getElementById('insert-doc-btn');if(ib)ib.addEventListener('click',()=>openDocPicker(EMOM.folderId));
   var imb=document.getElementById('insert-mom-btn');if(imb)imb.addEventListener('click',()=>openMomPicker(EMOM.id));
   document.getElementById('tiptap-editor').addEventListener('click',e=>{var a=e.target.closest('a');if(a&&a.href&&a.href.includes('mom.local/')){e.preventDefault();var mid=a.href.split('mom.local/')[1];if(mid){saveMom();openMom(mid);}}});
+  document.getElementById('tiptap-editor').addEventListener('paste',_handleEditorImagePaste);
 }
 function insertDocLink(name,url){if(_editor){_editor.chain().focus().insertContent('<a href="'+esc(url)+'">'+esc(name)+'</a> ').run();if(EMOM)EMOM.content=_editor.getHTML();}}
+function _insertImagePrompt(){
+  var modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.18);font-family:Inter,sans-serif">'+
+    '<div style="font-weight:600;font-size:15px;color:#111827;margin-bottom:16px">Insert Image</div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:12px;color:#6B7280;display:block;margin-bottom:4px">Paste image URL</label>'+
+    '<input id="_img-url" type="text" placeholder="https://..." style="width:100%;box-sizing:border-box;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;font-family:inherit"></div>'+
+    '<div style="text-align:center;color:#9CA3AF;font-size:12px;margin-bottom:12px">— or —</div>'+
+    '<label style="display:block;background:#F9FAFB;border:1.5px dashed #D1D5DB;border-radius:8px;padding:16px;text-align:center;cursor:pointer;font-size:13px;color:#6B7280">'+
+    '<input id="_img-file" type="file" accept="image/*" style="display:none">Upload from device</label>'+
+    '<div id="_img-prog" style="display:none;margin-top:8px;font-size:12px;color:#6366F1"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'+
+    '<button id="_img-cancel" style="border:1px solid #E5E7EB;background:#fff;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>'+
+    '<button id="_img-ok" style="background:#6366F1;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit">Insert</button>'+
+    '</div></div>';
+  document.body.appendChild(modal);
+  var urlInput=modal.querySelector('#_img-url');
+  var fileInput=modal.querySelector('#_img-file');
+  var prog=modal.querySelector('#_img-prog');
+  function doInsert(src){if(!src)return;_editor.chain().focus().setImage({src}).run();if(EMOM)EMOM.content=_editor.getHTML();modal.remove();}
+  modal.querySelector('#_img-cancel').addEventListener('click',()=>modal.remove());
+  modal.querySelector('#_img-ok').addEventListener('click',()=>{var u=urlInput.value.trim();if(u)doInsert(u);});
+  urlInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();var u=urlInput.value.trim();if(u)doInsert(u);}});
+  fileInput.addEventListener('change',function(){
+    var file=this.files[0];if(!file)return;
+    prog.style.display='block';prog.textContent='Uploading…';
+    var fd=new FormData();fd.append('file',file);fd.append('upload_preset','workspace_uploads');
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST','https://api.cloudinary.com/v1_1/dgznvawnm/image/upload');
+    xhr.upload.onprogress=function(e){if(e.lengthComputable)prog.textContent='Uploading '+Math.round(e.loaded/e.total*100)+'%…';};
+    xhr.onload=function(){if(xhr.status===200){var r=JSON.parse(xhr.responseText);doInsert(r.secure_url);}else{prog.textContent='Upload failed. Try a URL instead.';}};
+    xhr.onerror=function(){prog.textContent='Upload failed. Try a URL instead.';};
+    xhr.send(fd);
+  });
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  setTimeout(()=>urlInput.focus(),50);
+}
+function _handleEditorImagePaste(e){
+  if(!_editor)return;
+  var items=Array.from(e.clipboardData&&e.clipboardData.items||[]);
+  var imgItem=items.find(i=>i.type.startsWith('image/'));
+  if(!imgItem)return;
+  e.preventDefault();
+  var file=imgItem.getAsFile();if(!file)return;
+  var fd=new FormData();fd.append('file',file);fd.append('upload_preset','workspace_uploads');
+  var xhr=new XMLHttpRequest();
+  xhr.open('POST','https://api.cloudinary.com/v1_1/dgznvawnm/image/upload');
+  xhr.onload=function(){if(xhr.status===200){var r=JSON.parse(xhr.responseText);_editor.chain().focus().setImage({src:r.secure_url}).run();if(EMOM)EMOM.content=_editor.getHTML();}};
+  xhr.send(fd);
+}
 function collectMom(){
   if(!EMOM)return;
   var t=document.getElementById('mt'),d=document.getElementById('md'),g=document.getElementById('mg'),gd=document.getElementById('mgdoc');
