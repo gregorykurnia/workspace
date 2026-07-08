@@ -265,6 +265,7 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-relockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();relockDoc(el.dataset.relockdoc);}));
   ca.querySelectorAll('[data-lockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openLockModal('doc',el.dataset.lockdoc);}));
   ca.querySelectorAll('[data-deldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDelDoc(el.dataset.deldoc);}));
+  ca.querySelectorAll('[data-togglero]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var d=D.find(v=>v.id===el.dataset.togglero);if(!d)return;d.readOnly=!d.readOnly;sD(d);toast(d.readOnly?'Set to Read Only':'Editing unlocked.');}));
   ca.querySelectorAll('[data-movedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('doc',el.dataset.movedoc);}));
   ca.querySelectorAll('[data-opendocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();DOC_FOLDER=el.dataset.opendocfolder;renderMain();}));
   ca.querySelectorAll('[data-newdocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openNewDocFolder(el.dataset.newdocfolder);}));
@@ -515,21 +516,27 @@ function docCardHTML(d){
   var iUnlock='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>';
   var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
   var iLink='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
+  var isAdmin=CURR_USER_ROLE==='admin';
+  var ro=!!d.readOnly;
+  var roBadge=ro?'<span style="font-size:10px;font-weight:600;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">Read Only</span>':'';
+  var roToggleBtn=isAdmin?'<button class="ib" data-togglero="'+d.id+'" title="'+(ro?'Unlock editing':'Set Read Only')+'" style="color:'+(ro?'#3B82F6':'#9CA3AF')+'">'+(ro?'&#128274;':'&#128275;')+'</button>':'';
+  var canEdit=isAdmin||!ro;
   return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
     icBox+
-    '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+'</div><div class="dc-meta">'+(show&&d.note?esc(d.note):(!show?'Password protected':''))+'</div></div>'+
+    '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+roBadge+'</div><div class="dc-meta">'+(show&&d.note?esc(d.note):(!show?'Password protected':''))+'</div></div>'+
     '<div class="dc-right">'+
       '<button class="star-btn'+(d.starred?' on':'')+'" data-stardoc="'+d.id+'">&#9733;</button>'+
       badge+
       '<div class="dc-act">'+
+        roToggleBtn+
         (show&&d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
         (show&&d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">'+iDl+'</button>':'')+
-        '<button class="ib" data-movedoc="'+d.id+'" title="Move">'+iMove+'</button>'+
-        (lkd&&ulkd?'<button class="ib" data-relockdoc="'+d.id+'" title="Re-lock">'+iLock+'</button>':'')+
-        (lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'" title="Unlock">'+iUnlock+'</button>':'')+
-        (!lkd?'<button class="ib" data-lockdoc="'+d.id+'" title="Lock">'+iLock+'</button>':'')+
-        '<button class="ib" data-renamedoc="'+d.id+'" title="Rename">'+iRename+'</button>'+
-        '<button class="ib" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>'+
+        (canEdit?'<button class="ib" data-movedoc="'+d.id+'" title="Move">'+iMove+'</button>':'')+
+        (canEdit&&lkd&&ulkd?'<button class="ib" data-relockdoc="'+d.id+'" title="Re-lock">'+iLock+'</button>':'')+
+        (canEdit&&lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'" title="Unlock">'+iUnlock+'</button>':'')+
+        (canEdit&&!lkd?'<button class="ib" data-lockdoc="'+d.id+'" title="Lock">'+iLock+'</button>':'')+
+        (canEdit?'<button class="ib" data-renamedoc="'+d.id+'" title="Rename">'+iRename+'</button>':'')+
+        (canEdit?'<button class="ib" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
       '</div>'+
       (d.added?'<span class="dc-date">'+fmtDate(d.added)+'</span>':'')+'</div>'+
     '</div>';
@@ -637,7 +644,7 @@ function starredTabHTML(fid){
         '<div class="si-act">'+
           (d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
           (d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">'+iDl+'</button>':'')+
-          '<button class="ib del" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>'+
+          (CURR_USER_ROLE==='admin'||!d.readOnly?'<button class="ib del" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
         '</div>'+
         '<span class="si-date">'+fmtDate(d.added)+'</span>'+
         '<button class="star-btn on" data-stardoc="'+d.id+'">&#9733;</button>'+
