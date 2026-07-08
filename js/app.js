@@ -283,6 +283,7 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
   ca.querySelectorAll('[data-renamemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameMom(el.dataset.renamemom);}));
   ca.querySelectorAll('[data-delmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDelMomFromCard(el.dataset.delmom);}));
+  ca.querySelectorAll('[data-toggleromom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var m=M.find(v=>v.id===el.dataset.toggleromom);if(!m)return;m.readOnly=!m.readOnly;sM(m);toast(m.readOnly?'🔒 Set to Read Only':'🔓 Editing unlocked.');render();}));
   ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
   ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
   ca.querySelectorAll('[data-delfolder]').forEach(el=>el.addEventListener('click',()=>askDeleteFolder(el.dataset.delfolder)));
@@ -437,6 +438,7 @@ function momCardHTML(m){
       '<button class="star-btn'+(m.starred?' on':'')+'" data-starmom="'+m.id+'">&#9733;</button>'+
       '<div class="mc-act">'+
         (m.gdoc?'<a href="'+esc(m.gdoc)+'" target="_blank" class="ib" style="text-decoration:none;font-size:11px;padding:3px 6px" title="Google Doc">'+iDoc+' Doc</a>':'')+
+        (CURR_USER_ROLE==='admin'?'<button class="btn sm" data-toggleromom="'+m.id+'" style="font-size:11px;padding:2px 7px;'+(m.readOnly?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(m.readOnly?'🔒':'🔓')+'</button>':'')+
         '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
         '<button class="ib" data-renamemom="'+m.id+'" title="Rename">'+iRename+'</button>'+
         '<button class="ib" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>'+
