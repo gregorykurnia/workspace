@@ -437,7 +437,7 @@ const ResizableImage=Image.extend({name:'image',addAttributes(){return{...this.p
   const floatBtn=document.createElement('button');floatBtn.className='tt-img-tb-btn';
   function updateFloatBtn(){floatBtn.textContent=A.px!=null?'📌 Pin to text':'✋ Float (drag freely)';}
   updateFloatBtn();
-  floatBtn.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();
+  function bindFloatBtn(e){e.preventDefault();e.stopPropagation();
     if(A.px!=null){// pin back to text
       setInline();saveAttrs({px:null,py:null});
     } else {// convert to floating at current visual position
@@ -446,13 +446,15 @@ const ResizableImage=Image.extend({name:'image',addAttributes(){return{...this.p
       const nx=Math.round(wr.left-tr2.left);const ny=Math.round(wr.top-tr2.top+t.scrollTop);
       setFloating(nx,ny);saveAttrs({px:nx,py:ny});
     }
-  });
+  }
+  floatBtn.addEventListener('mousedown',bindFloatBtn);floatBtn.addEventListener('touchstart',bindFloatBtn,{passive:false});
   tb.appendChild(floatBtn);
   const sep=document.createElement('div');sep.className='tt-img-tb-sep';tb.appendChild(sep);
   const delBtn=document.createElement('button');delBtn.className='tt-img-tb-btn';delBtn.textContent='🗑 Remove';
-  delBtn.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();
+  function bindDelBtn(e){e.preventDefault();e.stopPropagation();
     if(typeof getPos==='function'){const pos=getPos();editor.commands.command(({tr})=>{tr.delete(pos,pos+initNode.nodeSize);return true;});}
-  });
+  }
+  delBtn.addEventListener('mousedown',bindDelBtn);delBtn.addEventListener('touchstart',bindDelBtn,{passive:false});
   tb.appendChild(delBtn);wrap.appendChild(tb);
   // image
   const img=document.createElement('img');img.src=initNode.attrs.src;img.alt=initNode.attrs.alt||'';
@@ -460,53 +462,57 @@ const ResizableImage=Image.extend({name:'image',addAttributes(){return{...this.p
   wrap.appendChild(img);
   // resize handle (bottom-right)
   const rh=document.createElement('div');rh.className='tt-rsz-handle se';
-  rh.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();
-    const startX=e.clientX,startW=img.offsetWidth;
-    const onMove=ev=>{const w=Math.max(40,startW+(ev.clientX-startX))+'px';img.style.width=w;saveAttrs({width:w});};
-    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};
+  function bindRhDrag(e){e.preventDefault();e.stopPropagation();
+    const startX=(e.touches?e.touches[0]:e).clientX,startW=img.offsetWidth;
+    const onMove=ev=>{const cx=(ev.touches?ev.touches[0]:ev).clientX;const w=Math.max(40,startW+(cx-startX))+'px';img.style.width=w;saveAttrs({width:w});};
+    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);};
     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-  });
+    document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
+  }
+  rh.addEventListener('mousedown',bindRhDrag);rh.addEventListener('touchstart',bindRhDrag,{passive:false});
   wrap.appendChild(rh);
-  // click to select; drag only works when floating
-  wrap.addEventListener('mousedown',e=>{
+  // click/tap to select; drag only works when floating
+  function startWrapDrag(e){
     if(tb.contains(e.target)||e.target===rh)return;
+    const isTouch=!!e.touches;
     if(!wrap.classList.contains('selected')){
-      e.stopPropagation();
+      if(!isTouch)e.stopPropagation();
       document.querySelectorAll('.tt-img-wrap.selected').forEach(w=>{if(w!==wrap)w.classList.remove('selected');});
       wrap.classList.add('selected');
-      return; // first click = select only, no drag
+      return;
     }
-    if(A.px==null)return; // not floating, can't drag — use the Float button first
+    if(A.px==null)return;
     e.preventDefault();e.stopPropagation();
     const t=tt();if(!t)return;
-    const tr2=t.getBoundingClientRect();
-    // read position from DOM style, not attrs (attrs may be stale)
     const startLeft=parseFloat(wrap.style.left)||0;
     const startTop=parseFloat(wrap.style.top)||0;
-    const mouseStartX=e.clientX;const mouseStartY=e.clientY;
+    const pt=isTouch?e.touches[0]:e;
+    const startX=pt.clientX,startY=pt.clientY;
     wrap.style.cursor='grabbing';
     const onMove=ev=>{
       const t2=tt();if(!t2)return;
-      const dx=ev.clientX-mouseStartX;const dy=ev.clientY-mouseStartY;
+      const cp=ev.touches?ev.touches[0]:ev;
+      const dx=cp.clientX-startX;const dy=cp.clientY-startY;
       const maxX=t2.clientWidth-wrap.offsetWidth;
       const maxY=t2.scrollHeight-wrap.offsetHeight;
-      const nx=Math.max(0,Math.min(maxX,startLeft+dx));
-      const ny=Math.max(0,Math.min(maxY,startTop+dy));
-      wrap.style.left=nx+'px';wrap.style.top=ny+'px';
+      wrap.style.left=Math.max(0,Math.min(maxX,startLeft+dx))+'px';
+      wrap.style.top=Math.max(0,Math.min(maxY,startTop+dy))+'px';
     };
     const onUp=ev=>{
       document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
+      document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);
       wrap.style.cursor='grab';
       const t2=tt();if(!t2)return;
-      const dx=ev.clientX-mouseStartX;const dy=ev.clientY-mouseStartY;
-      const maxX=t2.clientWidth-wrap.offsetWidth;
-      const maxY=t2.scrollHeight-wrap.offsetHeight;
-      const nx=Math.round(Math.max(0,Math.min(maxX,startLeft+dx)));
-      const ny=Math.round(Math.max(0,Math.min(maxY,startTop+dy)));
-      saveAttrs({px:nx,py:ny});
+      const cp=ev.changedTouches?ev.changedTouches[0]:ev;
+      const dx=cp.clientX-startX;const dy=cp.clientY-startY;
+      const maxX=t2.clientWidth-wrap.offsetWidth;const maxY=t2.scrollHeight-wrap.offsetHeight;
+      saveAttrs({px:Math.round(Math.max(0,Math.min(maxX,startLeft+dx))),py:Math.round(Math.max(0,Math.min(maxY,startTop+dy)))});
     };
     document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
-  });
+    document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
+  }
+  wrap.addEventListener('mousedown',startWrapDrag);
+  wrap.addEventListener('touchstart',startWrapDrag,{passive:false});
   document.addEventListener('click',ev=>{if(!wrap.contains(ev.target))wrap.classList.remove('selected');},{capture:true,passive:true});
   return{dom:wrap,update(n){
     if(n.type.name!=='image')return false;
