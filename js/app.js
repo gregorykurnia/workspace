@@ -68,6 +68,43 @@ async function uploadCL(file,onProg){
 function uid(){return '_'+Math.random().toString(36).slice(2,10);}
 function destroyEditor(){if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
 function _tovBtn(bg,cl){return'background:'+bg+';color:'+cl+';border:none;border-radius:7px;padding:6px 11px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:32px;'}
+function _getTableCellPos(){
+  var sel=window.getSelection();if(!sel||!sel.anchorNode)return null;
+  var cell=sel.anchorNode.nodeType===3?sel.anchorNode.parentElement:sel.anchorNode;
+  while(cell&&cell.nodeName!=='TD'&&cell.nodeName!=='TH'&&cell!==document.body)cell=cell.parentElement;
+  if(!cell)return null;
+  var row=cell.closest('tr');var table=cell.closest('table');if(!row||!table)return null;
+  var rows=Array.from(table.querySelectorAll('tr'));
+  var ri=rows.indexOf(row);
+  var cells=Array.from(row.querySelectorAll('td,th'));
+  var ci=cells.indexOf(cell);
+  return{table,row,rows,ri,ci};
+}
+function _moveTableRow(dir){
+  var p=_getTableCellPos();if(!p)return;
+  var{rows,ri}=p;var ti=ri+dir;
+  if(ti<0||ti>=rows.length)return;
+  var a=rows[ri],b=rows[ti];
+  if(dir<0)a.parentNode.insertBefore(a,b);
+  else b.parentNode.insertBefore(b,a);
+  _editor.commands.setContent(_editor.getHTML(),false);
+}
+function _moveTableCol(dir){
+  var p=_getTableCellPos();if(!p)return;
+  var{table,ci}=p;var ti=ci+dir;
+  var rows=Array.from(table.querySelectorAll('tr'));
+  if(rows.length===0)return;
+  var maxCols=Array.from(rows[0].querySelectorAll('td,th')).length;
+  if(ti<0||ti>=maxCols)return;
+  rows.forEach(function(row){
+    var cells=Array.from(row.querySelectorAll('td,th'));
+    if(cells.length<=Math.max(ci,ti))return;
+    var a=cells[ci],b=cells[ti];
+    if(dir<0)a.parentNode.insertBefore(a,b);
+    else b.parentNode.insertBefore(b,a);
+  });
+  _editor.commands.setContent(_editor.getHTML(),false);
+}
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
 function gf(id){return F.find(f=>f.id===id);}
@@ -696,9 +733,13 @@ function bindMomEditor(){
     ov.innerHTML='<div style="position:absolute;top:'+barTop+'px;left:'+l+'px;pointer-events:auto;display:flex;align-items:center;gap:4px;background:#1A1D2E;border-radius:10px;padding:5px 8px;box-shadow:0 4px 16px rgba(0,0,0,.25)">'+
       '<button data-tov="addRow" style="'+_tovBtn('#534AB7','#fff')+'">+ Row</button>'+
       '<button data-tov="delRow" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Row</button>'+
+      '<button data-tov="moveRowUp" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move row up">↑ Row</button>'+
+      '<button data-tov="moveRowDown" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move row down">↓ Row</button>'+
       '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
       '<button data-tov="addCol" style="'+_tovBtn('#534AB7','#fff')+'">+ Col</button>'+
       '<button data-tov="delCol" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Col</button>'+
+      '<button data-tov="moveColLeft" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move column left">← Col</button>'+
+      '<button data-tov="moveColRight" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move column right">→ Col</button>'+
       '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
       '<button data-tov="delTable" style="'+_tovBtn('#EF4444','#fff')+'">🗑 Delete table</button>'+
     '</div>';
@@ -710,6 +751,8 @@ function bindMomEditor(){
         else if(c==='addCol')_editor.chain().focus().addColumnAfter().run();
         else if(c==='delCol')_editor.chain().focus().deleteColumn().run();
         else if(c==='delTable')_editor.chain().focus().deleteTable().run();
+        else if(c==='moveRowUp'||c==='moveRowDown')_moveTableRow(c==='moveRowUp'?-1:1);
+        else if(c==='moveColLeft'||c==='moveColRight')_moveTableCol(c==='moveColLeft'?-1:1);
       });
     });
   }
