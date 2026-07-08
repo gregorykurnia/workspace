@@ -2,7 +2,7 @@ const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-proj
 const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
-var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null;
+var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false;
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
 function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
@@ -66,7 +66,8 @@ async function uploadCL(file,onProg){
   });
 }
 function uid(){return '_'+Math.random().toString(36).slice(2,10);}
-function destroyEditor(){if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
+function destroyEditor(){if(_autoSaveTimer){clearTimeout(_autoSaveTimer);_autoSaveTimer=null;}if(_momListener){_momListener();_momListener=null;}if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
+function setSaveStatus(s){var el=document.getElementById('autosave-status');if(!el)return;if(s==='saving'){el.textContent='Saving…';el.style.color='#9CA3AF';}else if(s==='saved'){el.textContent='Saved';el.style.color='#10B981';setTimeout(function(){if(el)el.textContent='';},2000);}}
 function _tovBtn(bg,cl){return'background:'+bg+';color:'+cl+';border:none;border-radius:7px;padding:6px 11px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:32px;'}
 function _getTableCellPos(){
   var sel=window.getSelection();if(!sel||!sel.anchorNode)return null;
@@ -663,6 +664,7 @@ function momEdHTML(){
     '<div style="position:relative;margin-bottom:20px"><div id="tiptap-editor"></div><div id="tt-tov" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
       '<button class="btn dk" id="mom-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>'+
+      '<span id="autosave-status" style="font-size:12px;margin-left:6px;align-self:center;"></span>'+
       '<button class="btn se" id="mom-cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</button>'+
       '<button class="btn se sm" id="mom-export"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PDF</button>'+
       '<button class="btn se sm" id="mom-move"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg> Move</button>'+
@@ -696,7 +698,7 @@ function bindMomEditor(){
     extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true}),TT.FontFamily,TT.TextAlign.configure({types:['heading','paragraph']}),TT.FontSize,TT.ResizableImage.configure({inline:true,allowBase64:true})],
     content:initialHTML,
     editorProps:{attributes:{class:'tiptap',spellcheck:'true'}},
-    onUpdate:function(){if(EMOM&&_editor)EMOM.content=_editor.getHTML();}
+    onUpdate:function(){if(_remoteUpdate)return;if(EMOM&&_editor)EMOM.content=_editor.getHTML();clearTimeout(_autoSaveTimer);setSaveStatus('saving');_autoSaveTimer=setTimeout(function(){if(EMOM&&_editor){collectMom();sM(EMOM);setSaveStatus('saved');}},1500);}
   });
   function updateTB(){
     if(!_editor)return;
@@ -812,6 +814,21 @@ function bindMomEditor(){
   var imb=document.getElementById('insert-mom-btn');if(imb)imb.addEventListener('click',()=>openMomPicker(EMOM.id));
   document.getElementById('tiptap-editor').addEventListener('click',e=>{var a=e.target.closest('a');if(a&&a.href&&a.href.includes('mom.local/')){e.preventDefault();var mid=a.href.split('mom.local/')[1];if(mid){saveMom();openMom(mid);}}});
   document.getElementById('tiptap-editor').addEventListener('paste',_handleEditorImagePaste);
+  if(EMOM){
+    _momListener=db.collection('moms').doc(EMOM.id).onSnapshot(function(snap){
+      if(!snap.exists||!_editor||!EMOM)return;
+      var data=snap.data();
+      if(data.content!==undefined&&data.content!==EMOM.content){
+        EMOM.content=data.content;
+        _remoteUpdate=true;
+        var sel=_editor.state.selection;
+        _editor.commands.setContent(data.content,false);
+        try{_editor.commands.setTextSelection(sel);}catch(e){}
+        _remoteUpdate=false;
+        setSaveStatus('saved');
+      }
+    });
+  }
 }
 function insertDocLink(name,url){if(_editor){_editor.chain().focus().insertContent('<a href="'+esc(url)+'">'+esc(name)+'</a> ').run();if(EMOM)EMOM.content=_editor.getHTML();}}
 function _insertImagePrompt(){
