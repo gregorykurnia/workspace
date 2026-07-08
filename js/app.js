@@ -3,9 +3,10 @@ const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
 var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false;
+var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
+function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');_autopurge();if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
@@ -23,19 +24,40 @@ window.addEventListener('hashchange',()=>{applyHash();render();});
 function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
 function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
 function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
-function dF(id){db.collection('folders').doc(id).delete().catch(console.error);}
-function dM(id){db.collection('moms').doc(id).delete().catch(console.error);}
-function dD(id){db.collection('docs').doc(id).delete().catch(console.error);}
+var _WEEK=7*24*60*60*1000;
+function _softDel(col,id){db.collection(col).doc(id).update({deleted:true,deletedAt:Date.now()}).catch(console.error);}
+function _permDel(col,id){db.collection(col).doc(id).delete().catch(console.error);}
+function dF(id){_softDel('folders',id);}
+function dM(id){_softDel('moms',id);}
+function dD(id){_softDel('docs',id);}
+function dDF(id){_softDel('docfolders',id);}
+function dMF(id){_softDel('momfolders',id);}
 function dFDeep(fid){kids(fid).forEach(c=>dFDeep(c.id));momsOf(fid).forEach(m=>dM(m.id));docsOf(fid).forEach(d=>dD(d.id));dF(fid);}
-db.collection('folders').onSnapshot(snap=>{F=snap.docs.map(d=>d.data());LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-db.collection('moms').onSnapshot(snap=>{var eid=EMOM?EMOM.id:null;M=snap.docs.map(d=>d.data());if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-db.collection('docs').onSnapshot(snap=>{D=snap.docs.map(d=>d.data());LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
-db.collection('docfolders').onSnapshot(snap=>{DF=snap.docs.map(d=>d.data());LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();},e=>{setSS('err');console.error(e);});
-db.collection('momfolders').onSnapshot(snap=>{MF=snap.docs.map(d=>d.data());LOADED.mf=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
+function restoreItem(col,id){db.collection(col).doc(id).update({deleted:false,deletedAt:firebase.firestore.FieldValue.delete()}).catch(console.error);}
+function permDeleteItem(col,id){_permDel(col,id);}
+function clearTrash(){
+  var now=Date.now();
+  TF.forEach(f=>_permDel('folders',f.id));
+  TM.forEach(m=>_permDel('moms',m.id));
+  TD.forEach(d=>_permDel('docs',d.id));
+  TDF.forEach(df=>_permDel('docfolders',df.id));
+  TMF.forEach(mf=>_permDel('momfolders',mf.id));
+}
+function _autopurge(){
+  var cut=Date.now()-_WEEK;
+  TF.filter(f=>f.deletedAt<cut).forEach(f=>_permDel('folders',f.id));
+  TM.filter(m=>m.deletedAt<cut).forEach(m=>_permDel('moms',m.id));
+  TD.filter(d=>d.deletedAt<cut).forEach(d=>_permDel('docs',d.id));
+  TDF.filter(df=>df.deletedAt<cut).forEach(df=>_permDel('docfolders',df.id));
+  TMF.filter(mf=>mf.deletedAt<cut).forEach(mf=>_permDel('momfolders',mf.id));
+}
+db.collection('folders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());F=all.filter(f=>!f.deleted);TF=all.filter(f=>f.deleted);LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+db.collection('moms').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());var eid=EMOM?EMOM.id:null;M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+db.collection('docs').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());D=all.filter(d=>!d.deleted);TD=all.filter(d=>d.deleted);LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
+db.collection('docfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());DF=all.filter(df=>!df.deleted);TDF=all.filter(df=>df.deleted);LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();},e=>{setSS('err');console.error(e);});
+db.collection('momfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());MF=all.filter(mf=>!mf.deleted);TMF=all.filter(mf=>mf.deleted);LOADED.mf=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
 function sDF(df){db.collection('docfolders').doc(df.id).set(df).catch(console.error);}
-function dDF(id){db.collection('docfolders').doc(id).delete().catch(console.error);}
 function sMF(mf){db.collection('momfolders').doc(mf.id).set(mf).catch(console.error);}
-function dMF(id){db.collection('momfolders').doc(id).delete().catch(console.error);}
 function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
 function docsOfDF(dfid){return D.filter(d=>d.docFolderId===dfid);}
 function docsUngrp(fid){return D.filter(d=>d.folderId===fid&&!d.docFolderId);}
@@ -165,6 +187,7 @@ function renderBC(){
   var el=document.getElementById('bc');
   var h='<span class="bc-i" id="bc-home">Workbase</span>';
   if(VIEW==='home'&&!PATH.length){h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">Home</span>';}
+  if(VIEW==='trash'){h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">Trash</span>';}
   PATH.forEach((id,i)=>{var f=gf(id);if(!f)return;var cur=i===PATH.length-1&&VIEW!=='mom';h+='<span class="bc-s">&#8250;</span><span class="bc-i'+(cur?' cur':'')+'" data-bcid="'+id+'">'+esc(f.name)+(f.pw?' &#128274;':'')+'</span>';});
   if(VIEW==='mom'&&EMOM)h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">'+esc(EMOM.title||'MoM')+'</span>';
   el.innerHTML=h;
@@ -191,7 +214,44 @@ function renderMain(){
   if(VIEW==='home')el.innerHTML=homeHTML();
   else if(VIEW==='folder')el.innerHTML=folderHTML();
   else if(VIEW==='mom'){el.innerHTML=momEdHTML();bindMomEditor();}
+  else if(VIEW==='trash'){el.innerHTML=trashHTML();bindTrashEvents();}
   bindMainEvents();
+}
+function openTrash(){VIEW='trash';EMOM=null;PATH=[];destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
+function trashHTML(){
+  var all=[];
+  TF.forEach(f=>all.push({col:'folders',id:f.id,label:f.name||(f.icon||'📁')+' Folder',type:'Folder',icon:'📁',deletedAt:f.deletedAt}));
+  TM.forEach(m=>all.push({col:'moms',id:m.id,label:m.title||'Untitled MoM',type:'MoM',icon:'📝',deletedAt:m.deletedAt}));
+  TD.forEach(d=>all.push({col:'docs',id:d.id,label:d.name||'Document',type:'Document',icon:'📄',deletedAt:d.deletedAt}));
+  TDF.forEach(df=>all.push({col:'docfolders',id:df.id,label:df.name||'Doc Folder',type:'Doc Folder',icon:'📂',deletedAt:df.deletedAt}));
+  TMF.forEach(mf=>all.push({col:'momfolders',id:mf.id,label:mf.name||'MoM Folder',type:'MoM Folder',icon:'📂',deletedAt:mf.deletedAt}));
+  all.sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  var now=Date.now();
+  var rows=all.map(it=>{
+    var daysLeft=Math.max(0,7-Math.floor((now-(it.deletedAt||now))/_WEEK*7));
+    var age=it.deletedAt?new Date(it.deletedAt).toLocaleDateString():'?';
+    return '<div class="trash-row" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F3F4F6;">'+
+      '<span style="font-size:18px">'+it.icon+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.label)+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF">'+it.type+' · Deleted '+age+' · Auto-deletes in '+daysLeft+' day'+(daysLeft!==1?'s':'')+'</div></div>'+
+      '<button class="btn se sm" data-restore-col="'+it.col+'" data-restore-id="'+it.id+'" style="white-space:nowrap">Restore</button>'+
+      '<button class="btn da sm" data-perm-col="'+it.col+'" data-perm-id="'+it.id+'" style="white-space:nowrap">Delete</button>'+
+    '</div>';
+  }).join('');
+  return '<div style="max-width:720px;margin:0 auto;padding:32px 24px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'+
+    '<div><div style="font-size:20px;font-weight:700;color:#111827">🗑 Trash</div>'+
+    '<div style="font-size:13px;color:#9CA3AF;margin-top:2px">Items are auto-deleted after 7 days</div></div>'+
+    (all.length?'<button class="btn da sm" id="clear-trash-btn">Clear Trash</button>':'')+'</div>'+
+    (all.length?'<div style="border:1px solid #E5E7EB;border-radius:12px;overflow:hidden;background:#fff">'+rows+'</div>':
+    '<div style="text-align:center;padding:60px 20px;color:#9CA3AF;font-size:15px">Trash is empty</div>')+'</div>';
+}
+function bindTrashEvents(){
+  var el=document.getElementById('ca');
+  var cb=document.getElementById('clear-trash-btn');
+  if(cb)cb.addEventListener('click',()=>{modal('<div class="m-title">Clear Trash?</div><div class="dz"><p>All '+((TF.length+TM.length+TD.length+TDF.length+TMF.length))+' items will be permanently deleted. This cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="ct-c">Cancel</button><button class="btn da" id="ct-d">Clear All</button></div></div>');document.getElementById('ct-c').addEventListener('click',closeModal);document.getElementById('ct-d').addEventListener('click',()=>{clearTrash();closeModal();toast('Trash cleared.');});});
+  el.querySelectorAll('[data-restore-col]').forEach(btn=>btn.addEventListener('click',()=>{restoreItem(btn.dataset.restoreCol,btn.dataset.restoreId);toast('Restored!');render();}));
+  el.querySelectorAll('[data-perm-col]').forEach(btn=>btn.addEventListener('click',()=>{permDeleteItem(btn.dataset.permCol,btn.dataset.permId);toast('Permanently deleted.');render();}));
 }
 function bindMainEvents(){
   var ca=document.getElementById('ca');
@@ -204,7 +264,7 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-unlockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();unlockDoc(el.dataset.unlockdoc);}));
   ca.querySelectorAll('[data-relockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();relockDoc(el.dataset.relockdoc);}));
   ca.querySelectorAll('[data-lockdoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openLockModal('doc',el.dataset.lockdoc);}));
-  ca.querySelectorAll('[data-deldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();dD(el.dataset.deldoc);}));
+  ca.querySelectorAll('[data-deldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDelDoc(el.dataset.deldoc);}));
   ca.querySelectorAll('[data-movedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('doc',el.dataset.movedoc);}));
   ca.querySelectorAll('[data-opendocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();DOC_FOLDER=el.dataset.opendocfolder;renderMain();}));
   ca.querySelectorAll('[data-newdocfolder]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openNewDocFolder(el.dataset.newdocfolder);}));
@@ -893,15 +953,15 @@ function collectMom(){
 function saveMom(){collectMom();if(EMOM)sM(EMOM);destroyEditor();backMom();}
 function backMom(){collectMom();if(EMOM)sM(EMOM);var mf=EMOM?EMOM.momFolderId||null:null;destroyEditor();VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=mf;history.pushState(null,'',buildHash());render();}
 function askDelMom(id){
-  modal('<div class="m-title">Delete this MoM?</div><div class="dz"><p>Permanently deleted.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Delete</button></div></div>');
+  modal('<div class="m-title">Move to Trash?</div><div class="dz"><p>This MoM will be moved to Trash and auto-deleted after 7 days.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Move to Trash</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
   document.getElementById('dm-d').addEventListener('click',()=>{dM(id);EMOM=null;destroyEditor();VIEW='folder';TAB='mom';closeModal();render();});
 }
 function askDelMomFromCard(id){
   var m=M.find(v=>v.id===id);if(!m)return;
-  modal('<div class="m-title">Delete "'+esc(m.title||'Untitled')+'"?</div><div class="dz"><p>Permanently deleted. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmc-c">Cancel</button><button class="btn da" id="dmc-d">Delete</button></div></div>');
+  modal('<div class="m-title">Move "'+esc(m.title||'Untitled')+'" to Trash?</div><div class="dz"><p>Will be auto-deleted after 7 days. Restore from Trash anytime.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmc-c">Cancel</button><button class="btn da" id="dmc-d">Move to Trash</button></div></div>');
   document.getElementById('dmc-c').addEventListener('click',closeModal);
-  document.getElementById('dmc-d').addEventListener('click',()=>{dM(id);closeModal();toast('MoM deleted.');});
+  document.getElementById('dmc-d').addEventListener('click',()=>{dM(id);closeModal();toast('Moved to Trash.');});
 }
 function openRenameMom(id){
   var m=M.find(v=>v.id===id);if(!m)return;
@@ -1034,11 +1094,17 @@ function openRenameDocFolder(id){
   document.getElementById('rdf-c').addEventListener('click',closeModal);
   document.getElementById('rdf-s').addEventListener('click',()=>{var n=document.getElementById('rdf-n').value.trim();if(!n)return;df.name=n;sDF(df);closeModal();toast('Renamed.');});
 }
+function askDelDoc(id){
+  var d=D.find(v=>v.id===id);if(!d)return;
+  modal('<div class="m-title">Move "'+esc(d.name||'Document')+'" to Trash?</div><div class="dz"><p>Will be auto-deleted after 7 days. Restore from Trash anytime.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddc-c">Cancel</button><button class="btn da" id="ddc-d">Move to Trash</button></div></div>');
+  document.getElementById('ddc-c').addEventListener('click',closeModal);
+  document.getElementById('ddc-d').addEventListener('click',()=>{dD(id);closeModal();toast('Moved to Trash.');});
+}
 function askDeleteDocFolder(id){
   var df=DF.find(v=>v.id===id);var dc=docsOfDF(id).length;
-  modal('<div class="m-title">Delete "'+esc(df?df.name:'')+'"?</div><div class="dz"><p>This will delete the folder'+(dc?' and ungroup '+dc+' document'+(dc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddf-c">Cancel</button><button class="btn da" id="ddf-d">Delete</button></div></div>');
+  modal('<div class="m-title">Move "'+esc(df?df.name:'')+'" to Trash?</div><div class="dz"><p>This will move the folder'+(dc?' and ungroup '+dc+' document'+(dc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+' to Trash.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddf-c">Cancel</button><button class="btn da" id="ddf-d">Move to Trash</button></div></div>');
   document.getElementById('ddf-c').addEventListener('click',closeModal);
-  document.getElementById('ddf-d').addEventListener('click',()=>{docsOfDF(id).forEach(d=>{delete d.docFolderId;sD(d);});dDF(id);closeModal();toast('Doc folder deleted.');});
+  document.getElementById('ddf-d').addEventListener('click',()=>{docsOfDF(id).forEach(d=>{delete d.docFolderId;sD(d);});dDF(id);closeModal();toast('Moved to Trash.');});
 }
 // MOM FOLDER MANAGEMENT
 function openNewMomFolder(fid){
@@ -1054,9 +1120,9 @@ function openRenameMomFolder(id){
 }
 function askDeleteMomFolder(id){
   var mf=MF.find(v=>v.id===id);var mc=momsOfMF(id).length;
-  modal('<div class="m-title">Delete "'+esc(mf?mf.name:'')+'"?</div><div class="dz"><p>This will delete the folder'+(mc?' and ungroup '+mc+' MoM'+(mc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmf-c">Cancel</button><button class="btn da" id="dmf-d">Delete</button></div></div>');
+  modal('<div class="m-title">Move "'+esc(mf?mf.name:'')+'" to Trash?</div><div class="dz"><p>This will move the folder'+(mc?' and ungroup '+mc+' MoM'+(mc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+' to Trash.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmf-c">Cancel</button><button class="btn da" id="dmf-d">Move to Trash</button></div></div>');
   document.getElementById('dmf-c').addEventListener('click',closeModal);
-  document.getElementById('dmf-d').addEventListener('click',()=>{momsOfMF(id).forEach(m=>{delete m.momFolderId;sM(m);});dMF(id);closeModal();toast('MoM folder deleted.');});
+  document.getElementById('dmf-d').addEventListener('click',()=>{momsOfMF(id).forEach(m=>{delete m.momFolderId;sM(m);});dMF(id);closeModal();toast('Moved to Trash.');});
 }
 // RENAME DOC
 function openRenameDoc(id){
@@ -1117,7 +1183,7 @@ function openRename(id){
 }
 function askDeleteFolder(id){
   var f=gf(id),tot=cnt(id);
-  modal('<div class="m-title">Delete "'+esc(f?f.name:'')+'"?</div><div class="dz"><p>This will permanently delete this folder'+(tot>0?' and all '+tot+' item'+(tot!==1?'s':'')+' inside':'')+'. Cannot be undone.</p><div style="display:flex;gap:8px"><button class="btn se" id="df-c">Cancel</button><button class="btn da" id="df-d">Yes, Delete</button></div></div>');
+  modal('<div class="m-title">Move "'+esc(f?f.name:'')+'" to Trash?</div><div class="dz"><p>This folder'+(tot>0?' and all '+tot+' item'+(tot!==1?'s':'')+' inside':'')+' will be moved to Trash and auto-deleted after 7 days.</p><div style="display:flex;gap:8px"><button class="btn se" id="df-c">Cancel</button><button class="btn da" id="df-d">Move to Trash</button></div></div>');
   document.getElementById('df-c').addEventListener('click',closeModal);
   document.getElementById('df-d').addEventListener('click',()=>{var f2=gf(id),par=f2?f2.parent:null;dFDeep(id);closeModal();par?goTo(pathTo(par)):goHome();});
 }
@@ -1159,5 +1225,6 @@ var _sbToggle=()=>{document.getElementById('sidebar').classList.toggle('collapse
 document.getElementById('sb-toggle').addEventListener('click',_sbToggle);
 document.getElementById('sb-close').addEventListener('click',_sbToggle);
 document.getElementById('nav-home').addEventListener('click',goHome);
+document.getElementById('sb-trash-btn').addEventListener('click',openTrash);
 loadExp();
 if(window.innerWidth<=700)document.getElementById('sidebar').classList.add('collapsed');
