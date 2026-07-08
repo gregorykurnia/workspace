@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Workspace</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -296,6 +296,11 @@ input.err{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)
 .lb-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:9001}
 .lb-close:hover{background:rgba(255,255,255,.3)}
 .lb-name{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw;text-align:center}
+@media(max-width:700px){
+  body{height:100dvh}
+  #ca{padding-bottom:max(80px,calc(env(safe-area-inset-bottom,0px) + 60px))}
+  #topbar{padding-top:env(safe-area-inset-top,0px)}
+}
 @media print{
   body>*{display:none!important}
   #pdf-print{display:block!important;padding:40px;font-family:'Inter',sans-serif;color:#1C1C2E}
