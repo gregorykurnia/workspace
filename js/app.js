@@ -730,18 +730,18 @@ function bindMomEditor(){
     var tr=table.getBoundingClientRect();
     var t=tr.top-er.top,l=tr.left-er.left,h=tr.height;
     var barTop=t+h+8;
-    ov.innerHTML='<div style="position:absolute;top:'+barTop+'px;left:'+l+'px;pointer-events:auto;display:flex;align-items:center;gap:4px;background:#1A1D2E;border-radius:10px;padding:5px 8px;box-shadow:0 4px 16px rgba(0,0,0,.25)">'+
-      '<button data-tov="addRow" style="'+_tovBtn('#534AB7','#fff')+'">+ Row</button>'+
-      '<button data-tov="delRow" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Row</button>'+
-      '<button data-tov="moveRowUp" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move row up">↑ Row</button>'+
-      '<button data-tov="moveRowDown" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move row down">↓ Row</button>'+
-      '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
-      '<button data-tov="addCol" style="'+_tovBtn('#534AB7','#fff')+'">+ Col</button>'+
-      '<button data-tov="delCol" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'">− Col</button>'+
-      '<button data-tov="moveColLeft" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move column left">← Col</button>'+
-      '<button data-tov="moveColRight" style="'+_tovBtn('rgba(255,255,255,.1)','#fff')+'" title="Move column right">→ Col</button>'+
-      '<div style="width:1px;height:18px;background:rgba(255,255,255,.15);margin:0 2px"></div>'+
-      '<button data-tov="delTable" style="'+_tovBtn('#EF4444','#fff')+'">🗑 Delete table</button>'+
+    ov.innerHTML='<div style="position:absolute;top:'+barTop+'px;left:'+l+'px;pointer-events:auto;display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:5px 8px;box-shadow:0 2px 8px rgba(0,0,0,.08)">'+
+      '<button data-tov="addRow" style="'+_tovBtn('#EEF2FF','#4338CA')+'">+ Row</button>'+
+      '<button data-tov="delRow" style="'+_tovBtn('#F3F4F6','#374151')+'">− Row</button>'+
+      '<button data-tov="moveRowUp" style="'+_tovBtn('#F3F4F6','#374151')+'" title="Move row up">↑ Row</button>'+
+      '<button data-tov="moveRowDown" style="'+_tovBtn('#F3F4F6','#374151')+'" title="Move row down">↓ Row</button>'+
+      '<div style="width:1px;height:18px;background:#E5E7EB;margin:0 2px"></div>'+
+      '<button data-tov="addCol" style="'+_tovBtn('#EEF2FF','#4338CA')+'">+ Col</button>'+
+      '<button data-tov="delCol" style="'+_tovBtn('#F3F4F6','#374151')+'">− Col</button>'+
+      '<button data-tov="moveColLeft" style="'+_tovBtn('#F3F4F6','#374151')+'" title="Move column left">← Col</button>'+
+      '<button data-tov="moveColRight" style="'+_tovBtn('#F3F4F6','#374151')+'" title="Move column right">→ Col</button>'+
+      '<div style="width:1px;height:18px;background:#E5E7EB;margin:0 2px"></div>'+
+      '<button data-tov="delTable" style="'+_tovBtn('#FEE2E2','#DC2626')+'">🗑 Delete table</button>'+
     '</div>';
     ov.querySelectorAll('[data-tov]').forEach(function(btn){
       btn.addEventListener('mousedown',function(e){
