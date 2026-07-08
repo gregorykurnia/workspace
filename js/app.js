@@ -164,7 +164,7 @@ function showCtx(e,fid){
   if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">'+iLock+'Lock again</div>';
   h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+iLock+(f.pw?'Change lock':'Set lock')+'</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct" data-a="access" data-id="'+fid+'">&#128274; Manage Access</div>';
-  h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">'+iDel+'Delete</div>';
+  if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">'+iDel+'Delete</div>';
   el.innerHTML=h;
   el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);});
   document.getElementById('CR').appendChild(el);el.style.left=Math.min(e.clientX,innerWidth-240)+'px';el.style.top=Math.min(e.clientY,innerHeight-260)+'px';
@@ -401,7 +401,7 @@ function folderHTML(){
         '<div style="font-size:15px;font-weight:500;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(f.pw?' <span style="font-size:14px;opacity:.6">&#128274;</span>':'')+'</div>'+
         '<div style="font-size:11px;color:#9CA3AF;margin-top:3px">Created '+fmtDate(f.created)+' &nbsp;&middot;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ms.length+' Document'+(ms.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ds.length+' File'+(ds.length!==1?'s':'')+'</div>'+
       '</div>'+
-      '<button style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;color:#EF4444;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-delfolder="'+f.id+'">'+iTrash+' Delete</button>'+
+      (CURR_USER_ROLE==='admin'?'<button style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;color:#EF4444;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-delfolder="'+f.id+'">'+iTrash+' Delete</button>':'')+
     '</div>'+
     '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
@@ -441,7 +441,7 @@ function momCardHTML(m){
         (CURR_USER_ROLE==='admin'?'<button class="btn sm" data-toggleromom="'+m.id+'" style="font-size:11px;padding:2px 7px;'+(m.readOnly?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(m.readOnly?'🔒':'🔓')+'</button>':'')+
         '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
         '<button class="ib" data-renamemom="'+m.id+'" title="Rename">'+iRename+'</button>'+
-        '<button class="ib" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>'+
+        (CURR_USER_ROLE==='admin'?'<button class="ib" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>':'')+
       '</div>'+
       '<span class="dc-date">'+fmtDate(m.date)+'</span>'+
     '</div>'+
@@ -484,7 +484,7 @@ function momListHTML(ms){
         '<div class="mc-title">'+esc(mf.name)+'</div>'+
         '<div class="mc-right"><div style="font-size:11px;color:#9CA3AF;margin-right:4px">'+mc+' MoM'+(mc!==1?'s':'')+'</div><div class="mc-act">'+
           '<button class="ib" data-renamemomfolder="'+mf.id+'" title="Rename">'+iRenSVG+'</button>'+
-          '<button class="ib" data-delmomfolder="'+mf.id+'" title="Delete">'+iDelSVG+'</button>'+
+          (CURR_USER_ROLE==='admin'?'<button class="ib" data-delmomfolder="'+mf.id+'" title="Delete">'+iDelSVG+'</button>':'')+
         '</div></div>'+
       '</div>';
     }).join('')+'</div>';
@@ -541,7 +541,7 @@ function docCardHTML(d){
         (canEdit&&lkd&&!ulkd?'<button class="ib" data-unlockdoc="'+d.id+'" title="Unlock">'+iUnlock+'</button>':'')+
         (canEdit&&!lkd?'<button class="ib" data-lockdoc="'+d.id+'" title="Lock">'+iLock+'</button>':'')+
         (canEdit?'<button class="ib" data-renamedoc="'+d.id+'" title="Rename">'+iRename+'</button>':'')+
-        (canEdit?'<button class="ib" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
+        (CURR_USER_ROLE==='admin'?'<button class="ib" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
       '</div>'+
       (d.added?'<span class="dc-date">'+fmtDate(d.added)+'</span>':'')+'</div>'+
     '</div>';
@@ -583,7 +583,7 @@ function docListHTML(ds){
         '<div class="dc-inf"><div class="dc-name">'+esc(df.name)+'</div><div class="dc-meta">'+dc+' document'+(dc!==1?'s':'')+'</div></div>'+
         '<div class="dc-right"><div class="dc-act">'+
           '<button class="ib" data-renamedocfolder="'+df.id+'" title="Rename">'+iRenSVG+'</button>'+
-          '<button class="ib" data-deldocfolder="'+df.id+'" title="Delete">'+iDelSVG+'</button>'+
+          (CURR_USER_ROLE==='admin'?'<button class="ib" data-deldocfolder="'+df.id+'" title="Delete">'+iDelSVG+'</button>':'')+
         '</div></div></div>';
     }).join('')+'</div>';
   }
@@ -631,7 +631,7 @@ function starredTabHTML(fid){
         '<span class="si-tag" style="background:#EEF2FF;color:#4F46E5">Notes</span>'+
         '<div class="si-act">'+
           '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
-          '<button class="ib del" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>'+
+          (CURR_USER_ROLE==='admin'?'<button class="ib del" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>':'')+
         '</div>'+
         '<span class="si-date">'+fmtDate(m.date)+'</span>'+
         '<button class="star-btn on" data-starmom="'+m.id+'">&#9733;</button>'+
@@ -649,7 +649,7 @@ function starredTabHTML(fid){
         '<div class="si-act">'+
           (d.url?'<button class="ib" title="Copy link">'+iLink+'</button>':'')+
           (d.url?'<button class="ib" data-dldoc="'+esc(d.url)+'" data-dlname="'+esc(d.name)+'" title="Download">'+iDl+'</button>':'')+
-          (CURR_USER_ROLE==='admin'||!d.readOnly?'<button class="ib del" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
+          (CURR_USER_ROLE==='admin'?'<button class="ib del" data-deldoc="'+d.id+'" title="Delete">'+iTrash+'</button>':'')+
         '</div>'+
         '<span class="si-date">'+fmtDate(d.added)+'</span>'+
         '<button class="star-btn on" data-stardoc="'+d.id+'">&#9733;</button>'+
@@ -997,11 +997,13 @@ function collectMom(){
 function saveMom(){collectMom();if(EMOM)sM(EMOM);destroyEditor();backMom();}
 function backMom(){collectMom();if(EMOM)sM(EMOM);var mf=EMOM?EMOM.momFolderId||null:null;destroyEditor();VIEW='folder';TAB='mom';EMOM=null;MOM_FOLDER=mf;history.pushState(null,'',buildHash());render();}
 function askDelMom(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   modal('<div class="m-title">Move to Trash?</div><div class="dz"><p>This MoM will be moved to Trash and auto-deleted after 7 days.</p><div style="display:flex;gap:8px"><button class="btn se" id="dm-c">Cancel</button><button class="btn da" id="dm-d">Move to Trash</button></div></div>');
   document.getElementById('dm-c').addEventListener('click',closeModal);
   document.getElementById('dm-d').addEventListener('click',()=>{dM(id);EMOM=null;destroyEditor();VIEW='folder';TAB='mom';closeModal();render();});
 }
 function askDelMomFromCard(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   var m=M.find(v=>v.id===id);if(!m)return;
   modal('<div class="m-title">Move "'+esc(m.title||'Untitled')+'" to Trash?</div><div class="dz"><p>Will be auto-deleted after 7 days. Restore from Trash anytime.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmc-c">Cancel</button><button class="btn da" id="dmc-d">Move to Trash</button></div></div>');
   document.getElementById('dmc-c').addEventListener('click',closeModal);
@@ -1150,12 +1152,14 @@ function openRenameDocFolder(id){
   document.getElementById('rdf-s').addEventListener('click',()=>{var n=document.getElementById('rdf-n').value.trim();if(!n)return;df.name=n;sDF(df);closeModal();toast('Renamed.');});
 }
 function askDelDoc(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   var d=D.find(v=>v.id===id);if(!d)return;
   modal('<div class="m-title">Move "'+esc(d.name||'Document')+'" to Trash?</div><div class="dz"><p>Will be auto-deleted after 7 days. Restore from Trash anytime.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddc-c">Cancel</button><button class="btn da" id="ddc-d">Move to Trash</button></div></div>');
   document.getElementById('ddc-c').addEventListener('click',closeModal);
   document.getElementById('ddc-d').addEventListener('click',()=>{dD(id);closeModal();toast('Moved to Trash.');});
 }
 function askDeleteDocFolder(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   var df=DF.find(v=>v.id===id);var dc=docsOfDF(id).length;
   modal('<div class="m-title">Move "'+esc(df?df.name:'')+'" to Trash?</div><div class="dz"><p>This will move the folder'+(dc?' and ungroup '+dc+' document'+(dc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+' to Trash.</p><div style="display:flex;gap:8px"><button class="btn se" id="ddf-c">Cancel</button><button class="btn da" id="ddf-d">Move to Trash</button></div></div>');
   document.getElementById('ddf-c').addEventListener('click',closeModal);
@@ -1174,6 +1178,7 @@ function openRenameMomFolder(id){
   document.getElementById('rmf-s').addEventListener('click',()=>{var n=document.getElementById('rmf-n').value.trim();if(!n)return;mf.name=n;sMF(mf);closeModal();toast('Renamed.');});
 }
 function askDeleteMomFolder(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   var mf=MF.find(v=>v.id===id);var mc=momsOfMF(id).length;
   modal('<div class="m-title">Move "'+esc(mf?mf.name:'')+'" to Trash?</div><div class="dz"><p>This will move the folder'+(mc?' and ungroup '+mc+' MoM'+(mc!==1?'s':'')+' (they stay in the parent workspace folder)':'')+' to Trash.</p><div style="display:flex;gap:8px"><button class="btn se" id="dmf-c">Cancel</button><button class="btn da" id="dmf-d">Move to Trash</button></div></div>');
   document.getElementById('dmf-c').addEventListener('click',closeModal);
@@ -1237,6 +1242,7 @@ function openRename(id){
   document.getElementById('rn-s').addEventListener('click',()=>{var n=document.getElementById('rn').value.trim();if(!n)return;f.name=n;f.icon=getSelEmoji(mr);sF(f);closeModal();});
 }
 function askDeleteFolder(id){
+  if(CURR_USER_ROLE!=='admin'){toast('Only admins can delete items.');return;}
   var f=gf(id),tot=cnt(id);
   modal('<div class="m-title">Move "'+esc(f?f.name:'')+'" to Trash?</div><div class="dz"><p>This folder'+(tot>0?' and all '+tot+' item'+(tot!==1?'s':'')+' inside':'')+' will be moved to Trash and auto-deleted after 7 days.</p><div style="display:flex;gap:8px"><button class="btn se" id="df-c">Cancel</button><button class="btn da" id="df-d">Move to Trash</button></div></div>');
   document.getElementById('df-c').addEventListener('click',closeModal);
