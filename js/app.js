@@ -213,7 +213,10 @@ function renderMain(){
   var el=document.getElementById('ca');
   if(VIEW==='home')el.innerHTML=homeHTML();
   else if(VIEW==='folder')el.innerHTML=folderHTML();
-  else if(VIEW==='mom'){el.innerHTML=momEdHTML();bindMomEditor();}
+  else if(VIEW==='mom'){
+    if(EMOM&&EMOM.readOnly&&CURR_USER_ROLE!=='admin'){el.innerHTML=momReadOnlyHTML();bindMomReadOnlyEvents();}
+    else{el.innerHTML=momEdHTML();bindMomEditor();}
+  }
   else if(VIEW==='trash'){el.innerHTML=trashHTML();bindTrashEvents();}
   bindMainEvents();
 }
@@ -736,8 +739,38 @@ function momEdHTML(){
       '<button class="btn se sm" id="mom-export"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PDF</button>'+
       '<button class="btn se sm" id="mom-move"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg> Move</button>'+
       '<button class="btn se sm" id="mom-star" style="color:'+(m.starred?'#F59E0B':'#6B7280')+'"><svg width="13" height="13" viewBox="0 0 24 24" fill="'+(m.starred?'#F59E0B':'none')+'" stroke="'+(m.starred?'#F59E0B':'currentColor')+'" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> '+(m.starred?'Starred':'Star')+'</button>'+
+      (CURR_USER_ROLE==='admin'?'<button class="btn sm" id="mom-togglero" style="'+(m.readOnly?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(m.readOnly?'🔒 Read Only':'🔓 Set Read Only')+'</button>':'')+
       '<button class="btn da sm" style="margin-left:auto" id="mom-del"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Delete</button>'+
     '</div></div>';
+}
+function momReadOnlyHTML(){
+  var m=EMOM;if(!m)return'';
+  var fld=gf(m.folderId);
+  var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
+  var body=m.content||'<p style="color:#9CA3AF">No content.</p>';
+  return '<div class="me">'+
+    '<div class="me-top">'+
+      '<button class="back-btn" id="mom-ro-back">'+iBack+' Back</button>'+
+      '<div class="me-meta"><span>MOM</span><span style="color:#D1D5DB">›</span><span>'+esc((fld?fld.name:'').toUpperCase())+'</span></div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+      '<h1 style="font-size:24px;font-weight:700;color:#111827;margin:0;flex:1">'+esc(m.title||'Untitled')+'</h1>'+
+      '<span style="font-size:11px;font-weight:600;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;border-radius:6px;padding:3px 8px;white-space:nowrap">🔒 Read Only</span>'+
+    '</div>'+
+    '<div style="font-size:12px;color:#9CA3AF;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #F3F4F6">'+
+      (fld?'📁 '+esc(fld.name)+' · ':'')+(m.date?'📅 '+fmtDate(m.date):'')+(m.tags&&m.tags.length?' · 🏷 '+m.tags.map(t=>esc(t)).join(', '):'')+
+    '</div>'+
+    '<div class="tiptap" style="font-size:14px;line-height:1.75;color:#1F2937;pointer-events:none">'+body+'</div>'+
+    '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #F3F4F6;display:flex;gap:8px">'+
+      '<button class="btn se sm" id="mom-ro-export"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PDF</button>'+
+    '</div>'+
+  '</div>';
+}
+function bindMomReadOnlyEvents(){
+  var back=document.getElementById('mom-ro-back');
+  if(back)back.addEventListener('click',backMom);
+  var exp=document.getElementById('mom-ro-export');
+  if(exp)exp.addEventListener('click',exportPDF);
 }
 function bindMomEditor(){
   if(!window._TT){setTimeout(bindMomEditor,100);return;}
@@ -875,6 +908,8 @@ function bindMomEditor(){
   document.getElementById('mom-cancel').addEventListener('click',backMom);
   document.getElementById('mom-export').addEventListener('click',exportPDF);
   document.getElementById('mom-del').addEventListener('click',()=>askDelMom(EMOM.id));
+  var roBtn=document.getElementById('mom-togglero');
+  if(roBtn)roBtn.addEventListener('click',()=>{if(!EMOM)return;EMOM.readOnly=!EMOM.readOnly;sM(EMOM);toast(EMOM.readOnly?'MoM set to Read Only — members can view but not edit.':'Editing unlocked for members.');render();});
   document.getElementById('mom-move').addEventListener('click',()=>openMoveModal('mom',EMOM.id));
   document.getElementById('mom-star').addEventListener('click',()=>{if(EMOM){EMOM.starred=!EMOM.starred;sM(EMOM);var b=document.getElementById('mom-star');if(b){var starSVG='<svg width="13" height="13" viewBox="0 0 24 24" fill="'+(EMOM.starred?'#F59E0B':'none')+'" stroke="'+(EMOM.starred?'#F59E0B':'currentColor')+'" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';b.style.color=EMOM.starred?'#F59E0B':'#6B7280';b.innerHTML=starSVG+' '+(EMOM.starred?'Starred':'Star');}}});
   var ib=document.getElementById('insert-doc-btn');if(ib)ib.addEventListener('click',()=>openDocPicker(EMOM.folderId));
