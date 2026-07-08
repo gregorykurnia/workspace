@@ -974,8 +974,19 @@ function openRenameMom(id){
 function exportPDF(){
   collectMom();var m=EMOM;if(!m)return;var fld=gf(m.folderId);
   var body=_editor?_editor.getHTML():'<p>'+esc(m.content||'')+'</p>';
-  document.getElementById('pdf-print').innerHTML='<h1>'+esc(m.title||'Meeting Notes')+'</h1><div class="pm">'+(fld?'Folder: '+esc(fld.name)+' &nbsp;&middot;&nbsp; ':'')+'Date: '+fmtDate(m.date)+(m.tags&&m.tags.length?' &nbsp;&middot;&nbsp; Tags: '+m.tags.map(t=>esc(t)).join(', '):'')+'</div><div class="pb">'+body+'</div>'+(m.tags&&m.tags.length?'<div class="pt">'+m.tags.map(t=>'<span class="ptag">'+esc(t)+'</span>').join('')+'</div>':'')+'<div style="margin-top:40px;font-size:11px;color:#9CA3AF">Exported from Greg\'s Workspace &middot; '+new Date().toLocaleDateString()+'</div>';
-  window.print();
+  var html='<div style="font-family:Inter,Georgia,serif;max-width:680px;margin:0 auto;padding:40px 32px;color:#111827">'+
+    '<h1 style="font-size:26px;font-weight:700;margin:0 0 10px">'+esc(m.title||'Meeting Notes')+'</h1>'+
+    '<div style="font-size:13px;color:#6B7280;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid #E5E7EB">'+
+      (fld?'📁 '+esc(fld.name)+' &nbsp;·&nbsp; ':'')+
+      '📅 '+fmtDate(m.date)+
+      (m.tags&&m.tags.length?' &nbsp;·&nbsp; 🏷 '+m.tags.map(t=>esc(t)).join(', '):'')+
+    '</div>'+
+    '<div style="font-size:14px;line-height:1.75;color:#1F2937">'+body+'</div>'+
+    '<div style="margin-top:48px;padding-top:16px;border-top:1px solid #E5E7EB;font-size:11px;color:#9CA3AF">Exported from Greg\'s Workspace · '+new Date().toLocaleDateString()+'</div>'+
+  '</div>';
+  var el=document.createElement('div');el.innerHTML=html;
+  var fname=(m.title||'meeting-notes').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.pdf';
+  html2pdf().set({margin:0,filename:fname,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(el).save();
 }
 // DOC PICKER
 function openDocPicker(folderId){
