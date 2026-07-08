@@ -519,7 +519,7 @@ function docCardHTML(d){
   var isAdmin=CURR_USER_ROLE==='admin';
   var ro=!!d.readOnly;
   var roBadge=ro?'<span style="font-size:10px;font-weight:600;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">Read Only</span>':'';
-  var roToggleBtn=isAdmin?'<button class="ib" data-togglero="'+d.id+'" title="'+(ro?'Unlock editing':'Set Read Only')+'" style="color:'+(ro?'#3B82F6':'#9CA3AF')+'">'+(ro?'&#128274;':'&#128275;')+'</button>':'';
+  var roToggleBtn=isAdmin?'<button class="btn sm" data-togglero="'+d.id+'" style="font-size:11px;padding:3px 8px;'+(ro?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(ro?'🔒 Read Only':'🔓 Set Read Only')+'</button>':'';
   var canEdit=isAdmin||!ro;
   return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
     icBox+
