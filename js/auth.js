@@ -28,6 +28,7 @@ function doSignIn() {
 auth.onAuthStateChanged(function(user) {
   if (user) {
     document.getElementById('auth-screen').style.display = 'none';
+    startListeners();
     // Update sidebar user chip with real name
     var n = user.displayName || user.email || 'User';
     var ini = n.split(/\s+/).map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
