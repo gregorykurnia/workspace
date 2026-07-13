@@ -929,9 +929,11 @@ function bindMomEditor(){
       if(data.content!==undefined&&data.content!==EMOM.content){
         EMOM.content=data.content;
         _remoteUpdate=true;
+        var hadFocus=_editor.isFocused;
         var sel=_editor.state.selection;
         _editor.commands.setContent(data.content,false);
         try{_editor.commands.setTextSelection(sel);}catch(e){}
+        if(hadFocus)_editor.commands.focus();
         _remoteUpdate=false;
         setSaveStatus('saved');
       }
