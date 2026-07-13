@@ -3,6 +3,7 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
+  globalSetup: './tests/global-setup.js',
   timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // serial — tests share Firebase state

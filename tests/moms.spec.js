@@ -72,28 +72,5 @@ test.describe('MoMs (Documents)', () => {
     await expect(page.locator('.star-btn.on').first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('cleanup: delete all test MoM folders', async ({ page }) => {
-    while (await page.locator('.ti', { hasText: TEST_FOLDER }).count() > 0) {
-      const folderItem = page.locator('.ti', { hasText: TEST_FOLDER }).first();
-      await folderItem.click();
-      await page.locator('[data-tab="mom"]').click();
-      await page.waitForTimeout(1000);
-
-      while (await page.locator('.mc[data-openmom]').count() > 0) {
-        const delBtn = page.locator('.mc[data-openmom]').first().locator('[data-delmom]');
-        if (await delBtn.count() === 0) break;
-        await delBtn.click();
-        await page.locator('#dmc-d').click();
-        await page.waitForTimeout(600);
-      }
-
-      await folderItem.hover();
-      await folderItem.locator('.mb').click();
-      await page.locator('[data-a="del"]').click();
-      await page.locator('#df-d').click();
-      await page.waitForTimeout(600);
-    }
-
-    await expect(page.locator('.ti', { hasText: TEST_FOLDER })).toHaveCount(0, { timeout: 10000 });
-  });
+  // Cleanup is handled by global-setup.js before each run
 });

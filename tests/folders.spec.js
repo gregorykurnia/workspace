@@ -39,27 +39,5 @@ test.describe('Folders', () => {
     await expect(page.locator('.ti .nm', { hasText: TEST_SUBFOLDER }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('cleanup: delete all test folders', async ({ page }) => {
-    // Delete all subfolders first
-    while (await page.locator('.ti', { hasText: TEST_SUBFOLDER }).count() > 0) {
-      const item = page.locator('.ti', { hasText: TEST_SUBFOLDER }).first();
-      await item.hover();
-      await item.locator('.mb').click();
-      await page.locator('[data-a="del"]').click();
-      await page.locator('#df-d').click();
-      await page.waitForTimeout(600);
-    }
-
-    // Delete all parent test folders
-    while (await page.locator('.ti', { hasText: TEST_FOLDER }).count() > 0) {
-      const item = page.locator('.ti', { hasText: TEST_FOLDER }).first();
-      await item.hover();
-      await item.locator('.mb').click();
-      await page.locator('[data-a="del"]').click();
-      await page.locator('#df-d').click();
-      await page.waitForTimeout(600);
-    }
-
-    await expect(page.locator('.ti', { hasText: TEST_FOLDER })).toHaveCount(0, { timeout: 10000 });
-  });
+  // Cleanup is handled by global-setup.js before each run
 });
