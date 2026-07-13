@@ -24,10 +24,10 @@ test.describe('Sidebar & Layout', () => {
     await expect(page.locator('#nav-home')).toHaveClass(/active/);
   });
 
-  test('sync indicator shows live status', async ({ page }) => {
-    // Allow time for Firestore to connect
+  test('sync dot has live class after Firestore connects', async ({ page }) => {
+    // sync-row is hidden by CSS but the dot still gets class="sync-dot live"
     await page.waitForTimeout(3000);
-    await expect(page.locator('.sync-dot.live')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#sdot')).toHaveClass(/live/, { timeout: 10000 });
   });
 
   test('trash nav item is clickable', async ({ page }) => {

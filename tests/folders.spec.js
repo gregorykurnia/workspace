@@ -53,9 +53,7 @@ test.describe('Folders', () => {
       await subItem.hover();
       await subItem.locator('.mb').click();
       await page.locator('[data-a="del"]').click();
-      // Confirm deletion dialog
-      const confirmBtn = page.locator('button', { hasText: /delete|confirm|yes/i }).last();
-      await confirmBtn.click();
+      await page.locator('#df-d').click(); // modal confirm button
       await expect(subItem).toBeHidden({ timeout: 10000 });
     }
 
@@ -65,8 +63,7 @@ test.describe('Folders', () => {
       await folderItem.hover();
       await folderItem.locator('.mb').click();
       await page.locator('[data-a="del"]').click();
-      const confirmBtn = page.locator('button', { hasText: /delete|confirm|yes/i }).last();
-      await confirmBtn.click();
+      await page.locator('#df-d').click(); // modal confirm button
       await expect(folderItem).toBeHidden({ timeout: 10000 });
     }
   });

@@ -22,7 +22,7 @@ module.exports = defineConfig({
     },
     {
       name: 'mobile',
-      use: { ...devices['iPhone 13'] },
+      use: { ...devices['Pixel 5'] }, // Chromium-based — webkit not available on CI
     },
   ],
 });
