@@ -1,8 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers');
+const { login, TEST_PREFIX } = require('./helpers');
 
-const TEST_FOLDER = '[TEST] Playwright Folder';
-const TEST_SUBFOLDER = '[TEST] Playwright Subfolder';
+const TEST_FOLDER = `${TEST_PREFIX} Folders`;
+const TEST_SUBFOLDER = `${TEST_PREFIX} Subfolder`;
 
 test.describe('Folders', () => {
   test.beforeEach(async ({ page }) => {
@@ -18,9 +18,7 @@ test.describe('Folders', () => {
   });
 
   test('navigate into folder and see tabs', async ({ page }) => {
-    const folderItem = page.locator('.ti', { hasText: TEST_FOLDER }).first();
-    await expect(folderItem).toBeVisible({ timeout: 10000 });
-    await folderItem.click();
+    await page.locator('.ti', { hasText: TEST_FOLDER }).first().click();
     await expect(page.locator('[data-tab="mom"]')).toBeVisible();
     await expect(page.locator('[data-tab="doc"]')).toBeVisible();
     await expect(page.locator('[data-tab="star"]')).toBeVisible();
@@ -30,8 +28,7 @@ test.describe('Folders', () => {
     const folderItem = page.locator('.ti', { hasText: TEST_FOLDER }).first();
     await expect(folderItem).toBeVisible({ timeout: 10000 });
     await folderItem.hover();
-    const menuBtn = folderItem.locator('.mb');
-    await menuBtn.click();
+    await folderItem.locator('.mb').click();
     await page.locator('[data-a="sub"]').click();
     await page.waitForSelector('#fn', { state: 'visible' });
     await page.fill('#fn', TEST_SUBFOLDER);
