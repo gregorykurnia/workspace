@@ -6,7 +6,7 @@ var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDE
 var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-function chkLoad(){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){setSS('live');_autopurge();if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
+var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
