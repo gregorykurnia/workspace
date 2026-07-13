@@ -55,7 +55,7 @@ var _listenersStarted=false;
 function startListeners(){
   if(_listenersStarted)return;_listenersStarted=true;
   db.collection('folders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());F=all.filter(f=>!f.deleted);TF=all.filter(f=>f.deleted);LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-  db.collection('moms').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());var eid=EMOM?EMOM.id:null;M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
+  db.collection('moms').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());var eid=EMOM?EMOM.id:null;M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d&&VIEW!=='mom')render();},e=>{setSS('err');console.error(e);});
   db.collection('docs').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());D=all.filter(d=>!d.deleted);TD=all.filter(d=>d.deleted);LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
   db.collection('docfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());DF=all.filter(df=>!df.deleted);TDF=all.filter(df=>df.deleted);LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();},e=>{setSS('err');console.error(e);});
   db.collection('momfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());MF=all.filter(mf=>!mf.deleted);TMF=all.filter(mf=>mf.deleted);LOADED.mf=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
