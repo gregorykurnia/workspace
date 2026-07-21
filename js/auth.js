@@ -1,5 +1,13 @@
 const auth = firebase.auth();
 
+// Share link: sign in anonymously so no login screen is needed
+(function(){
+  var p=new URLSearchParams(window.location.search);
+  if(p.has('folder')){
+    auth.signInAnonymously().catch(console.error);
+  }
+})();
+
 function doSignIn() {
   var em = document.getElementById('auth-email').value.trim();
   var pw = document.getElementById('auth-pw').value;
@@ -29,12 +37,18 @@ auth.onAuthStateChanged(function(user) {
   if (user) {
     document.getElementById('auth-screen').style.display = 'none';
     startListeners();
-    // Update sidebar user chip with real name
-    var n = user.displayName || user.email || 'User';
-    var ini = n.split(/\s+/).map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
-    var av = document.getElementById('sb-av'); if (av) av.textContent = ini;
-    var un = document.getElementById('sb-uname'); if (un) un.textContent = n;
-    var ur = document.getElementById('sb-urole'); if (ur) ur.textContent = user.email;
+    if (user.isAnonymous) {
+      // Guest via share link — hide owner-only sidebar footer
+      var sbFoot = document.querySelector('.sb-foot');
+      if (sbFoot) sbFoot.style.display = 'none';
+    } else {
+      // Update sidebar user chip with real name
+      var n = user.displayName || user.email || 'User';
+      var ini = n.split(/\s+/).map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+      var av = document.getElementById('sb-av'); if (av) av.textContent = ini;
+      var un = document.getElementById('sb-uname'); if (un) un.textContent = n;
+      var ur = document.getElementById('sb-urole'); if (ur) ur.textContent = user.email;
+    }
   } else {
     document.getElementById('auth-screen').style.display = 'flex';
   }

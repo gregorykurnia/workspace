@@ -5,8 +5,10 @@ const db=firebase.firestore();
 var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false;
 var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
+var SHARE_MODE=false,SHARE_FOLDER_ID=null;
+(function(){var p=new URLSearchParams(window.location.search);if(p.has('folder')){SHARE_MODE=true;SHARE_FOLDER_ID=p.get('folder');}})();
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
+var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_FOLDER_ID){var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
@@ -149,7 +151,7 @@ function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);i
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
-function goHome(){VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
+function goHome(){if(SHARE_MODE&&SHARE_FOLDER_ID){goTo(pathTo(SHARE_FOLDER_ID));return;}VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
 function goTo(path){if(typeof canSeeFolder==='function'&&!canSeeFolder(path[path.length-1])){toast('You don\'t have access to this folder.');goHome();return;}for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;destroyEditor();DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
 function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
@@ -161,16 +163,19 @@ function showCtx(e,fid){
   var iSub='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>';
   var iLock='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
   var iDel='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  var iShare='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
   var h='<div class="ct" data-a="open" data-id="'+fid+'">'+iOpen+'Open</div>';
   h+='<div class="ct" data-a="rename" data-id="'+fid+'">'+iRename+'Rename</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="ct" data-a="sub" data-id="'+fid+'">'+iSub+'Add subfolder</div>';
+  h+='<div class="cd"></div>';
+  h+='<div class="ct" data-a="share" data-id="'+fid+'">'+iShare+'Copy share link</div>';
   h+='<div class="cd"></div>';
   if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">'+iLock+'Lock again</div>';
   h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+iLock+(f.pw?'Change lock':'Set lock')+'</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct" data-a="access" data-id="'+fid+'">&#128274; Manage Access</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">'+iDel+'Delete</div>';
   el.innerHTML=h;
-  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);});
+  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);else if(a==='share'){var lnk=location.origin+location.pathname+'?folder='+encodeURIComponent(id);navigator.clipboard.writeText(lnk).then(()=>toast('Share link copied! Anyone with the link can enter via the folder password.')).catch(()=>{modal('<div class="m-title">Share Link</div><div class="m-sub">Copy this link and send it to whoever you want to share with:</div><input type="text" id="share-lnk-inp" value="'+esc(lnk)+'" readonly style="font-size:12px"><div class="m-foot"><button class="btn pr" id="share-lnk-copy">Copy</button><button class="btn se" id="share-lnk-close">Close</button></div>');var inp=document.getElementById('share-lnk-inp');inp.select();document.getElementById('share-lnk-copy').addEventListener('click',()=>{inp.select();document.execCommand('copy');toast('Copied!');closeModal();});document.getElementById('share-lnk-close').addEventListener('click',closeModal);});} });
   document.getElementById('CR').appendChild(el);el.style.left=Math.min(e.clientX,innerWidth-240)+'px';el.style.top=Math.min(e.clientY,innerHeight-260)+'px';
 }
 function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
