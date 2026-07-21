@@ -2,6 +2,13 @@
 auth.onAuthStateChanged(function(user) {
   if (!user) { CURR_USER_ROLE = 'member'; FA = []; return; }
 
+  // Anonymous share-link guests skip user record lookup
+  if (user.isAnonymous) {
+    CURR_USER_ROLE = 'member';
+    if (typeof render === 'function') render();
+    return;
+  }
+
   // Get or create this user's record in Firestore
   db.collection('users').doc(user.uid).get().then(function(doc) {
     if (doc.exists) {
@@ -40,6 +47,15 @@ function canSeeFolder(fid) {
   if (CURR_USER_ROLE === 'admin') return true;
   var user = auth.currentUser;
   if (!user) return false;
+  // Anonymous share-link guests: allow access only within the shared folder tree
+  if (user.isAnonymous && typeof SHARE_MODE !== 'undefined' && SHARE_MODE && SHARE_FOLDER_ID) {
+    var check = gf(fid);
+    while (check) {
+      if (check.id === SHARE_FOLDER_ID) return true;
+      check = check.parent ? gf(check.parent) : null;
+    }
+    return false;
+  }
   // Walk up the folder tree — access on any ancestor grants access
   var current = gf(fid);
   while (current) {
