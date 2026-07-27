@@ -3,7 +3,7 @@ const auth = firebase.auth();
 // Share link: sign in anonymously so no login screen is needed
 (function(){
   var p=new URLSearchParams(window.location.search);
-  if(p.has('folder')||p.has('doc')){
+  if(p.has('folder')||p.has('doc')||p.has('mom')){
     auth.signInAnonymously().catch(console.error);
   }
 })();

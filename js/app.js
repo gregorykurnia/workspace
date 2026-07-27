@@ -5,8 +5,8 @@ const db=firebase.firestore();
 var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false;
 var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
-var SHARE_MODE=false,SHARE_FOLDER_ID=null,SHARE_DOC_ID=null;
-(function(){var p=new URLSearchParams(window.location.search);if(p.has('folder')){SHARE_MODE=true;SHARE_FOLDER_ID=p.get('folder');}else if(p.has('doc')){SHARE_MODE=true;SHARE_DOC_ID=p.get('doc');}})();
+var SHARE_MODE=false,SHARE_FOLDER_ID=null,SHARE_DOC_ID=null,SHARE_MOM_ID=null;
+(function(){var p=new URLSearchParams(window.location.search);if(p.has('folder')){SHARE_MODE=true;SHARE_FOLDER_ID=p.get('folder');}else if(p.has('doc')){SHARE_MODE=true;SHARE_DOC_ID=p.get('doc');}else if(p.has('mom')){SHARE_MODE=true;SHARE_MOM_ID=p.get('mom');}})();
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
 function renderSharedDoc(id){
   var d=D.find(v=>v.id===id);if(!d){shareLinkDenied();return;}
@@ -20,8 +20,18 @@ function renderSharedDoc(id){
   var open=d.url?'<a class="btn pr" href="'+esc(d.url)+'" target="_blank" rel="noopener">Open / Download</a>':'';
   document.getElementById('CR').innerHTML=wrap+'<div style="font-size:40px">&#128196;</div><div style="font-size:16px;font-weight:600;color:#111827">'+esc(d.name)+'</div>'+(d.note?'<div style="font-size:13px;color:#6B7280;max-width:400px">'+esc(d.note)+'</div>':'')+'<div>'+open+'</div></div>';
 }
+function renderSharedMom(id){
+  var m=M.find(v=>v.id===id);if(!m){shareLinkDenied();return;}
+  var body=momDeltaToHTML(m.content);
+  document.getElementById('CR').innerHTML=
+    '<div style="max-width:760px;margin:0 auto;padding:32px 20px">'+
+      '<h1 style="font-size:24px;font-weight:700;color:#111827;margin:0 0 4px">'+esc(m.title||'Untitled')+'</h1>'+
+      '<div style="font-size:12px;color:#9CA3AF;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #F3F4F6">'+(m.date?'&#128197; '+fmtDate(m.date):'')+(m.tags&&m.tags.length?' &middot; &#127991; '+m.tags.map(function(t){return esc(t);}).join(', '):'')+'</div>'+
+      '<div class="tiptap" style="font-size:14px;line-height:1.75;color:#1F2937;pointer-events:none">'+body+'</div>'+
+    '</div>';
+}
 function shareLinkDenied(){document.getElementById('CR').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;gap:10px"><div style="font-size:40px">&#128274;</div><div style="font-size:16px;font-weight:600;color:#111827">This link is no longer available</div><div style="font-size:13px;color:#6B7280">The owner has turned off link sharing for this folder.</div></div>';}
-var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_DOC_ID){var sid2=document.getElementById('sidebar');if(sid2)sid2.style.display='none';var tog2=document.getElementById('sb-toggle');if(tog2)tog2.style.display='none';var sd=D.find(v=>v.id===SHARE_DOC_ID);if(!sd||!sd.shared){shareLinkDenied();return;}renderSharedDoc(SHARE_DOC_ID);}else if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
+var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_DOC_ID){var sid2=document.getElementById('sidebar');if(sid2)sid2.style.display='none';var tog2=document.getElementById('sb-toggle');if(tog2)tog2.style.display='none';var sd=D.find(v=>v.id===SHARE_DOC_ID);if(!sd||!sd.shared){shareLinkDenied();return;}renderSharedDoc(SHARE_DOC_ID);}else if(SHARE_MODE&&SHARE_MOM_ID){var sid3=document.getElementById('sidebar');if(sid3)sid3.style.display='none';var tog3=document.getElementById('sb-toggle');if(tog3)tog3.style.display='none';var sm=M.find(v=>v.id===SHARE_MOM_ID);if(!sm||!sm.shared){shareLinkDenied();return;}renderSharedMom(SHARE_MOM_ID);}else if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
@@ -160,6 +170,23 @@ function saveExp(){localStorage.setItem('G_exp',JSON.stringify([...EXP]));}
 function loadExp(){try{EXP=new Set(JSON.parse(localStorage.getItem('G_exp')||'[]'));}catch(e){}}
 function folderLabel(id){var p=[],c=gf(id);while(c){p.unshift(c.name);c=c.parent?gf(c.parent):null;}return p.join(' / ');}
 function docIco(d){if(d.format==='pdf'||d.type==='pdf')return'&#128196;';if(d.cloudType==='image')return'&#128444;';if(d.cloudType==='video')return'&#127916;';var m={pdf:'&#128196;',presentation:'&#128202;',spreadsheet:'&#128203;',image:'&#128444;',link:'&#128279;',other:'&#128206;'};return m[d.type]||'&#128206;';}
+function momDeltaToHTML(content){
+  if(!content)return'<p style="color:#9CA3AF">No content.</p>';
+  try{
+    var d=JSON.parse(content);
+    if(d&&Array.isArray(d.ops)){
+      var tmp=document.createElement('div');
+      tmp.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;width:400px';
+      document.body.appendChild(tmp);
+      var q=new Quill(tmp);
+      q.setContents(d);
+      var html=q.root.innerHTML;
+      tmp.remove();
+      return html;
+    }
+  }catch(e){}
+  return content;
+}
 function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);if(d&&Array.isArray(d.ops)){var t=d.ops.map(o=>typeof o.insert==='string'?o.insert:'').join('').replace(/\n/g,' ').trim();return esc(t.substring(0,140)+(t.length>140?'...':''));}}catch(e){}var tmp=document.createElement('div');tmp.innerHTML=c;var t2=(tmp.textContent||tmp.innerText||'').replace(/\s+/g,' ').trim();return esc(t2.substring(0,140)+(t2.length>140?'...':''));}
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
@@ -305,6 +332,7 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-movemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMoveModal('mom',el.dataset.movemom);}));
   ca.querySelectorAll('[data-renamemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameMom(el.dataset.renamemom);}));
   ca.querySelectorAll('[data-delmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();askDelMomFromCard(el.dataset.delmom);}));
+  ca.querySelectorAll('[data-sharemom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openShareModal('mom',el.dataset.sharemom);}));
   ca.querySelectorAll('[data-toggleromom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var m=M.find(v=>v.id===el.dataset.toggleromom);if(!m)return;m.readOnly=!m.readOnly;sM(m);toast(m.readOnly?'🔒 Set to Read Only':'🔓 Editing unlocked.');render();}));
   ca.querySelectorAll('[data-renamedoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRenameDoc(el.dataset.renamedoc);}));
   ca.querySelectorAll('[data-dldoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();downloadFile(el.dataset.dldoc,el.dataset.dlname);}));
@@ -452,6 +480,7 @@ function momCardHTML(m){
   var iMove='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>';
   var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
   var iDoc='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  var iShare='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
   return '<div class="mc" data-openmom="'+m.id+'">'+
     '<div class="dc-ic-box" style="background:#EEF2FF;color:#4F46E5">'+iNotes+'</div>'+
     '<div class="mc-title">'+esc(m.title||'Untitled')+'</div>'+
@@ -463,6 +492,7 @@ function momCardHTML(m){
         (CURR_USER_ROLE==='admin'?'<button class="btn sm" data-toggleromom="'+m.id+'" style="font-size:11px;padding:2px 7px;'+(m.readOnly?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(m.readOnly?'🔒':'🔓')+'</button>':'')+
         '<button class="ib" data-movemom="'+m.id+'" title="Move">'+iMove+'</button>'+
         '<button class="ib" data-renamemom="'+m.id+'" title="Rename">'+iRename+'</button>'+
+        (CURR_USER_ROLE==='admin'?'<button class="ib" data-sharemom="'+m.id+'" title="'+(m.shared?'Share link (on)':'Share link')+'">'+iShare+'</button>':'')+
         (CURR_USER_ROLE==='admin'?'<button class="ib" data-delmom="'+m.id+'" title="Delete">'+iTrash+'</button>':'')+
       '</div>'+
       '<span class="dc-date">'+fmtDate(m.date)+'</span>'+
@@ -1277,14 +1307,18 @@ function askDeleteFolder(id){
 function relock(id){UF.delete(id);if(PATH.includes(id))goHome();else render();}
 // SHARE LINK (anyone with the link, no account needed) — type is 'folder' or 'doc'
 function openShareModal(type,id){
-  var item=type==='folder'?gf(id):D.find(d=>d.id===id);if(!item)return;
-  var lnk=location.origin+location.pathname+'?'+(type==='folder'?'folder':'doc')+'='+encodeURIComponent(id);
+  var item=type==='folder'?gf(id):type==='mom'?M.find(m=>m.id===id):D.find(d=>d.id===id);if(!item)return;
+  var param=type==='folder'?'folder':type==='mom'?'mom':'doc';
+  var lnk=location.origin+location.pathname+'?'+param+'='+encodeURIComponent(id);
   var on=!!item.shared;
+  var itemLabel=item.name||item.title||'Untitled';
   var scopeMsg=type==='folder'
     ?'When on, anyone with this link can view this folder and everything inside it &mdash; no workspace account needed.'
+    :type==='mom'
+    ?'When on, anyone with this link can view this document &mdash; no workspace account needed.'
     :'When on, anyone with this link can view/download just this file &mdash; no workspace account needed.';
   modal(
-    '<div class="m-title">&#128279; Share link — '+esc(item.name)+'</div>'+
+    '<div class="m-title">&#128279; Share link — '+esc(itemLabel)+'</div>'+
     '<div class="m-sub">'+scopeMsg+'</div>'+
     '<div class="fr" style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
       '<label style="margin:0">Anyone with the link can view</label>'+
@@ -1300,7 +1334,7 @@ function openShareModal(type,id){
   document.getElementById('sh-on').addEventListener('change',function(e){
     var row=document.getElementById('sh-lnk-row');
     item.shared=e.target.checked;
-    if(type==='folder')sF(item);else sD(item);
+    if(type==='folder')sF(item);else if(type==='mom')sM(item);else sD(item);
     row.style.display=e.target.checked?'':'none';
     toast(e.target.checked?'Link sharing turned on.':'Link sharing turned off.');
   });
