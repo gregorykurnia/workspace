@@ -47,8 +47,11 @@ function canSeeFolder(fid) {
   if (CURR_USER_ROLE === 'admin') return true;
   var user = auth.currentUser;
   if (!user) return false;
-  // Anonymous share-link guests: allow access only within the shared folder tree
+  // Anonymous share-link guests: allow access only within a folder tree that
+  // has link-sharing explicitly turned on
   if (user.isAnonymous && typeof SHARE_MODE !== 'undefined' && SHARE_MODE && SHARE_FOLDER_ID) {
+    var shareRoot = gf(SHARE_FOLDER_ID);
+    if (!shareRoot || !shareRoot.shared) return false;
     var check = gf(fid);
     while (check) {
       if (check.id === SHARE_FOLDER_ID) return true;

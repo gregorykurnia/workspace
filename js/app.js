@@ -8,7 +8,8 @@ var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 var SHARE_MODE=false,SHARE_FOLDER_ID=null;
 (function(){var p=new URLSearchParams(window.location.search);if(p.has('folder')){SHARE_MODE=true;SHARE_FOLDER_ID=p.get('folder');}})();
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
-var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_FOLDER_ID){var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
+function shareLinkDenied(){document.getElementById('CR').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;gap:10px"><div style="font-size:40px">&#128274;</div><div style="font-size:16px;font-weight:600;color:#111827">This link is no longer available</div><div style="font-size:13px;color:#6B7280">The owner has turned off link sharing for this folder.</div></div>';}
+var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
@@ -151,7 +152,7 @@ function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);i
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
-function goHome(){if(SHARE_MODE&&SHARE_FOLDER_ID){goTo(pathTo(SHARE_FOLDER_ID));return;}VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
+function goHome(){if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}goTo(pathTo(SHARE_FOLDER_ID));return;}VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
 function goTo(path){if(typeof canSeeFolder==='function'&&!canSeeFolder(path[path.length-1])){toast('You don\'t have access to this folder.');goHome();return;}for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;destroyEditor();DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
 function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
@@ -167,15 +168,13 @@ function showCtx(e,fid){
   var h='<div class="ct" data-a="open" data-id="'+fid+'">'+iOpen+'Open</div>';
   h+='<div class="ct" data-a="rename" data-id="'+fid+'">'+iRename+'Rename</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="ct" data-a="sub" data-id="'+fid+'">'+iSub+'Add subfolder</div>';
-  h+='<div class="cd"></div>';
-  h+='<div class="ct" data-a="share" data-id="'+fid+'">'+iShare+'Copy share link</div>';
-  h+='<div class="cd"></div>';
+  if(CURR_USER_ROLE==='admin'){h+='<div class="cd"></div>';h+='<div class="ct" data-a="share" data-id="'+fid+'">'+iShare+(f.shared?'Share link (on)':'Share link')+'</div>';h+='<div class="cd"></div>';}
   if(f.pw&&UF.has(fid))h+='<div class="ct wa" data-a="relock" data-id="'+fid+'">'+iLock+'Lock again</div>';
   h+='<div class="ct '+(f.pw?'wa':'')+'" data-a="lock" data-id="'+fid+'">'+iLock+(f.pw?'Change lock':'Set lock')+'</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct" data-a="access" data-id="'+fid+'">&#128274; Manage Access</div>';
   if(CURR_USER_ROLE==='admin')h+='<div class="cd"></div><div class="ct da" data-a="del" data-id="'+fid+'">'+iDel+'Delete</div>';
   el.innerHTML=h;
-  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);else if(a==='share'){var lnk=location.origin+location.pathname+'?folder='+encodeURIComponent(id);navigator.clipboard.writeText(lnk).then(()=>toast('Share link copied! Anyone with the link can enter via the folder password.')).catch(()=>{modal('<div class="m-title">Share Link</div><div class="m-sub">Copy this link and send it to whoever you want to share with:</div><input type="text" id="share-lnk-inp" value="'+esc(lnk)+'" readonly style="font-size:12px"><div class="m-foot"><button class="btn pr" id="share-lnk-copy">Copy</button><button class="btn se" id="share-lnk-close">Close</button></div>');var inp=document.getElementById('share-lnk-inp');inp.select();document.getElementById('share-lnk-copy').addEventListener('click',()=>{inp.select();document.execCommand('copy');toast('Copied!');closeModal();});document.getElementById('share-lnk-close').addEventListener('click',closeModal);});} });
+  el.addEventListener('click',ev=>{var t=ev.target.closest('[data-a]');if(!t)return;var a=t.dataset.a,id=t.dataset.id;closeCtx();if(a==='open')goId(id);else if(a==='rename')openRename(id);else if(a==='sub')openNewFolder(id);else if(a==='relock')relock(id);else if(a==='lock')openLockModal('folder',id);else if(a==='access')openAccessModal(id);else if(a==='del')askDeleteFolder(id);else if(a==='share')openShareModal(id); });
   document.getElementById('CR').appendChild(el);el.style.left=Math.min(e.clientX,innerWidth-240)+'px';el.style.top=Math.min(e.clientY,innerHeight-260)+'px';
 }
 function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
@@ -213,6 +212,7 @@ function renderTB(){
     var r=document.createElement('button');r.className='btn se sm';r.textContent='Rename';r.addEventListener('click',()=>openRename(f.id));el.appendChild(r);
     if(f.pw&&UF.has(f.id)){var lk=document.createElement('button');lk.className='btn wa sm';lk.textContent='Lock';lk.addEventListener('click',()=>relock(f.id));el.appendChild(lk);}
     var sl=document.createElement('button');sl.className='btn se sm';sl.textContent=f.pw?'Change Lock':'Set Lock';sl.addEventListener('click',()=>openLockModal('folder',f.id));el.appendChild(sl);
+    if(CURR_USER_ROLE==='admin'){var sh=document.createElement('button');sh.className='btn '+(f.shared?'pr':'se')+' sm';sh.textContent=f.shared?'Shared ✓':'Share';sh.addEventListener('click',()=>openShareModal(f.id));el.appendChild(sh);}
   }else if(VIEW==='mom'){
     var ep=document.createElement('button');ep.className='btn gr sm';ep.textContent='Export PDF';ep.addEventListener('click',exportPDF);el.appendChild(ep);
     var sv=document.createElement('button');sv.className='btn pr sm';sv.textContent='Save';sv.addEventListener('click',saveMom);el.appendChild(sv);
@@ -1260,6 +1260,37 @@ function askDeleteFolder(id){
   document.getElementById('df-d').addEventListener('click',()=>{var f2=gf(id),par=f2?f2.parent:null;dFDeep(id);closeModal();par?goTo(pathTo(par)):goHome();});
 }
 function relock(id){UF.delete(id);if(PATH.includes(id))goHome();else render();}
+// SHARE LINK (anyone with the link, no account needed)
+function openShareModal(id){
+  var f=gf(id);if(!f)return;
+  var lnk=location.origin+location.pathname+'?folder='+encodeURIComponent(id);
+  var on=!!f.shared;
+  modal(
+    '<div class="m-title">&#128279; Share link — '+esc(f.name)+'</div>'+
+    '<div class="m-sub">When on, anyone with this link can view this folder and everything inside it &mdash; no workspace account needed.</div>'+
+    '<div class="fr" style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
+      '<label style="margin:0">Anyone with the link can view</label>'+
+      '<input type="checkbox" id="sh-on" '+(on?'checked':'')+' style="width:18px;height:18px">'+
+    '</div>'+
+    '<div class="fr" id="sh-lnk-row" style="'+(on?'':'display:none')+'"><label>Link</label>'+
+      '<div style="display:flex;gap:8px"><input type="text" id="sh-lnk-inp" value="'+esc(lnk)+'" readonly style="flex:1;font-size:12px"><button class="btn pr" id="sh-copy" style="white-space:nowrap;flex-shrink:0">Copy</button></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn se" id="sh-close">Done</button></div>',
+    true
+  );
+  document.getElementById('sh-close').addEventListener('click',closeModal);
+  document.getElementById('sh-on').addEventListener('change',function(e){
+    var row=document.getElementById('sh-lnk-row');
+    f.shared=e.target.checked;sF(f);
+    row.style.display=e.target.checked?'':'none';
+    toast(e.target.checked?'Link sharing turned on.':'Link sharing turned off.');
+  });
+  var cp=document.getElementById('sh-copy');
+  if(cp)cp.addEventListener('click',function(){
+    var inp=document.getElementById('sh-lnk-inp');inp.select();
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(lnk):Promise.reject()).catch(function(){document.execCommand('copy');}).then(function(){toast('Copied!');});
+  });
+}
 // LOCK
 function openLockModal(type,id){
   var item=type==='folder'?gf(id):D.find(d=>d.id===id);if(!item)return;var has=!!item.pw;
