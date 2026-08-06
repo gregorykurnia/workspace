@@ -352,6 +352,18 @@ function bindMainEvents(){
   var ds=ca.querySelector('#doc-search');var dsort=ca.querySelector('#doc-sort');
   if(ds)ds.addEventListener('input',applyDocFilter);
   if(dsort)dsort.addEventListener('change',applyDocFilter);
+  var ss=ca.querySelector('#sub-search');var ssort=ca.querySelector('#sub-sort');
+  if(ss)ss.addEventListener('input',applySubFilter);
+  if(ssort)ssort.addEventListener('change',applySubFilter);
+}
+function applySubFilter(){
+  var q=(document.getElementById('sub-search')||{}).value||'';
+  var sort=(document.getElementById('sub-sort')||{}).value||'date';
+  var q2=q.toLowerCase();
+  var list=document.querySelector('#ca .sg');if(!list)return;
+  var cards=Array.from(list.querySelectorAll('.fc'));
+  cards.forEach(c=>{var t=(c.querySelector('.fc-name')||{}).textContent||'';c.style.display=(!q2||t.toLowerCase().includes(q2))?'':'none';});
+  if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.fc-name')||{}).textContent||'').localeCompare((b.querySelector('.fc-name')||{}).textContent||''));var addC=list.querySelector('.add-c');vis.forEach(c=>list.insertBefore(c,addC||null));}
 }
 function applyMomFilter(){
   var q=(document.getElementById('mom-search')||{}).value||'';
@@ -462,7 +474,8 @@ function subHTML(s,fid){
   var iList='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
   var iFldr='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
   var h='<div class="sub-toolbar">'+
-    '<div class="sub-search">'+iSrch+'<input type="text" placeholder="Search subfolders..." readonly></div>'+
+    '<div class="sub-search">'+iSrch+'<input type="text" id="sub-search" placeholder="Search subfolders..."></div>'+
+    '<select id="sub-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select>'+
     '<div style="display:flex;gap:4px">'+
       '<button class="sub-view-btn on">'+iGrid+'</button>'+
       '<button class="sub-view-btn">'+iList+'</button>'+
@@ -1150,6 +1163,42 @@ function openMomPicker(currentMomId){
     closeModal();toast(sel.length+' MoM link'+(sel.length>1?'s':'')+' inserted.');
   });
 }
+// GLOBAL SEARCH
+function openGlobalSearch(){
+  var iSrchIco='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  var iFldrIco='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  var iNotesIco='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+  var iDocIco='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  function rowHTML(ic,bg,cl,title,sub,ds){return '<div class="dp-item" '+ds+'><div style="width:30px;height:30px;border-radius:6px;background:'+bg+';color:'+cl+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ic+'</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(title)+'</div>'+(sub?'<div style="font-size:11px;color:#9CA3AF;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(sub)+'</div>':'')+'</div></div>';}
+  function runSearch(q){
+    var container=document.getElementById('gs-list');if(!container)return;
+    if(!q){container.innerHTML='<div style="padding:16px;text-align:center;color:#9CA3AF;font-size:13px">Type to search folders, documents and files...</div>';return;}
+    var q2=q.toLowerCase();
+    var folders=F.filter(f=>f.name.toLowerCase().includes(q2));
+    var moms=M.filter(m=>(m.title||'').toLowerCase().includes(q2)||momPreview(m.content).toLowerCase().includes(q2));
+    var docs=D.filter(d=>(d.name||'').toLowerCase().includes(q2)||(d.note||'').toLowerCase().includes(q2));
+    if(!folders.length&&!moms.length&&!docs.length){container.innerHTML='<div style="padding:16px;text-align:center;color:#9CA3AF;font-size:13px">No results for "'+esc(q)+'"</div>';return;}
+    var h='';
+    folders.forEach(f=>{h+=rowHTML(iFldrIco,'#F3F4F6','#6B7280',f.name,folderLabel(f.parent)||'Workspace root','data-gotofolder="'+f.id+'"');});
+    moms.forEach(m=>{h+=rowHTML(iNotesIco,'#EEF2FF','#4F46E5',m.title||'Untitled',folderLabel(m.folderId),'data-gotomom="'+m.id+'"');});
+    docs.forEach(d=>{h+=rowHTML(iDocIco,'#FFF7ED','#F97316',d.name||'Untitled',folderLabel(d.folderId),'data-gotodocfolder="'+d.folderId+'"');});
+    container.innerHTML=h;
+    container.querySelectorAll('[data-gotofolder]').forEach(el=>el.addEventListener('click',()=>{closeModal();goTo(pathTo(el.dataset.gotofolder));}));
+    container.querySelectorAll('[data-gotomom]').forEach(el=>el.addEventListener('click',()=>{closeModal();openMom(el.dataset.gotomom);}));
+    container.querySelectorAll('[data-gotodocfolder]').forEach(el=>el.addEventListener('click',()=>{closeModal();goTo(pathTo(el.dataset.gotodocfolder));TAB='doc';render();}));
+  }
+  modal(
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+
+      '<div style="width:32px;height:32px;border-radius:8px;background:#EEF2FF;color:#4F46E5;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+iSrchIco+'</div>'+
+      '<div><div style="font-size:15px;font-weight:600;color:#111827">Search workspace</div>'+
+      '<div style="font-size:12px;color:#9CA3AF;margin-top:1px">Search across folders, MoMs and files.</div></div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:8px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;margin:14px 0 6px">'+iSrchIco+'<input type="text" id="gs-search" placeholder="Search everything..." style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#111827;outline:none;flex:1"></div>'+
+    '<div id="gs-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;margin-bottom:4px"></div>'
+  );
+  runSearch('');
+  document.getElementById('gs-search').addEventListener('input',e=>runSearch(e.target.value.trim()));
+}
 // MOVE MODAL - full tree
 function openMoveModal(type,itemId){
   var item=type==='mom'?M.find(m=>m.id===itemId):D.find(d=>d.id===itemId);if(!item)return;
@@ -1381,6 +1430,7 @@ var _sbToggle=()=>{document.getElementById('sidebar').classList.toggle('collapse
 document.getElementById('sb-toggle').addEventListener('click',_sbToggle);
 document.getElementById('sb-close').addEventListener('click',_sbToggle);
 document.getElementById('nav-home').addEventListener('click',goHome);
+document.getElementById('nav-search').addEventListener('click',openGlobalSearch);
 document.getElementById('sb-trash-btn').addEventListener('click',openTrash);
 loadExp();
 if(window.innerWidth<=700)document.getElementById('sidebar').classList.add('collapsed');
