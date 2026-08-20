@@ -6,6 +6,61 @@ var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDE
 var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 var SHARE_MODE=false,SHARE_FOLDER_ID=null,SHARE_DOC_ID=null,SHARE_MOM_ID=null;
+var SEL_MODE=false,SEL_TYPE=null,SEL_IDS=new Set();
+function toggleSelMode(type){if(SEL_MODE&&SEL_TYPE===type){SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();}else{SEL_MODE=true;SEL_TYPE=type;SEL_IDS.clear();}renderMain();}
+function toggleSelId(type,id){if(SEL_TYPE!==type)return;if(SEL_IDS.has(id))SEL_IDS.delete(id);else SEL_IDS.add(id);renderMain();}
+function selBarHTML(type,label){
+  if(!SEL_MODE||SEL_TYPE!==type)return'';
+  var n=SEL_IDS.size;
+  return '<div class="sel-bar" style="display:flex;align-items:center;gap:10px;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:#3730A3">'+
+    '<span>'+n+' '+label+(n!==1?'s':'')+' selected</span><div style="flex:1"></div>'+
+    (n?'<button class="btn pr sm" id="sel-move-btn">&#128194; Move Selected</button>':'')+
+    '<button class="btn se sm" id="sel-cancel-btn">Cancel</button>'+
+  '</div>';
+}
+function bindSelBar(){
+  var mb=document.getElementById('sel-move-btn');if(mb)mb.addEventListener('click',()=>openBulkMoveModal(SEL_TYPE,Array.from(SEL_IDS)));
+  var cb=document.getElementById('sel-cancel-btn');if(cb)cb.addEventListener('click',()=>{SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();renderMain();});
+}
+function openBulkMoveModal(type,ids){
+  ids=ids.filter(Boolean);if(!ids.length)return;
+  function buildTree(pid,depth){
+    return F.filter(f=>f.parent===pid).map(f=>{
+      return'<div class="move-fi" data-fid="'+f.id+'" data-sfid="" style="padding-left:'+(12+depth*16)+'px">'+'<span style="font-size:14px">'+(f.icon||'&#128193;')+'</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+'</span></div>'+buildTree(f.id,depth+1)+buildSubFolders(f.id,depth+1);
+    }).join('');
+  }
+  function buildSubFolders(fid,depth){
+    var out='';
+    if(type==='doc'){
+      out+=DF.filter(df=>df.folderId===fid).map(df=>{
+        return'<div class="move-fi" data-fid="'+df.folderId+'" data-sfid="'+df.id+'" data-sftype="doc" style="padding-left:'+(12+depth*16)+'px">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(df.name)+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">doc folder</span></div>';
+      }).join('');
+    }
+    if(type==='mom'){
+      out+=MF.filter(mf=>mf.folderId===fid).map(mf=>{
+        return'<div class="move-fi" data-fid="'+mf.folderId+'" data-sfid="'+mf.id+'" data-sftype="mom" style="padding-left:'+(12+depth*16)+'px">'+'<span style="font-size:14px">&#128193;</span>'+'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#534AB7">'+esc(mf.name)+'</span><span style="font-size:10px;color:#9CA3AF;margin-left:4px">MoM folder</span></div>';
+      }).join('');
+    }
+    return out;
+  }
+  var tree=buildTree(null,0);
+  modal('<div class="m-title">&#128194; Move '+ids.length+' Item'+(ids.length!==1?'s':'')+'</div><div class="m-sub">Choose a destination folder.</div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No folders yet.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  var sel=null,selSf=null,selSfType=null;
+  document.getElementById('mv-c').addEventListener('click',closeModal);
+  document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(el=>{
+    el.addEventListener('click',()=>{document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.fid;selSf=el.dataset.sfid||null;selSfType=el.dataset.sftype||null;document.getElementById('mv-ok').disabled=false;});
+  });
+  document.getElementById('mv-ok').addEventListener('click',()=>{
+    if(!sel)return;
+    ids.forEach(id=>{
+      if(type==='mom'){var m=M.find(v=>v.id===id);if(m){m.folderId=sel;if(selSf&&selSfType==='mom')m.momFolderId=selSf;else delete m.momFolderId;sM(m);}}
+      else{var d=D.find(v=>v.id===id);if(d){d.folderId=sel;if(selSf&&selSfType==='doc')d.docFolderId=selSf;else delete d.docFolderId;sD(d);}}
+    });
+    var sfLabel=selSf?((selSfType==='doc'?(DF.find(v=>v.id===selSf)||{}):(MF.find(v=>v.id===selSf)||{})).name||''):'';
+    SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();
+    closeModal();toast('Moved '+ids.length+' item'+(ids.length!==1?'s':'')+' to '+folderLabel(sel)+(sfLabel?', '+sfLabel:''));renderMain();
+  });
+}
 (function(){var p=new URLSearchParams(window.location.search);if(p.has('folder')){SHARE_MODE=true;SHARE_FOLDER_ID=p.get('folder');}else if(p.has('doc')){SHARE_MODE=true;SHARE_DOC_ID=p.get('doc');}else if(p.has('mom')){SHARE_MODE=true;SHARE_MOM_ID=p.get('mom');}})();
 function setSS(s){var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');if(s==='live'){dot.className='sync-dot live';lbl.textContent='Live';}else if(s==='err'){dot.className='sync-dot err';lbl.textContent='Offline';}else{dot.className='sync-dot';lbl.textContent='Connecting...';}}
 function renderSharedDoc(id){
@@ -194,7 +249,7 @@ function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}goTo(pathTo(SHARE_FOLDER_ID));return;}VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
 function goTo(path){if(typeof canSeeFolder==='function'&&!canSeeFolder(path[path.length-1])){toast('You don\'t have access to this folder.');goHome();return;}for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}PATH=path;VIEW='folder';TAB='sub';EMOM=null;destroyEditor();DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
-function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;renderMain();}
+function setTab(t){TAB=t;DOC_FOLDER=null;MOM_FOLDER=null;SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();renderMain();}
 function showCtx(e,fid){
   e.stopPropagation();closeCtx();var f=gf(fid);if(!f)return;
   var el=document.createElement('div');el.className='ctx';el.id='CTX';
@@ -355,6 +410,9 @@ function bindMainEvents(){
   var ss=ca.querySelector('#sub-search');var ssort=ca.querySelector('#sub-sort');
   if(ss)ss.addEventListener('input',applySubFilter);
   if(ssort)ssort.addEventListener('change',applySubFilter);
+  ca.querySelectorAll('[data-selmode]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();toggleSelMode(el.dataset.selmode);}));
+  ca.querySelectorAll('[data-selchk]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();toggleSelId(SEL_TYPE,el.dataset.selchk);}));
+  bindSelBar();
 }
 function applySubFilter(){
   var q=(document.getElementById('sub-search')||{}).value||'';
@@ -494,7 +552,11 @@ function momCardHTML(m){
   var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
   var iDoc='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
   var iShare='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
-  return '<div class="mc" data-openmom="'+m.id+'">'+
+  var selOn=SEL_MODE&&SEL_TYPE==='mom';
+  var checked=selOn&&SEL_IDS.has(m.id);
+  var chk=selOn?'<input type="checkbox" class="mc-selchk" '+(checked?'checked':'')+' style="width:16px;height:16px;margin-right:2px;cursor:pointer;flex-shrink:0">':'';
+  return '<div class="mc'+(checked?' mc-sel':'')+'" '+(selOn?'data-selchk="'+m.id+'"':'data-openmom="'+m.id+'"')+'>'+
+    chk+
     '<div class="dc-ic-box" style="background:#EEF2FF;color:#4F46E5">'+iNotes+'</div>'+
     '<div class="mc-title">'+esc(m.title||'Untitled')+'</div>'+
     '<div class="mc-prev" style="display:none">'+momPreview(m.content)+'</div>'+
@@ -517,8 +579,9 @@ function momListHTML(ms){
   if(MOM_FOLDER){
     var mf=MF.find(v=>v.id===MOM_FOLDER);
     var mfmoms=momsOfMF(MOM_FOLDER).sort((a,b)=>b.date-a.date);
-    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="momfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(mf?mf.name:'Folder')+'</span><div style="flex:1"></div><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
+    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="momfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(mf?mf.name:'Folder')+'</span><div style="flex:1"></div><button class="btn se sm" data-selmode="mom">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
     h+='<div class="search-bar"><input type="text" id="mom-search" placeholder="&#128269; Search MoMs..."><select id="mom-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
+    h+=selBarHTML('mom','item');
     if(!mfmoms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No MoMs in this folder</div><div class="empty-s">Create a new MoM or move existing ones here</div></div>';
     return h+'<div class="ml">'+mfmoms.map(m=>momCardHTML(m)).join('')+'</div>';
   }
@@ -534,8 +597,10 @@ function momListHTML(ms){
       '<select id="mom-sort" style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:4px"><option value="date">Newest first</option><option value="name">Name A-Z</option></select>'+iChevM+
     '</div>'+
     '<button class="btn se" data-newmomfolder="'+f.id+'" style="display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:13px;padding:7px 12px">'+iFldrM+' New document folder</button>'+
+    '<button class="btn se" data-selmode="mom" style="flex-shrink:0;font-size:13px;padding:7px 12px">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button>'+
     '<button class="btn dk" data-newmom style="flex-shrink:0;font-size:13px;padding:7px 12px">+ Add Document</button>'+
   '</div>';
+  h+=selBarHTML('mom','item');
   var content='';
   var iFldrSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
   var iRenSVG='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
