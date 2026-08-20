@@ -215,7 +215,7 @@ function _moveTableCol(dir){
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
 function gf(id){return F.find(f=>f.id===id);}
-function kids(pid){return F.filter(f=>f.parent===pid);}
+function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
 function momsOf(fid){return M.filter(m=>m.folderId===fid);}
 function docsOf(fid){return D.filter(d=>d.folderId===fid);}
 function cf(){return PATH.length?gf(PATH[PATH.length-1]):null;}
