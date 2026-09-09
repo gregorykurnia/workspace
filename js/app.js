@@ -214,6 +214,7 @@ function _moveTableCol(dir){
 }
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+function docAddedValue(d){var v=d&&d.added;if(!v)return 0;if(typeof v==='number')return v;if(v&&typeof v.toMillis==='function')return v.toMillis();var n=new Date(v).getTime();return Number.isNaN(n)?0:n;}
 function gf(id){return F.find(f=>f.id===id);}
 function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
 function momsOf(fid){return M.filter(m=>m.folderId===fid);}
@@ -436,10 +437,13 @@ function applyDocFilter(){
   var q=(document.getElementById('doc-search')||{}).value||'';
   var sort=(document.getElementById('doc-sort')||{}).value||'date';
   var q2=q.toLowerCase();
-  var list=document.querySelector('#ca .dl');if(!list)return;
+  var list=document.querySelector('#ca .doc-items');if(!list)return;
   var cards=Array.from(list.querySelectorAll('.dc'));
   cards.forEach(c=>{var n=(c.querySelector('.dc-name')||{}).textContent||'';c.style.display=(!q2||n.toLowerCase().includes(q2))?'':'none';});
-  if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.dc-name')||{}).textContent||'').localeCompare((b.querySelector('.dc-name')||{}).textContent||''));vis.forEach(c=>list.appendChild(c));}
+  cards.sort((a,b)=>sort==='name'
+    ?((a.querySelector('.dc-name')||{}).textContent||'').localeCompare((b.querySelector('.dc-name')||{}).textContent||'')
+    :Number(b.dataset.added||0)-Number(a.dataset.added||0));
+  cards.forEach(c=>list.appendChild(c));
 }
 // HOME
 function homeHTML(){
@@ -657,7 +661,7 @@ function docCardHTML(d){
   var roBadge=ro?'<span style="font-size:10px;font-weight:600;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle">Read Only</span>':'';
   var roToggleBtn=isAdmin?'<button class="btn sm" data-togglero="'+d.id+'" style="font-size:11px;padding:3px 8px;'+(ro?'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE':'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB')+'">'+(ro?'🔒 Read Only':'🔓 Set Read Only')+'</button>':'';
   var canEdit=isAdmin||!ro;
-  return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" '+clickAttr+'>'+
+  return '<div class="dc'+(lkd?' lkd':'')+(clickable?' dc-clickable':'')+'" data-added="'+docAddedValue(d)+'" '+clickAttr+'>'+
     icBox+
     '<div class="dc-inf"><div class="dc-name">'+esc(d.name)+(lkd?(ulkd?' &#128275;':' &#128274;'):'')+roBadge+'</div><div class="dc-meta">'+(show&&d.note?esc(d.note):(!show?'Password protected':''))+'</div></div>'+
     '<div class="dc-right">'+
@@ -682,14 +686,14 @@ function docListHTML(ds){
   var f=cf();if(!f)return'';
   if(DOC_FOLDER){
     var df=DF.find(v=>v.id===DOC_FOLDER);
-    var dfdocs=docsOfDF(DOC_FOLDER);
+    var dfdocs=docsOfDF(DOC_FOLDER).slice().sort((a,b)=>docAddedValue(b)-docAddedValue(a));
     var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="docfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(df?df.name:'Folder')+'</span><div style="flex:1"></div><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
     h+='<div class="search-bar"><input type="text" id="doc-search" placeholder="&#128269; Search documents..."><select id="doc-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
     if(!dfdocs.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents in this folder</div><div class="empty-s">Add documents or move existing ones here</div></div>';
-    return h+'<div class="dl">'+dfdocs.map(d=>docCardHTML(d)).join('')+'</div>';
+    return h+'<div class="dl doc-items">'+dfdocs.map(d=>docCardHTML(d)).join('')+'</div>';
   }
   var dfolders=docFoldersOf(f.id);
-  var ungrp=docsUngrp(f.id);
+  var ungrp=docsUngrp(f.id).slice().sort((a,b)=>docAddedValue(b)-docAddedValue(a));
   var iSrchD='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   var iFldrD='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
   var iChevD='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
@@ -722,7 +726,7 @@ function docListHTML(ds){
   if(!dfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents yet</div><div class="empty-s">Upload files, add links, or create doc folders</div></div>';
   if(ungrp.length){
     content+='<div class="df-section-lbl">Ungrouped</div>';
-    content+='<div class="dl">'+ungrp.map(d=>docCardHTML(d)).join('')+'</div>';
+    content+='<div class="dl doc-items">'+ungrp.map(d=>docCardHTML(d)).join('')+'</div>';
   }
   return h+content;
 }
