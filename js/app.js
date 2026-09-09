@@ -274,7 +274,12 @@ function showCtx(e,fid){
 }
 function closeCtx(){var m=document.getElementById('CTX');if(m)m.remove();}
 document.addEventListener('click',closeCtx);
-function render(){renderTree();renderBC();renderTB();renderMain();history.replaceState(null,'',buildHash());}
+function render(){renderTree();renderBC();renderTB();renderMain();renderNavState();history.replaceState(null,'',buildHash());}
+function renderNavState(){
+  var home=document.getElementById('nav-home'),trash=document.getElementById('sb-trash-btn');
+  if(home)home.classList.toggle('active',VIEW==='home');
+  if(trash)trash.classList.toggle('active',VIEW==='trash');
+}
 function renderTree(){var el=document.getElementById('tree');el.innerHTML='';kids(null).filter(f=>canSeeFolder(f.id)).forEach(f=>buildNode(el,f,0));}
 function buildNode(par,f,d){
   var ch=kids(f.id).filter(c=>canSeeFolder(c.id)),act=PATH[PATH.length-1]===f.id,exp=EXP.has(f.id);
@@ -337,21 +342,20 @@ function trashHTML(){
   var rows=all.map(it=>{
     var daysLeft=Math.max(0,7-Math.floor((now-(it.deletedAt||now))/_WEEK*7));
     var age=it.deletedAt?new Date(it.deletedAt).toLocaleDateString():'?';
-    return '<div class="trash-row" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F3F4F6;">'+
+    return '<div class="trash-row">'+
       '<span style="font-size:18px">'+it.icon+'</span>'+
-      '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.label)+'</div>'+
-      '<div style="font-size:11px;color:#9CA3AF">'+it.type+' · Deleted '+age+' · Auto-deletes in '+daysLeft+' day'+(daysLeft!==1?'s':'')+'</div></div>'+
+      '<div class="trash-copy"><div class="trash-name">'+esc(it.label)+'</div>'+
+      '<div class="trash-meta">'+it.type+' · Deleted '+age+' · Auto-deletes in '+daysLeft+' day'+(daysLeft!==1?'s':'')+'</div></div>'+
       '<button class="btn se sm" data-restore-col="'+it.col+'" data-restore-id="'+it.id+'" style="white-space:nowrap">Restore</button>'+
       '<button class="btn da sm" data-perm-col="'+it.col+'" data-perm-id="'+it.id+'" style="white-space:nowrap">Delete</button>'+
     '</div>';
   }).join('');
-  return '<div style="max-width:720px;margin:0 auto;padding:32px 24px">'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'+
-    '<div><div style="font-size:20px;font-weight:700;color:#111827">🗑 Trash</div>'+
-    '<div style="font-size:13px;color:#9CA3AF;margin-top:2px">Items are auto-deleted after 7 days</div></div>'+
+  return '<div class="trash-view">'+
+    '<div class="trash-head"><div><div class="resource-title">Trash</div>'+
+    '<div class="resource-subtitle">Items are permanently removed after 7 days</div></div>'+
     (all.length?'<button class="btn da sm" id="clear-trash-btn">Clear Trash</button>':'')+'</div>'+
-    (all.length?'<div style="border:1px solid #E5E7EB;border-radius:12px;overflow:hidden;background:#fff">'+rows+'</div>':
-    '<div style="text-align:center;padding:60px 20px;color:#9CA3AF;font-size:15px">Trash is empty</div>')+'</div>';
+    (all.length?'<div class="trash-list">'+rows+'</div>':
+    '<div class="empty"><div class="empty-ic">&#128465;</div><div class="empty-t">Trash is empty</div><div class="empty-s">Deleted items will appear here for 7 days.</div></div>')+'</div>';
 }
 function bindTrashEvents(){
   var el=document.getElementById('ca');
@@ -396,8 +400,8 @@ function bindMainEvents(){
   ca.querySelectorAll('[data-starmom]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var m=M.find(v=>v.id===el.dataset.starmom);if(m){m.starred=!m.starred;sM(m);}}));
   ca.querySelectorAll('[data-stardoc]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();var d=D.find(v=>v.id===el.dataset.stardoc);if(d){d.starred=!d.starred;sD(d);}}));
   ca.querySelectorAll('.ro-menu').forEach(function(el){el.addEventListener('click',function(e){e.stopPropagation();});});
-  var nb=ca.querySelector('[data-newmom]');if(nb)nb.addEventListener('click',newMom);
-  var ab=ca.querySelector('[data-adddoc]');if(ab)ab.addEventListener('click',openAddDoc);
+  ca.querySelectorAll('[data-newmom]').forEach(el=>el.addEventListener('click',newMom));
+  ca.querySelectorAll('[data-adddoc]').forEach(el=>el.addEventListener('click',openAddDoc));
   ca.querySelectorAll('[data-newsub]').forEach(sb=>sb.addEventListener('click',e=>{e.stopPropagation();openNewFolder(sb.dataset.newsub);}));
   var afc=ca.querySelector('[data-addfolder]');if(afc)afc.addEventListener('click',()=>openNewFolder(null));
   var fb=ca.querySelector('#folder-back');if(fb)fb.addEventListener('click',()=>{var f=cf();if(f&&f.parent){var par=gf(f.parent);if(par)goTo(pathTo(par.id));else goHome();}else goHome();});
@@ -423,6 +427,7 @@ function applySubFilter(){
   var cards=Array.from(list.querySelectorAll('.fc'));
   cards.forEach(c=>{var t=(c.querySelector('.fc-name')||{}).textContent||'';c.style.display=(!q2||t.toLowerCase().includes(q2))?'':'none';});
   if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.fc-name')||{}).textContent||'').localeCompare((b.querySelector('.fc-name')||{}).textContent||''));var addC=list.querySelector('.add-c');vis.forEach(c=>list.insertBefore(c,addC||null));}
+  updateFilterEmpty(list,cards,q,'subfolders');
 }
 function applyMomFilter(){
   var q=(document.getElementById('mom-search')||{}).value||'';
@@ -432,6 +437,7 @@ function applyMomFilter(){
   var cards=Array.from(list.querySelectorAll('.mc'));
   cards.forEach(c=>{var t=(c.querySelector('.mc-title')||{}).textContent||'';var p=(c.querySelector('.mc-prev')||{}).textContent||'';c.style.display=(!q2||(t+p).toLowerCase().includes(q2))?'':'none';});
   if(sort==='name'){var vis=cards.filter(c=>c.style.display!=='none');vis.sort((a,b)=>((a.querySelector('.mc-title')||{}).textContent||'').localeCompare((b.querySelector('.mc-title')||{}).textContent||''));vis.forEach(c=>list.appendChild(c));}
+  updateFilterEmpty(list,cards,q,'documents');
 }
 function applyDocFilter(){
   var q=(document.getElementById('doc-search')||{}).value||'';
@@ -444,6 +450,11 @@ function applyDocFilter(){
     ?((a.querySelector('.dc-name')||{}).textContent||'').localeCompare((b.querySelector('.dc-name')||{}).textContent||'')
     :Number(b.dataset.added||0)-Number(a.dataset.added||0));
   cards.forEach(c=>list.appendChild(c));
+  updateFilterEmpty(list,cards,q,'files');
+}
+function updateFilterEmpty(list,cards,q,label){
+  var old=list.parentElement.querySelector('.filter-empty');if(old)old.remove();
+  if(q&&cards.every(c=>c.style.display==='none')){var el=document.createElement('div');el.className='filter-empty';el.textContent='No '+label+' match “'+q+'”.';list.insertAdjacentElement('afterend',el);}
 }
 // HOME
 function homeHTML(){
@@ -476,16 +487,15 @@ function homeHTML(){
         '<div class="ro-info"><div class="ro-name">'+esc(item.name)+'</div>'+(path?'<div class="ro-path">'+esc(path)+'</div>':'')+'</div>'+
         '<span class="ro-badge" style="'+badgeStyle+'">'+badgeText+'</span>'+
         '<span class="ro-time">'+fmtDate(item.date)+'</span>'+
-        '<button class="ro-menu">&#8942;</button>'+
       '</div>';
     }).join('');
     recentHTML='<div style="margin-top:32px">'+
-      '<div class="home-sec-head"><span class="sec-l">Recently Opened</span><button class="home-view-all">View all</button></div>'+
+      '<div class="home-sec-head"><span class="sec-l">Recently added</span></div>'+
       '<div class="ro-list">'+rows+'</div></div>';
   }
   return '<div class="home">'+
     '<div class="h-greet">My workspace</div>'+
-    '<div><div class="home-sec-head"><span class="sec-l">Active Folders</span><button class="home-view-all">View all</button></div>'+
+    '<div><div class="home-sec-head"><span class="sec-l">Active folders</span></div>'+
     '<div class="fg">'+r.map(function(f){return fcard(f,true);}).join('')+(CURR_USER_ROLE==='admin'?'<div class="add-c" data-addfolder><div class="add-c-plus">+</div><div class="add-c-lbl">New folder</div></div>':'')+'</div></div>'+
     recentHTML+
   '</div>';
@@ -518,16 +528,16 @@ function folderHTML(){
   var iTrash='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
   return '<div class="fv">'+
-    '<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;margin-bottom:20px">'+
-      '<button class="back-btn" id="folder-back" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;color:#374151;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap">'+iBack+' Back</button>'+
-      '<div style="width:40px;height:40px;border-radius:8px;background:'+ibg+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+(f.icon||'📁')+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:15px;font-weight:500;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.name)+(f.pw?' <span style="font-size:14px;opacity:.6">&#128274;</span>':'')+'</div>'+
-        '<div style="font-size:11px;color:#9CA3AF;margin-top:3px">Created '+fmtDate(f.created)+' &nbsp;&middot;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ms.length+' Document'+(ms.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ds.length+' File'+(ds.length!==1?'s':'')+'</div>'+
+    '<div class="folder-summary">'+
+      '<button class="back-btn" id="folder-back">'+iBack+' Back</button>'+
+      '<div class="folder-summary-icon" style="background:'+ibg+'">'+(f.icon||'📁')+'</div>'+
+      '<div class="folder-summary-copy">'+
+        '<div class="folder-summary-title">'+esc(f.name)+(f.pw?' <span style="font-size:14px;opacity:.6">&#128274;</span>':'')+'</div>'+
+        '<div class="folder-summary-meta">Created '+fmtDate(f.created)+' &nbsp;&middot;&nbsp; '+s.length+' subfolder'+(s.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ms.length+' document'+(ms.length!==1?'s':'')+' &nbsp;&middot;&nbsp; '+ds.length+' file'+(ds.length!==1?'s':'')+'</div>'+
       '</div>'+
       (CURR_USER_ROLE==='admin'?'<button style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#FEF2F2;border:1px solid #FECACA;color:#EF4444;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap" data-delfolder="'+f.id+'">'+iTrash+' Delete</button>':'')+
     '</div>'+
-    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Documents'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
+    '<div class="tab-bar"><div class="tab'+(t==='sub'?' on':'')+'" data-tab="sub">'+iFldr+'Subfolders'+(s.length?'<span class="chip">'+s.length+'</span>':'')+'</div><div class="tab'+(t==='mom'?' on':'')+'" data-tab="mom">'+iDoc+'Meeting notes'+(ms.length?'<span class="chip">'+ms.length+'</span>':'')+'</div><div class="tab'+(t==='doc'?' on':'')+'" data-tab="doc">'+iFldr+'Files'+(ds.length?'<span class="chip">'+ds.length+'</span>':'')+'</div><div class="tab'+(t==='star'?' on':'')+'" data-tab="star">'+iStar+'Starred'+(starCount?'<span class="chip">'+starCount+'</span>':'')+'</div></div>'+
     (t==='sub'?subHTML(s,f.id):'')+(t==='mom'?momListHTML(ms):'')+(t==='doc'?docListHTML(ds):'')+(t==='star'?starredTabHTML(f.id):'');
 }
 function subHTML(s,fid){
@@ -538,14 +548,10 @@ function subHTML(s,fid){
   var h='<div class="sub-toolbar">'+
     '<div class="sub-search">'+iSrch+'<input type="text" id="sub-search" placeholder="Search subfolders..."></div>'+
     '<select id="sub-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select>'+
-    '<div style="display:flex;gap:4px">'+
-      '<button class="sub-view-btn on">'+iGrid+'</button>'+
-      '<button class="sub-view-btn">'+iList+'</button>'+
-    '</div>'+
     '<div style="flex:1"></div>'+
     (CURR_USER_ROLE==='admin'?'<button class="btn dk" style="display:flex;align-items:center;gap:6px;padding:8px 14px" data-newsub="'+fid+'">'+iFldr+' New subfolder</button>':'')+
   '</div>';
-  if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Break this space into sections</div></div>';
+  if(!s.length)return h+'<div class="empty"><div class="empty-ic">&#128193;</div><div class="empty-t">No subfolders yet</div><div class="empty-s">Organize this workspace into focused sections.</div>'+(CURR_USER_ROLE==='admin'?'<button class="btn pr" data-newsub="'+fid+'">Create subfolder</button>':'')+'</div>';
   var addCard=CURR_USER_ROLE==='admin'?'<div class="add-c" data-newsub="'+fid+'" style="min-height:120px"><div class="add-c-plus" style="width:36px;height:36px;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:1;color:#6B7280">+</div><div class="add-c-lbl">New folder</div></div>':'';
   return h+'<div class="sg">'+s.map(f=>fcard(f,false)).join('')+addCard+'</div>';
 }
@@ -583,10 +589,10 @@ function momListHTML(ms){
   if(MOM_FOLDER){
     var mf=MF.find(v=>v.id===MOM_FOLDER);
     var mfmoms=momsOfMF(MOM_FOLDER).sort((a,b)=>b.date-a.date);
-    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="momfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(mf?mf.name:'Folder')+'</span><div style="flex:1"></div><button class="btn se sm" data-selmode="mom">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button><button class="btn pr sm" data-newmom>+ New MoM</button></div>';
+    var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="momfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(mf?mf.name:'Folder')+'</span><div style="flex:1"></div><button class="btn se sm" data-selmode="mom">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button><button class="btn pr sm" data-newmom>+ New note</button></div>';
     h+='<div class="search-bar"><input type="text" id="mom-search" placeholder="&#128269; Search MoMs..."><select id="mom-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
     h+=selBarHTML('mom','item');
-    if(!mfmoms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No MoMs in this folder</div><div class="empty-s">Create a new MoM or move existing ones here</div></div>';
+    if(!mfmoms.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes in this folder</div><div class="empty-s">Create a note or move an existing one here.</div><button class="btn pr" data-newmom>Create note</button></div>';
     return h+'<div class="ml">'+mfmoms.map(m=>momCardHTML(m)).join('')+'</div>';
   }
   var mfolders=momFoldersOf(f.id);
@@ -594,15 +600,15 @@ function momListHTML(ms){
   var iSrchM='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   var iFldrM='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
   var iChevM='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
-  var h='<div style="margin-bottom:20px"><div style="font-size:22px;font-weight:700;color:#111827;margin-bottom:4px">Documents</div><div style="font-size:13px;color:#9CA3AF">Manage and organize your project files and assets.</div></div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">'+
-    '<div style="display:flex;align-items:center;gap:8px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:7px 12px;flex:1;min-width:160px">'+iSrchM+'<input type="text" id="mom-search" placeholder="Search documents..." style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#111827;outline:none;flex:1;min-width:0"></div>'+
-    '<div style="display:flex;align-items:center;gap:6px;border:1px solid #E5E7EB;border-radius:8px;padding:7px 12px;background:#fff;font-size:13px;color:#374151;flex-shrink:0">'+
-      '<select id="mom-sort" style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:4px"><option value="date">Newest first</option><option value="name">Name A-Z</option></select>'+iChevM+
+  var h='<div class="resource-head"><div class="resource-title">Meeting notes</div><div class="resource-subtitle">Capture decisions, context, and follow-ups in one place.</div></div>';
+  h+='<div class="resource-toolbar">'+
+    '<div class="resource-search">'+iSrchM+'<input type="text" id="mom-search" placeholder="Search meeting notes..."></div>'+
+    '<div class="resource-sort">'+
+      '<select id="mom-sort" aria-label="Sort meeting notes"><option value="date">Newest first</option><option value="name">Name A–Z</option></select>'+iChevM+
     '</div>'+
-    '<button class="btn se" data-newmomfolder="'+f.id+'" style="display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:13px;padding:7px 12px">'+iFldrM+' New document folder</button>'+
-    '<button class="btn se" data-selmode="mom" style="flex-shrink:0;font-size:13px;padding:7px 12px">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button>'+
-    '<button class="btn dk" data-newmom style="flex-shrink:0;font-size:13px;padding:7px 12px">+ Add Document</button>'+
+    '<button class="btn se" data-newmomfolder="'+f.id+'">'+iFldrM+' New notes folder</button>'+
+    '<button class="btn se" data-selmode="mom">'+(SEL_MODE&&SEL_TYPE==='mom'?'Done':'&#9745; Select')+'</button>'+
+    '<button class="btn dk" data-newmom>+ New note</button>'+
   '</div>';
   h+=selBarHTML('mom','item');
   var content='';
@@ -623,7 +629,7 @@ function momListHTML(ms){
       '</div>';
     }).join('')+'</div>';
   }
-  if(!mfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Log your first MoM or create a MoM folder</div></div>';
+  if(!mfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128221;</div><div class="empty-t">No meeting notes yet</div><div class="empty-s">Capture your first meeting’s decisions and follow-ups.</div><button class="btn pr" data-newmom>Create note</button></div>';
   if(ungrp.length){
     content+='<div class="df-section-lbl">Ungrouped</div>';
     content+='<div class="ml">'+ungrp.map(m=>momCardHTML(m)).join('')+'</div>';
@@ -689,7 +695,7 @@ function docListHTML(ds){
     var dfdocs=docsOfDF(DOC_FOLDER).slice().sort((a,b)=>docAddedValue(b)-docAddedValue(a));
     var h='<div class="tab-actions" style="display:flex;gap:8px;align-items:center"><button class="btn se sm" id="docfolder-back">&#8592; Back</button><span style="font-size:13px;font-weight:600">&#128193; '+esc(df?df.name:'Folder')+'</span><div style="flex:1"></div><button class="btn pr sm" data-adddoc>+ Add Document</button></div>';
     h+='<div class="search-bar"><input type="text" id="doc-search" placeholder="&#128269; Search documents..."><select id="doc-sort"><option value="date">Newest first</option><option value="name">Name A-Z</option></select></div>';
-    if(!dfdocs.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents in this folder</div><div class="empty-s">Add documents or move existing ones here</div></div>';
+    if(!dfdocs.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No files in this folder</div><div class="empty-s">Add a file or move an existing one here.</div><button class="btn pr" data-adddoc>Add file</button></div>';
     return h+'<div class="dl doc-items">'+dfdocs.map(d=>docCardHTML(d)).join('')+'</div>';
   }
   var dfolders=docFoldersOf(f.id);
@@ -697,14 +703,14 @@ function docListHTML(ds){
   var iSrchD='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   var iFldrD='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
   var iChevD='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
-  var h='<div style="margin-bottom:20px"><div style="font-size:22px;font-weight:700;color:#111827;margin-bottom:4px">Files</div><div style="font-size:13px;color:#9CA3AF">Upload and manage your documents, images, and assets.</div></div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">'+
-    '<div style="display:flex;align-items:center;gap:8px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:7px 12px;flex:1;min-width:160px">'+iSrchD+'<input type="text" id="doc-search" placeholder="Search files..." style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#111827;outline:none;flex:1;min-width:0"></div>'+
-    '<div style="display:flex;align-items:center;gap:6px;border:1px solid #E5E7EB;border-radius:8px;padding:7px 12px;background:#fff;font-size:13px;color:#374151;flex-shrink:0">'+
-      '<select id="doc-sort" style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#374151;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:4px"><option value="date">Newest first</option><option value="name">Name A-Z</option></select>'+iChevD+
+  var h='<div class="resource-head"><div class="resource-title">Files</div><div class="resource-subtitle">Upload and manage documents, images, links, and assets.</div></div>';
+  h+='<div class="resource-toolbar">'+
+    '<div class="resource-search">'+iSrchD+'<input type="text" id="doc-search" placeholder="Search files..."></div>'+
+    '<div class="resource-sort">'+
+      '<select id="doc-sort" aria-label="Sort files"><option value="date">Newest first</option><option value="name">Name A–Z</option></select>'+iChevD+
     '</div>'+
-    '<button class="btn se" data-newdocfolder="'+f.id+'" style="display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:13px;padding:7px 12px">'+iFldrD+' New file folder</button>'+
-    '<button class="btn dk" data-adddoc style="flex-shrink:0;font-size:13px;padding:7px 12px">+ Add File</button>'+
+    '<button class="btn se" data-newdocfolder="'+f.id+'">'+iFldrD+' New file folder</button>'+
+    '<button class="btn dk" data-adddoc>+ Add file</button>'+
   '</div>';
   var content='';
   var iFldrSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>';
@@ -723,7 +729,7 @@ function docListHTML(ds){
         '</div></div></div>';
     }).join('')+'</div>';
   }
-  if(!dfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No documents yet</div><div class="empty-s">Upload files, add links, or create doc folders</div></div>';
+  if(!dfolders.length&&!ungrp.length)return h+'<div class="empty"><div class="empty-ic">&#128206;</div><div class="empty-t">No files yet</div><div class="empty-s">Upload a file or add a link to get started.</div><button class="btn pr" data-adddoc>Add file</button></div>';
   if(ungrp.length){
     content+='<div class="df-section-lbl">Ungrouped</div>';
     content+='<div class="dl doc-items">'+ungrp.map(d=>docCardHTML(d)).join('')+'</div>';
@@ -1490,7 +1496,7 @@ async function doUD(id){var d=D.find(v=>v.id===id),pw=document.getElementById('u
 // LIGHTBOX
 function openLightbox(url,name){var ov=document.createElement('div');ov.className='lb-ov';var img=document.createElement('img');img.src=url;img.alt=name||'';var cls=document.createElement('button');cls.className='lb-close';cls.innerHTML='&#10005;';var nm=document.createElement('div');nm.className='lb-name';nm.textContent=name||'';ov.appendChild(img);ov.appendChild(cls);ov.appendChild(nm);document.body.appendChild(ov);function closeLB(){ov.remove();document.removeEventListener('keydown',onKey);}function onKey(e){if(e.key==='Escape')closeLB();}ov.addEventListener('click',e=>{if(e.target===ov)closeLB();});cls.addEventListener('click',closeLB);document.addEventListener('keydown',onKey);}
 // MODAL
-function modal(html,wide){var r=document.getElementById('MR');r.innerHTML='<div class="ov" id="OV"><div class="modal'+(wide?' w':'')+'">'+html+'</div></div>';document.getElementById('OV').addEventListener('click',e=>{if(e.target.id==='OV')closeModal();});setTimeout(()=>{var i=r.querySelector('input[type=text],input[type=password]');if(i)i.focus();},50);}
+function modal(html,wide){var r=document.getElementById('MR');r.innerHTML='<div class="ov" id="OV"><div class="modal'+(wide?' w':'')+'" role="dialog" aria-modal="true">'+html+'</div></div>';document.getElementById('OV').addEventListener('click',e=>{if(e.target.id==='OV')closeModal();});setTimeout(()=>{var i=r.querySelector('input[type=text],input[type=password],input[type=email],select,button');if(i)i.focus();},50);}
 function closeModal(){document.getElementById('MR').innerHTML='';}
 function toast(msg){var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2200);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeCtx();}if((e.metaKey||e.ctrlKey)&&e.key==='s'&&VIEW==='mom'){e.preventDefault();saveMom();}});
@@ -1504,6 +1510,7 @@ var _sbToggle=()=>{var sidebar=document.getElementById('sidebar');_setSidebar(si
 document.getElementById('sb-toggle').addEventListener('click',_sbToggle);
 document.getElementById('sb-close').addEventListener('click',_sbToggle);
 document.getElementById('sb-scrim').addEventListener('click',()=>_setSidebar(false));
+document.getElementById('sidebar').addEventListener('click',e=>{if(window.innerWidth<=700&&e.target.closest('.sb-nav-item,.ti'))setTimeout(()=>_setSidebar(false),0);});
 document.getElementById('sidebar').addEventListener('click',e=>{if(window.innerWidth<=700&&(e.target.closest('.ti')||e.target.closest('.sb-nav-item')))setTimeout(()=>_setSidebar(false),0);});
 document.getElementById('nav-home').addEventListener('click',goHome);
 document.getElementById('nav-search').addEventListener('click',openGlobalSearch);
