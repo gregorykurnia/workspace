@@ -2,7 +2,7 @@ const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-proj
 const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
 firebase.initializeApp(FB);
 const db=firebase.firestore();
-var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false;
+var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false,_remarkOverlay=null,_remarkCleanup=null;
 var TF=[],TM=[],TD=[],TDF=[],TMF=[];
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
 var SHARE_MODE=false,SHARE_FOLDER_ID=null,SHARE_DOC_ID=null,SHARE_MOM_ID=null;
@@ -172,7 +172,8 @@ async function uploadCL(file,onProg){
   });
 }
 function uid(){return '_'+Math.random().toString(36).slice(2,10);}
-function destroyEditor(){if(_autoSaveTimer){clearTimeout(_autoSaveTimer);_autoSaveTimer=null;}if(_momListener){_momListener();_momListener=null;}if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
+function closeRemarkOverlay(){if(_remarkOverlay){if(typeof _remarkOverlay._flush==='function')_remarkOverlay._flush();if(_remarkOverlay._cell)_remarkOverlay._cell.classList.remove('remark-open');if(_remarkOverlay.parentNode)_remarkOverlay.parentNode.removeChild(_remarkOverlay);_remarkOverlay=null;}}
+function destroyEditor(){if(_autoSaveTimer){clearTimeout(_autoSaveTimer);_autoSaveTimer=null;}closeRemarkOverlay();if(_remarkCleanup){_remarkCleanup();_remarkCleanup=null;}if(_momListener){_momListener();_momListener=null;}if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
 function setSaveStatus(s){var el=document.getElementById('autosave-status');if(!el)return;if(s==='saving'){el.textContent='Saving…';el.style.color='#9CA3AF';}else if(s==='saved'){el.textContent='Saved';el.style.color='#10B981';setTimeout(function(){if(el)el.textContent='';},2000);}}
 function _tovBtn(bg,cl){return'background:'+bg+';color:'+cl+';border:none;border-radius:7px;padding:6px 11px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:32px;'}
 function _getTableCellPos(){
@@ -244,6 +245,45 @@ function momDeltaToHTML(content){
   return content;
 }
 function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);if(d&&Array.isArray(d.ops)){var t=d.ops.map(o=>typeof o.insert==='string'?o.insert:'').join('').replace(/\n/g,' ').trim();return esc(t.substring(0,140)+(t.length>140?'...':''));}}catch(e){}var tmp=document.createElement('div');tmp.innerHTML=c;var t2=(tmp.textContent||tmp.innerText||'').replace(/\s+/g,' ').trim();return esc(t2.substring(0,140)+(t2.length>140?'...':''));}
+function isProspectJournal(m){return!!m&&String(m.title||'').trim().toLowerCase()==='clients - prospect journal';}
+function remarkHeaderText(cell){return String(cell&&cell.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();}
+function remarkColumnIndex(table){
+  var row=table&&table.querySelector('tr');if(!row)return-1;
+  var cells=Array.from(row.children);
+  for(var i=0;i<cells.length;i++)if(remarkHeaderText(cells[i])==='detailed remarks')return i;
+  return-1;
+}
+function addDetailedRemarksColumn(html){
+  if(!html)return{html:html,added:false};
+  var wrap=document.createElement('div');wrap.innerHTML=html;
+  var tables=Array.from(wrap.querySelectorAll('table'));
+  for(var ti=0;ti<tables.length;ti++){
+    var table=tables[ti],rows=Array.from(table.querySelectorAll('tr'));
+    if(!rows.length||remarkColumnIndex(table)!==-1)continue;
+    var header=document.createElement('th');header.textContent='Detailed Remarks';rows[0].appendChild(header);
+    for(var ri=1;ri<rows.length;ri++){var cell=document.createElement('td');cell.innerHTML='<p></p>';rows[ri].appendChild(cell);}
+    return{html:wrap.innerHTML,added:true};
+  }
+  return{html:html,added:false};
+}
+function decorateReadOnlyRemarks(html){
+  if(!html)return html;
+  var wrap=document.createElement('div');wrap.innerHTML=html;
+  Array.from(wrap.querySelectorAll('table')).forEach(function(table){
+    var col=remarkColumnIndex(table);if(col<0)return;
+    Array.from(table.querySelectorAll('tr')).forEach(function(row,ri){
+      if(ri===0||!row.children[col])return;
+      var cell=row.children[col];cell.classList.add('remark-cell','remark-cell-readonly');
+      var copy=document.createElement('div');copy.className='remark-cell-copy';
+      while(cell.firstChild)copy.appendChild(cell.firstChild);
+      if(!copy.textContent.trim())copy.innerHTML='<span class="remark-empty">No remarks yet.</span>';
+      cell.appendChild(copy);
+      var toggle=document.createElement('button');toggle.type='button';toggle.className='remark-cell-toggle';toggle.textContent='Expand';toggle.setAttribute('aria-expanded','false');
+      cell.appendChild(toggle);
+    });
+  });
+  return wrap.innerHTML;
+}
 async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
 function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
@@ -875,7 +915,7 @@ function momEdHTML(){
       '<span class="tt-tm-sep"></span>'+
       '<button type="button" class="tt-tm-btn danger" data-tc="delTable">✕ Table</button>'+
     '</div>'+
-    '<div style="position:relative;margin-bottom:20px"><div id="tiptap-editor"></div><div id="tt-tov" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div></div>'+
+    '<div style="position:relative;margin-bottom:20px"><div id="tiptap-editor"></div><div id="tt-tov" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div><div id="tt-remark-tov" style="position:absolute;inset:0;pointer-events:none;z-index:6"></div></div>'+
     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;border-top:1px solid #F3F4F6;padding-top:16px;margin-top:4px">'+
       '<button class="btn dk" id="mom-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>'+
       '<span id="autosave-status" style="font-size:12px;margin-left:6px;align-self:center;"></span>'+
@@ -891,7 +931,7 @@ function momReadOnlyHTML(){
   var m=EMOM;if(!m)return'';
   var fld=gf(m.folderId);
   var iBack='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
-  var body=m.content||'<p style="color:#9CA3AF">No content.</p>';
+  var body=m.content?decorateReadOnlyRemarks(m.content):'<p style="color:#9CA3AF">No content.</p>';
   return '<div class="me">'+
     '<div class="me-top">'+
       '<button class="back-btn" id="mom-ro-back">'+iBack+' Back</button>'+
@@ -904,7 +944,7 @@ function momReadOnlyHTML(){
     '<div style="font-size:12px;color:#9CA3AF;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #F3F4F6">'+
       (fld?'📁 '+esc(fld.name)+' · ':'')+(m.date?'📅 '+fmtDate(m.date):'')+(m.tags&&m.tags.length?' · 🏷 '+m.tags.map(t=>esc(t)).join(', '):'')+
     '</div>'+
-    '<div class="tiptap" style="font-size:14px;line-height:1.75;color:#1F2937;pointer-events:none">'+body+'</div>'+
+    '<div class="tiptap" style="font-size:14px;line-height:1.75;color:#1F2937;pointer-events:auto">'+body+'</div>'+
     '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #F3F4F6;display:flex;gap:8px">'+
       '<button class="btn se sm" id="mom-ro-export"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export PDF</button>'+
     '</div>'+
@@ -915,6 +955,15 @@ function bindMomReadOnlyEvents(){
   if(back)back.addEventListener('click',backMom);
   var exp=document.getElementById('mom-ro-export');
   if(exp)exp.addEventListener('click',exportPDF);
+  var content=document.querySelector('.me .tiptap');
+  if(content)content.querySelectorAll('.remark-cell-readonly').forEach(function(cell){
+    cell.addEventListener('click',function(e){
+      e.preventDefault();e.stopPropagation();
+      var open=cell.classList.toggle('remark-open');
+      var btn=cell.querySelector('.remark-cell-toggle');
+      if(btn){btn.textContent=open?'Collapse':'Expand';btn.setAttribute('aria-expanded',open?'true':'false');}
+    });
+  });
 }
 function bindMomEditor(){
   if(!window._TT){setTimeout(bindMomEditor,100);return;}
@@ -937,13 +986,114 @@ function bindMomEditor(){
     return content;
   }
   var initialHTML=EMOM?deltaToHTML(EMOM.content):'';
+  var prospectColumnUpgrade=isProspectJournal(EMOM)?addDetailedRemarksColumn(initialHTML):{html:initialHTML,added:false};
+  initialHTML=prospectColumnUpgrade.html;
+  function remarkCellInfo(target){
+    var cell=target&&target.closest?target.closest('td,th'):null;
+    if(!cell)return null;
+    var table=cell.closest('table'),row=cell.closest('tr'),col=remarkColumnIndex(table);
+    if(!table||!row||col<0||row.children[col]!==cell||row===table.querySelector('tr'))return null;
+    return{cell:cell,table:table,col:col};
+  }
+  function remarkCellPosition(cell){
+    if(!_editor||!cell)return null;
+    var offsets=[0,1];
+    for(var i=0;i<offsets.length;i++){
+      try{
+        var raw=_editor.view.posAtDOM(cell,offsets[i]),resolved=_editor.state.doc.resolve(raw);
+        for(var depth=resolved.depth;depth>0;depth--){
+          var node=resolved.node(depth);
+          if(node.type.name==='tableCell'||node.type.name==='tableHeader')return resolved.before(depth);
+        }
+      }catch(e){}
+    }
+    return null;
+  }
+  function remarkCellText(cell){
+    if(!cell)return'';
+    var text=cell.innerText||cell.textContent||'';
+    return String(text).replace(/\u00a0/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function remarkCellContent(text){
+    var schema=_editor.schema,lines=String(text||'').replace(/\r\n?/g,'\n').split('\n');
+    return lines.map(function(line){return schema.nodes.paragraph.create(null,line?schema.text(line):null);});
+  }
+  function setRemarkCellText(pos,text){
+    if(!_editor||pos==null)return false;
+    var node=_editor.state.doc.nodeAt(pos);
+    if(!node||(node.type.name!=='tableCell'&&node.type.name!=='tableHeader'))return false;
+    var replacement=node.type.create(node.attrs,remarkCellContent(text));
+    _editor.view.dispatch(_editor.state.tr.replaceWith(pos,pos+node.nodeSize,replacement));
+    return true;
+  }
+  function decorateEditableRemarks(){
+    var root=document.querySelector('#tiptap-editor .tiptap');if(!root)return;
+    Array.from(root.querySelectorAll('table')).forEach(function(table){
+      var col=remarkColumnIndex(table);if(col<0)return;
+      Array.from(table.querySelectorAll('tr')).forEach(function(row,ri){
+        if(ri===0||!row.children[col])return;
+        row.children[col].classList.add('remark-cell','remark-cell-editable');
+        row.children[col].setAttribute('title','Click to expand Detailed Remarks');
+      });
+    });
+  }
+  function positionRemarkPanel(panel,cell){
+    var host=document.getElementById('tt-remark-tov');if(!host||!cell||!cell.isConnected)return;
+    var hr=host.getBoundingClientRect(),cr=cell.getBoundingClientRect();
+    var width=Math.min(440,Math.max(260,cr.width)),left=cr.left-hr.left;
+    if(hr.width<=520){width=Math.max(0,hr.width-16);left=8;}
+    else if(left+width>hr.width-8)left=Math.max(8,hr.width-width-8);
+    panel.style.top=Math.max(8,cr.bottom-hr.top+8)+'px';panel.style.left=left+'px';panel.style.width=width+'px';
+  }
+  function openRemarkEditor(cell){
+    var pos=remarkCellPosition(cell);if(pos==null)return;
+    closeRemarkOverlay();
+    var host=document.getElementById('tt-remark-tov');if(!host)return;
+    var panel=document.createElement('div');panel.className='tt-remark-popover';
+    var head=document.createElement('div');head.className='tt-remark-head';
+    var title=document.createElement('div');title.className='tt-remark-title';title.textContent='Detailed Remarks';
+    var close=document.createElement('button');close.type='button';close.className='tt-remark-close';close.setAttribute('aria-label','Close Detailed Remarks');close.textContent='×';
+    head.appendChild(title);head.appendChild(close);
+    var sub=document.createElement('div');sub.className='tt-remark-sub';sub.textContent='Add as much context as you need. This saves automatically.';
+    var textarea=document.createElement('textarea');textarea.className='tt-remark-input';textarea.rows=9;textarea.placeholder='Write detailed remarks, context, next steps, or anything else…';textarea.value=remarkCellText(cell);
+    var foot=document.createElement('div');foot.className='tt-remark-foot';
+    var status=document.createElement('span');status.className='tt-remark-status';status.textContent='Autosaves as you type';
+    var done=document.createElement('button');done.type='button';done.className='btn pr sm';done.textContent='Done';
+    foot.appendChild(status);foot.appendChild(done);
+    panel.appendChild(head);panel.appendChild(sub);panel.appendChild(textarea);panel.appendChild(foot);host.appendChild(panel);
+    positionRemarkPanel(panel,cell);
+    cell.classList.add('remark-open');
+    var state={timer:null,last:textarea.value};
+    function flush(){
+      if(state.timer){clearTimeout(state.timer);state.timer=null;}
+      if(textarea.value===state.last)return;
+      if(setRemarkCellText(pos,textarea.value)){state.last=textarea.value;status.textContent='Saved';}
+    }
+    panel._flush=flush;panel._cell=cell;_remarkOverlay=panel;
+    textarea.addEventListener('input',function(){
+      status.textContent='Saving…';
+      clearTimeout(state.timer);state.timer=setTimeout(flush,350);
+    });
+    textarea.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeRemarkOverlay();}});
+    close.addEventListener('click',closeRemarkOverlay);done.addEventListener('click',closeRemarkOverlay);
+    textarea.focus();textarea.setSelectionRange(textarea.value.length,textarea.value.length);
+    positionRemarkPanel(panel,cell);
+  }
+  var editorHost=document.getElementById('tiptap-editor');
+  function onRemarkClick(e){var info=remarkCellInfo(e.target);if(!info)return;e.preventDefault();e.stopPropagation();openRemarkEditor(info.cell);}
+  if(editorHost)editorHost.addEventListener('click',onRemarkClick);
+  function onRemarkOutside(e){if(_remarkOverlay&&!_remarkOverlay.contains(e.target))closeRemarkOverlay();}
+  document.addEventListener('mousedown',onRemarkOutside,true);
+  _remarkCleanup=function(){if(editorHost)editorHost.removeEventListener('click',onRemarkClick);document.removeEventListener('mousedown',onRemarkOutside,true);};
   _editor=new TT.Editor({
     element:document.getElementById('tiptap-editor'),
     extensions:[TT.StarterKit,TT.Table.configure({resizable:true}),TT.TableRow,TT.TableHeader,TT.TableCell,TT.Underline,TT.Link.configure({openOnClick:false}),TT.TextStyle,TT.Color,TT.Highlight.configure({multicolor:true}),TT.FontFamily,TT.TextAlign.configure({types:['heading','paragraph']}),TT.FontSize,TT.ResizableImage.configure({inline:true,allowBase64:true})],
     content:initialHTML,
     editorProps:{attributes:{class:'tiptap',spellcheck:'true'}},
-    onUpdate:function(){if(_remoteUpdate)return;if(EMOM&&_editor)EMOM.content=_editor.getHTML();clearTimeout(_autoSaveTimer);setSaveStatus('saving');_autoSaveTimer=setTimeout(function(){if(EMOM&&_editor){collectMom();sM(EMOM);setSaveStatus('saved');}},1500);}
+    onUpdate:function(){if(_remoteUpdate)return;if(EMOM&&_editor)EMOM.content=_editor.getHTML();setTimeout(decorateEditableRemarks,0);clearTimeout(_autoSaveTimer);setSaveStatus('saving');_autoSaveTimer=setTimeout(function(){if(EMOM&&_editor){collectMom();sM(EMOM);setSaveStatus('saved');}},1500);}
   });
+  decorateEditableRemarks();
+  if(prospectColumnUpgrade.added&&EMOM){EMOM.content=_editor.getHTML();sM(EMOM);}
   function updateTB(){
     if(!_editor)return;
     document.querySelectorAll('#tt-toolbar .tt-btn[data-cmd]').forEach(function(b){
@@ -1073,6 +1223,7 @@ function bindMomEditor(){
         try{_editor.commands.setTextSelection(sel);}catch(e){}
         if(hadFocus)_editor.commands.focus();
         _remoteUpdate=false;
+        setTimeout(decorateEditableRemarks,0);
         setSaveStatus('saved');
       }
     });
