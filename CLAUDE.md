@@ -1,4 +1,4 @@
-# Greg's Workspace App — Claude Code Instructions
+# Workbench App — Claude Code Instructions
 
 ## Auto-push rule
 After EVERY change, automatically run:

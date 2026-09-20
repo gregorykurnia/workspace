@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'workbase-static-v2';
-const RUNTIME_CACHE = 'workbase-runtime-v1';
+const STATIC_CACHE = 'workbench-static-v3';
+const RUNTIME_CACHE = 'workbench-runtime-v2';
 
 const APP_SHELL = [
   './',

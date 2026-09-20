@@ -1,6 +1,6 @@
 {
-  "name": "Workbase Workspace",
-  "short_name": "Workbase",
+  "name": "Workbench",
+  "short_name": "Workbench",
   "description": "A mobile-friendly workspace for folders, documents, and meeting notes.",
   "start_url": "./",
   "scope": "./",

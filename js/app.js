@@ -333,7 +333,7 @@ function buildNode(par,f,d){
 }
 function renderBC(){
   var el=document.getElementById('bc');
-  var h='<span class="bc-i" id="bc-home">Workbase</span>';
+  var h='<span class="bc-i" id="bc-home">Workbench</span>';
   if(VIEW==='home'&&!PATH.length){h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">Home</span>';}
   if(VIEW==='trash'){h+='<span class="bc-s">&#8250;</span><span class="bc-i cur">Trash</span>';}
   PATH.forEach((id,i)=>{var f=gf(id);if(!f)return;var cur=i===PATH.length-1&&VIEW!=='mom';h+='<span class="bc-s">&#8250;</span><span class="bc-i'+(cur?' cur':'')+'" data-bcid="'+id+'">'+esc(f.name)+(f.pw?' &#128274;':'')+'</span>';});
@@ -1323,7 +1323,7 @@ function exportPDF(){
       (m.tags&&m.tags.length?' &nbsp;·&nbsp; 🏷 '+m.tags.map(t=>esc(t)).join(', '):'')+
     '</div>'+
     '<div style="font-size:14px;line-height:1.75;color:#1F2937">'+body+'</div>'+
-    '<div style="margin-top:48px;padding-top:16px;border-top:1px solid #E5E7EB;font-size:11px;color:#9CA3AF">Exported from Greg\'s Workspace · '+new Date().toLocaleDateString()+'</div>'+
+    '<div style="margin-top:48px;padding-top:16px;border-top:1px solid #E5E7EB;font-size:11px;color:#9CA3AF">Exported from Workbench · '+new Date().toLocaleDateString()+'</div>'+
   '</div>';
   var el=document.createElement('div');el.innerHTML=html;
   var fname=(m.title||'meeting-notes').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.pdf';

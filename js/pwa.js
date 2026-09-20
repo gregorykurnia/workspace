@@ -6,7 +6,7 @@
           banner = document.createElement('div');
           banner.id = 'sw-update';
           banner.setAttribute('role', 'status');
-          banner.innerHTML = '<span>A new Workbase version is available.</span><button type="button">Refresh</button>';
+          banner.innerHTML = '<span>A new Workbench version is available.</span><button type="button">Refresh</button>';
           document.body.appendChild(banner);
         }
         banner.hidden = false;
@@ -32,7 +32,7 @@
           });
         });
       }).catch(function (error) {
-        console.warn('Workbase offline support is unavailable.', error);
+        console.warn('Workbench offline support is unavailable.', error);
       });
     });
   }

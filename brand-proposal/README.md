@@ -2,7 +2,7 @@
 
 ## Recommendation
 
-Use **Workbench** as the single product name across the browser title, PWA label, sign-in screen, and sidebar. It keeps the practical “work” meaning of the current name but feels more specific and memorable than the split “Workspace” / “Workbase” combination.
+Use **Workbench** as the single product name across the browser title, PWA label, sign-in screen, and sidebar. It keeps the practical “work” meaning of the current name while giving the product one clear, memorable identity.
 
 ## Logo direction
 
