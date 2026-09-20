@@ -6,7 +6,7 @@ Use **Workbench** as the single product name across the browser title, PWA label
 
 ## Logo direction
 
-The proposed mark is a woven **W** made from two rounded strokes. It hints at bringing folders, documents, and meeting notes together, without relying on a generic four-square grid. The deep ink and indigo palette matches the current UI and stays high-contrast at small sizes.
+The proposed mark is the **Dock** icon: three organized work lanes with small accent markers. It hints at folders, documents, and meeting notes having a clear place, without relying on a literal lettermark or a generic four-square grid. The deep ink and indigo palette matches the current UI and stays high-contrast at small sizes.
 
 - `workbench-pwa-icon.svg` — larger rounded-square icon with safe visual padding for a home-screen/PWA icon.
 - `workbench-tab-icon.svg` — compact browser favicon/sidetab version.
