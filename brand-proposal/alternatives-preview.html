@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logo alternatives</title>
+  <style>
+    :root { --ink:#111827; --muted:#667085; --line:#E4E7EC; --soft:#F6F7FB; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:40px; background:var(--soft); color:var(--ink); font:14px/1.5 Inter,ui-sans-serif,system-ui,sans-serif; }
+    main { max-width:1020px; margin:0 auto; }
+    h1 { margin:0; font-size:30px; letter-spacing:-.7px; }
+    .intro { color:var(--muted); max-width:720px; margin:8px 0 28px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:0 2px 5px rgba(16,24,40,.04); }
+    .card h2 { margin:0; font-size:18px; }
+    .card p { margin:5px 0 18px; color:var(--muted); min-height:42px; }
+    .samples { display:flex; align-items:center; gap:24px; min-height:170px; }
+    .home { width:112px; height:112px; border-radius:27px; box-shadow:0 10px 22px rgba(17,24,39,.2); }
+    .tab { width:210px; border:1px solid #D0D5DD; border-radius:9px 9px 0 0; background:#F9FAFB; padding:8px 10px; display:flex; align-items:center; gap:8px; box-shadow:0 5px 12px rgba(16,24,40,.08); }
+    .tab img { width:18px; height:18px; }
+    .tab span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+    .label { color:#98A2B3; text-transform:uppercase; letter-spacing:.12em; font-size:10px; font-weight:700; margin-bottom:4px; }
+    .foot { margin-top:22px; color:var(--muted); font-size:12px; }
+    @media (max-width:760px) { body { padding:24px 16px; } .grid { grid-template-columns:1fr; } .samples { gap:18px; } .tab { flex:1; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Logo alternatives — no lettermark</h1>
+    <p class="intro">These directions avoid a literal “W” and work as the same visual identity in both the home-screen/PWA icon and browser sidetab. The concept names are labels for comparison, not final product names.</p>
+    <section class="grid">
+      <article class="card"><div class="label">01 · Organized work</div><h2>Dock</h2><p>Three calm lanes for notes, files, and folders; practical and easy to recognize.</p><div class="samples"><img class="home" src="alternatives/dock-icon.svg" alt="Dock icon"><div class="tab"><img src="alternatives/dock-icon.svg" alt=""><span>Workbench</span></div></div></article>
+      <article class="card"><div class="label">02 · Connected work</div><h2>Orbit</h2><p>A central workspace with related pieces moving around it; collaborative and modern.</p><div class="samples"><img class="home" src="alternatives/orbit-icon.svg" alt="Orbit icon"><div class="tab"><img src="alternatives/orbit-icon.svg" alt=""><span>Workbench</span></div></div></article>
+      <article class="card"><div class="label">03 · A place to work</div><h2>Frame</h2><p>An open container or portal; simple, calm, and especially strong in a small tab.</p><div class="samples"><img class="home" src="alternatives/frame-icon.svg" alt="Frame icon"><div class="tab"><img src="alternatives/frame-icon.svg" alt=""><span>Workbench</span></div></div></article>
+      <article class="card"><div class="label">04 · Organized depth</div><h2>Layers</h2><p>Overlapping surfaces suggest the app’s hierarchy of workspaces, folders, and documents.</p><div class="samples"><img class="home" src="alternatives/layers-icon.svg" alt="Layers icon"><div class="tab"><img src="alternatives/layers-icon.svg" alt=""><span>Workbench</span></div></div></article>
+      <article class="card"><div class="label">05 · Momentum</div><h2>Spark</h2><p>A more energetic option for a product centered on decisions, ideas, and follow-through.</p><div class="samples"><img class="home" src="alternatives/spark-icon.svg" alt="Spark icon"><div class="tab"><img src="alternatives/spark-icon.svg" alt=""><span>Workbench</span></div></div></article>
+    </section>
+    <p class="foot">My strongest three are Dock for practical clarity, Frame for a premium/minimal feel, and Orbit for a more collaborative product personality.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Spark logo concept</title>
+  <desc id="desc">A four-point spark rising from a grounded workspace line.</desc>
+  <defs>
+    <linearGradient id="bg" x1="52" y1="38" x2="460" y2="478" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#312E81"/><stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="190" y1="112" x2="322" y2="338" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/><stop offset="1" stop-color="#A5B4FC"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M256 92 286 202l106 54-106 54-30 110-30-110-106-54 106-54 30-110Z" fill="url(#spark)"/>
+  <path d="M148 406h216" stroke="#67E8F9" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="28" fill="#4F46E5"/>
+</svg>

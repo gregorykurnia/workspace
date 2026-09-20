@@ -14,3 +14,15 @@ The proposed mark is a woven **W** made from two rounded strokes. It hints at br
 - `preview.html` — open this file to see the proposal applied in three contexts.
 
 Other name options worth considering: **Workroom** (warmer and more approachable) or **Slate** (shorter and more premium), but Workbench is the clearest fit for the current product.
+
+## Non-lettermark alternatives
+
+The `alternatives/` folder contains five additional directions that do not use a “W”:
+
+- **Dock** — organized work lanes.
+- **Orbit** — a central workspace connecting related pieces.
+- **Frame** — an open container or portal.
+- **Layers** — stacked levels of organized work.
+- **Spark** — energy, ideas, and momentum.
+
+Open `alternatives-preview.html` to compare each at PWA and browser-tab scale.

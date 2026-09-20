@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Frame logo concept</title>
+  <desc id="desc">An open frame holding a bright workspace panel.</desc>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="42" x2="438" y2="474" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/><stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="188" y1="182" x2="326" y2="336" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7D2FE"/><stop offset="1" stop-color="#67E8F9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M170 132h172c24 0 44 20 44 44v160c0 24-20 44-44 44H170c-24 0-44-20-44-44V176c0-24 20-44 44-44Z" fill="none" stroke="#fff" stroke-width="34" stroke-linejoin="round"/>
+  <path d="M256 132v46" fill="none" stroke="#A5B4FC" stroke-width="34" stroke-linecap="round"/>
+  <rect x="188" y="198" width="136" height="112" rx="24" fill="url(#panel)"/>
+  <path d="M216 252h80" stroke="#fff" stroke-width="16" stroke-linecap="round" opacity=".9"/>
+</svg>
