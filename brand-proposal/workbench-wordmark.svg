@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-labelledby="title desc">
+  <title id="title">Workbench wordmark</title>
+  <desc id="desc">The Workbench name paired with a woven W mark.</desc>
+  <defs>
+    <linearGradient id="bg" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#bg)"/>
+  <path d="M15 19 23 45 32 29.5 41 45 49 19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 29.5 41 45" fill="none" stroke="#A5B4FC" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="82" y="42" fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.7">Workbench</text>
+</svg>

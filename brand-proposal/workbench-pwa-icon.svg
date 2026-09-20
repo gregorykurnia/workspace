@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Workbench app icon</title>
+  <desc id="desc">A woven W mark inside a deep ink rounded square.</desc>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="48" x2="440" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="164" y1="142" x2="344" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7D2FE"/>
+      <stop offset="1" stop-color="#818CF8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M116 154 180 358 256 236 332 358 396 154" fill="none" stroke="#fff" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 236 332 358" fill="none" stroke="url(#accent)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,19 @@
+{
+  "name": "Workbase Workspace",
+  "short_name": "Workbase",
+  "description": "A mobile-friendly workspace for folders, documents, and meeting notes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F6F7FB",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
