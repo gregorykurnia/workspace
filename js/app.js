@@ -41,6 +41,22 @@ function bindSelBar(){
   var tb=document.getElementById('sel-trash-btn');if(tb)tb.addEventListener('click',()=>openBulkTrashModal(SEL_TYPE,Array.from(SEL_IDS)));
   var cb=document.getElementById('sel-cancel-btn');if(cb)cb.addEventListener('click',()=>{SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();renderMain();});
 }
+function moveSearchHTML(){
+  return'<div class="move-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><input type="text" id="mv-search" aria-label="Search destination folders" placeholder="Search destination folders..."></div>';
+}
+function bindMoveSearch(){
+  var input=document.getElementById('mv-search'),list=document.getElementById('mv-list'),empty=document.getElementById('mv-no-results');
+  if(!input||!list)return;
+  input.addEventListener('input',function(){
+    var q=input.value.trim().toLowerCase(),visible=0;
+    list.querySelectorAll('.move-fi').forEach(function(el){
+      var match=!q||el.textContent.toLowerCase().includes(q);
+      el.style.display=match?'':'none';
+      if(match)visible++;
+    });
+    if(empty){empty.textContent=q&&!visible?'No destinations match "'+input.value.trim()+'".':'';empty.style.display=q&&!visible?'block':'none';}
+  });
+}
 function openBulkMoveModal(type,ids){
   ids=ids.filter(Boolean);if(!ids.length)return;
   if(type==='folder'&&CURR_USER_ROLE!=='admin'){toast('Only admins can move folders.');return;}
@@ -68,7 +84,8 @@ function openBulkMoveModal(type,ids){
   var tree=buildTree(null,0);
   if(type==='folder')tree='<div class="move-fi" data-fid="" data-root="1" style="padding-left:12px"><span style="font-size:14px">&#127968;</span><span style="flex:1">Workspace root</span></div>'+tree;
   var label=type==='folder'?'folder':type==='mom'?'MoM':'file';
-  modal('<div class="m-title">&#128194; Move '+ids.length+' '+label+(ids.length!==1?'s':'')+'</div><div class="m-sub">Choose a destination folder.</div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No valid destinations.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  modal('<div class="m-title">&#128194; Move '+ids.length+' '+label+(ids.length!==1?'s':'')+'</div><div class="m-sub">Choose a destination folder.</div>'+moveSearchHTML()+'<div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No valid destinations.</div>')+'</div><div id="mv-no-results" class="move-no-results" style="display:none"></div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  bindMoveSearch();
   var sel=null,selSf=null,selSfType=null,selSet=false;
   document.getElementById('mv-c').addEventListener('click',closeModal);
   document.getElementById('mv-list').querySelectorAll('.move-fi').forEach(el=>{
@@ -1518,7 +1535,8 @@ function openMoveModal(type,itemId){
   }
   var curSFlabel=curSFid?((type==='doc'?(DF.find(v=>v.id===curSFid)||{}):(MF.find(v=>v.id===curSFid)||{})).name||'subfolder'):'';
   var tree=buildTree(null,0);
-  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+(curSFid?(', '+esc(curSFlabel)):'')+'</small></div><div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  modal('<div class="m-title">&#128194; Move to Folder</div><div class="m-sub">Choose destination for <strong>'+esc(item.name||item.title||'this item')+'</strong><br><small style="color:#9CA3AF">Currently in: '+esc(folderLabel(curFid))+(curSFid?(', '+esc(curSFlabel)):'')+'</small></div>'+moveSearchHTML()+'<div id="mv-list" style="display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;border:1px solid #EAECF0;border-radius:8px;padding:6px">'+(tree||'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No other folders.</div>')+'</div><div id="mv-no-results" class="move-no-results" style="display:none"></div><div class="m-foot"><button class="btn se" id="mv-c">Cancel</button><button class="btn pr" id="mv-ok" disabled>Move Here</button></div>');
+  bindMoveSearch();
   var sel=null,selSf=null,selSfType=null;
   document.getElementById('mv-c').addEventListener('click',closeModal);
   document.getElementById('mv-list').querySelectorAll('.move-fi:not([style*="pointer-events:none"])').forEach(el=>{
