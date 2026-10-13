@@ -1,6 +1,8 @@
+v1.0 — approved 2026-10-13
+
 # Daybook design guide
 
-**Status: draft for the owner's review.** The version line (`v1.0 — approved YYYY-MM-DD`) goes here once it's approved.
+**Status: approved by the owner on 2026-10-13.**
 
 Daybook is the working name (open question 2 in `decisions.md`). The design is **Daybook's base** (Today home, soft cards, large radius, Plus Jakarta Sans, bottom tabs and create sheet on phone) combined with **Folio's sidebar, breadcrumb and indigo colour**, plus one amber accent for flags.
 
