@@ -167,3 +167,27 @@ body.selecting .cw > .row { padding-left: 52px; }
 }
 /* The dashed "New sub-area" card shows the focus ring too. */
 .subcard.new-card:focus-visible { box-shadow: var(--focus) !important; }
+
+/* ---------- Phase 4: the MoM editor ---------- */
+/* Editor mount: the loading lines before the note opens. */
+.ed-mount[aria-busy="true"] { display: grid; gap: 12px; padding-top: 8px; }
+/* Empty note: the hint on the first line (design gap G13: wording to confirm). */
+.ed-body p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none; }
+/* Long text cells show the two-line preview (a decoration); the cell's own text stays in the
+   note and opens in the Detailed Remarks drawer. */
+.ed-body td.longtext > :not(.remark) { display: none; }
+.ed-body td.longtext { cursor: pointer; }
+/* The tag field sits in the meta row as a form (Enter adds the tag). */
+.inline-form { display: contents; }
+/* Picker rows: the kind icon. */
+.dest .gi { width: 26px; display: grid; place-items: center; color: var(--accent-strong); flex: none; }
+/* Pills for links to workspace files and MoMs (W7): the icon is drawn with a mask in the text
+   colour, because the link itself is stored note content. */
+.ed-body a.ref::before { content: ""; width: 14px; height: 14px; flex: none; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5'/%3E%3C/svg%3E") center / contain no-repeat; }
+.ed-body a.ref.mom::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h4'/%3E%3C/svg%3E"); }
+/* An image with no stored width keeps its own size, never wider than the note. */
+.ed-body .img img { max-width: 100%; }

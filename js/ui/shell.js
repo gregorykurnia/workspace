@@ -118,7 +118,7 @@ function topbarHTML(r) {
     return `
       <div class="top-crumbs">${crumbsHTML(m.folderId, m.title || 'Untitled')}</div>
       <div class="top-right">
-        ${ro ? `<span class="ed-readonly">${ic('lock', 'sm')}Final · read only</span>` : `<span class="status-pill js-status" role="status" aria-live="polite">${ic('cloud-check', 'sm')}Saved</span>`}
+        ${ro ? edReadOnlyHTML() : statusPillHTML(UI.edStatus || 'saved')}
         ${search}
         <button class="icon-btn" data-act="flag" data-kind="m" data-id="${esc(m.id)}" aria-pressed="${!!m.starred}" aria-label="${m.starred ? 'Unflag' : 'Flag as important'}">${ic(m.starred ? 'flag-fill' : 'flag', 'sm')}</button>
         <button class="icon-btn" data-act="editor-menu" data-id="${esc(m.id)}" aria-haspopup="menu" aria-label="More for this MoM">${ic('more', 'sm')}</button>

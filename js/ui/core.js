@@ -104,6 +104,8 @@ const ACT = {};
 const FORMS = {};
 const INPUTS = {};
 const KEYS = {};
+const KEYMAP = {};   // per-field keys, by data-key: onKey('name', (e, el) => ...)
+const onKey = (name, fn) => reg(KEYMAP, 'Key', name, fn);
 const reg = (table, kind, name, fn) => { if (table[name]) console.warn(`${kind} "${name}" is registered twice`); table[name] = fn; };
 const on = (name, fn) => reg(ACT, 'Action', name, fn);
 const onForm = (name, fn) => reg(FORMS, 'Form', name, fn);
@@ -127,6 +129,9 @@ document.addEventListener('click', e => {
   if (!fn) { if (el.dataset.act) console.warn(`No handler for data-act="${el.dataset.act}" yet`); return; }
   if (el.tagName === 'A') e.preventDefault();
   fn(el.dataset, el, e);
+});
+document.addEventListener('mousedown', e => {
+  if (e.target.closest && e.target.closest('[data-keepfocus] button')) e.preventDefault();
 });
 document.addEventListener('submit', e => {
   const f = e.target;
@@ -321,11 +326,15 @@ function render({ keepView = false } = {}) {
   if (!bare && !shared && !waiting) keepFocus(() => renderShell(r));
   else { $('#side').innerHTML = ''; $('.topbar').innerHTML = ''; $('#tabbar').innerHTML = ''; }
   const el = $('#view');
-  if (!changed && keepView && !waiting) { renderBanners(); return; }
-  if (waiting || role === 'loading') el.innerHTML = skeletonHTML();
+  if (!changed && keepView && !waiting && UI.shownKey === key) { renderBanners(); return; }
+  if (UI.mounted && UI.mounted.unmount) { const m = UI.mounted; UI.mounted = null; m.unmount(); }
+  UI.mounted = null; UI.shownKey = '';
+  const v = VIEWS[r.name] || VIEWS.missing || PLACEHOLDER;
+  const html = waiting || role === 'loading' ? null : v.html(r);
+  if (html == null) el.innerHTML = skeletonHTML();   // loading, or the view isn't ready yet
   else {
-    const v = VIEWS[r.name] || VIEWS.missing || PLACEHOLDER;
-    el.innerHTML = v.html(r);
+    el.innerHTML = html;
+    UI.shownKey = key; UI.mounted = v;
     v.mount && v.mount(r, el);
   }
   if (changed) {
@@ -367,6 +376,15 @@ function renderBanners() {
   if (s === 'catchup') b.push(bannerHTML({ kind: 'sync', text: 'Catching up on changes from your team…' }));
   $('#banners').innerHTML = b.join('');
 }
+/* The page's one file input (#fileInput). Whoever opens it sets UI.onFiles first. */
+function pickFiles(fn, accept = '') {
+  const input = $('#fileInput');
+  if (!input) return;
+  UI.onFiles = fn;
+  if (accept) input.setAttribute('accept', accept); else input.removeAttribute('accept');
+  input.click();
+}
+onInput('file-picked', el => { const fn = UI.onFiles; UI.onFiles = null; const files = Array.from(el.files || []); el.value = ''; if (fn && files.length) fn(files); });
 /* Show or hide a password. data-for is the input's id. */
 on('pw-toggle', (d, el) => {
   const input = document.getElementById(d.for);
@@ -389,8 +407,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Tab' && LAYERS.length) { trapTab(e); return; }
   if (e.key === 'Escape') {
     if (LAYERS.length) { e.preventDefault(); closeTop(); return; }
+    if (e.defaultPrevented) return;
     KEYS.escape && KEYS.escape();
   }
+  const kn = e.target && e.target.dataset && e.target.dataset.key;
+  if (kn && KEYMAP[kn]) KEYMAP[kn](e, e.target);
 });
 
 /* ---------- Components (Phase 3): pure builders. Data in, markup out; no store reads, no inline
@@ -474,9 +495,11 @@ function searchInHTML({ value = '', label = 'Filter this area', placeholder = 'F
   return `<div class="search-wrap"><label class="search-in"><span class="sr">${esc(label)}</span>${ic('search', 'sm')}<input type="search" data-input="filter" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"></label>${value ? `<button type="button" class="icon-btn sm search-clear" data-act="clear-filter" aria-label="Clear filter">${ic('x', 'sm')}</button>` : ''}</div>`;
 }
 /* The date in the MoM header: a chip that opens the device's own date picker. */
-function dateChipHTML({ id, value, disabled = false }) {
-  return `<button type="button" class="mchip" data-act="pick-date" data-for="${id}"${disabled ? ' disabled' : ''} aria-label="Meeting date, ${fmtDate(value)}. Change date">${ic('calendar', 'sm')}<span>${fmtDate(value)}</span></button><input type="date" id="${id}" class="sr" tabindex="-1" aria-hidden="true" value="${esc(value)}">`;
+function dateChipHTML({ id, value, disabled = false, change = '' }) {
+  return `<button type="button" class="mchip" data-act="pick-date" data-for="${id}"${disabled ? ' disabled' : ''} aria-label="Meeting date, ${fmtDate(value)}. Change date">${ic('calendar', 'sm')}<span>${fmtDate(value)}</span></button><input type="date" id="${id}" class="sr" tabindex="-1" aria-hidden="true" value="${esc(value)}"${change ? ` data-change="${change}"` : ''}>`;
 }
+/* The chip opens the device's own date picker. */
+on('pick-date', d => { const i = document.getElementById(d.for); if (!i) return; try { i.showPicker(); } catch (e) { i.focus(); i.click(); } });
 /* Tags in the MoM header: each removable, plus an input to add one. */
 function tagsEditHTML({ tags, canEdit = true, id = 'tagIn' }) {
   return `<div class="tags">${tags.map(t => `<span class="mchip tagc">#${esc(t)}<button type="button" data-act="tag-remove" data-t="${esc(t)}" aria-label="Remove tag ${esc(t)}">${ic('x', 'sm')}</button></span>`).join('')}${canEdit ? `<input class="tag-add" id="${id}" placeholder="Add tag" aria-label="Add a tag" autocomplete="off">` : ''}</div>`;
@@ -631,7 +654,7 @@ const slashItemsFor = q => { const t = (q || '').trim().toLowerCase(); return SL
 
 function editorToolbarHTML({ active = {}, block = 'p', canUndo = true, canRedo = true }) {
   const b = (cmd, icon, label, key = '') => `<button type="button" class="tb" data-act="ed" data-cmd="${cmd}" aria-label="${label}" aria-pressed="${!!active[cmd]}" title="${label}${key ? ' ' + key : ''}">${ic(icon)}</button>`;
-  return `<div class="toolbar"><div class="tb-inner">
+  return `<div class="toolbar" role="toolbar" aria-label="Formatting" data-keepfocus><div class="tb-inner">
     <button type="button" class="tb" data-act="ed" data-cmd="undo" aria-label="Undo" title="Undo ⌘Z"${canUndo ? '' : ' disabled'}>${ic('undo')}</button><button type="button" class="tb" data-act="ed" data-cmd="redo" aria-label="Redo" title="Redo ⇧⌘Z"${canRedo ? '' : ' disabled'}>${ic('redo')}</button><span class="tb-div"></span>
     <label class="tb-sel"><span class="sr">Text style</span><select data-change="ed-block">${EDITOR_BLOCKS.map(([v, l]) => `<option value="${v}"${v === block ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <span class="tb-div"></span>
@@ -683,7 +706,7 @@ function longtextCellHTML({ text = '', row = 0 }) {
   return `<td class="longtext" data-label="Detailed Remarks"><button type="button" class="remark" data-act="remarks-open" data-row="${row}" aria-label="Open Detailed Remarks"><span class="remark-text">${text ? esc(text) : '<span class="remark-empty">Add remarks</span>'}</span><span class="remark-open" aria-hidden="true">${ic('expand', 'sm')}</span></button></td>`;
 }
 function journalBarHTML({ count, readOnly = false }) {
-  return `<div class="journal-bar"><span class="ktile k-other">${ic('table', 'sm')}</span><span class="mid"><b>Prospect journal</b><small>${plural(count, 'entry')} · tap Detailed Remarks to read or write in full</small></span>${readOnly ? '' : `<button type="button" class="btn btn-primary btn-sm" data-act="new-entry">${ic('plus', 'sm')}New entry</button>`}</div>`;
+  return `<div class="journal-bar"><span class="ktile k-other">${ic('table', 'sm')}</span><span class="mid"><b>Prospect journal</b><small>${count} ${count === 1 ? 'entry' : 'entries'} · tap Detailed Remarks to read or write in full</small></span>${readOnly ? '' : `<button type="button" class="btn btn-primary btn-sm" data-act="new-entry">${ic('plus', 'sm')}New entry</button>`}</div>`;
 }
 /* The drawer's panel content. fields (journal only): [{ id, label, value, i }]. sub: a line of HTML. */
 function remarksDrawerHTML({ title, sub = '', text = '', fields = null, status = 'saved' }) {
@@ -744,6 +767,69 @@ function quickFirstHTML({ act = 'new-area', adminOff = '' }) {
 const contRowHTML = cards => `<div class="cont-row">${cards.join('')}</div>`;
 /* A section label inside the ⌘K results. */
 const paletteCapHTML = t => `<div class="pal-cap">${esc(t)}</div>`;
+
+/* ---------- Shared item actions (flag, final, delete, unlock). The editor uses them first;
+   the Area, Today and Flagged screens reuse them. ---------- */
+/* The design's kind for a stored file (old records have type / cloudType / format). */
+function docKind(d) {
+  if (!d) return 'other';
+  if (d.kind && KINDS[d.kind]) return d.kind;
+  const f = String(d.format || '').toLowerCase();
+  if (d.cloudType === 'image' || d.type === 'image') return 'image';
+  if (d.cloudType === 'video') return 'video';
+  if (f === 'pdf' || d.type === 'pdf') return 'pdf';
+  if (d.type === 'presentation') return 'slides';
+  if (d.type === 'spreadsheet') return 'sheet';
+  if (d.type === 'link') return guessKind(d.url) === 'link' ? 'link' : guessKind(d.url);
+  return 'other';
+}
+const itemOf = (kind, id) => (kind === 'm' ? mom(id) : D.find(d => d.id === id) || null);
+const itemName = (kind, x) => (kind === 'm' ? (x.title || 'Untitled meeting') : (x.name || 'Untitled file'));
+on('flag', d => {
+  const x = itemOf(d.kind, d.id); if (!x) return;
+  setFlag(d.kind, d.id, !x.starred).catch(() => toast('Couldn’t save the flag. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+on('final', d => {
+  const x = itemOf(d.kind, d.id); if (!x) return;
+  const now = !x.readOnly;
+  setFinal(d.kind, d.id, now).then(() => toast(now ? 'Marked final. Members can read it but not change it.' : 'Final mark removed', { icon: 'lock' }),
+    () => toast('Couldn’t change the final mark. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+on('delete-item', d => {
+  const x = itemOf(d.kind, d.id); if (!x) return;
+  confirmDialog({ title: `Delete “${itemName(d.kind, x)}”?`, text: 'It goes to Deleted and stays recoverable for 7 days.', impact: d.kind === 'm' ? 'Its link to the area is kept until you restore or remove it.' : '', danger: true, cta: 'Delete', act: 'delete-item-now', data: { kind: d.kind, id: d.id } });
+});
+on('delete-item-now', d => {
+  const x = itemOf(d.kind, d.id); if (!x) return;
+  const name = itemName(d.kind, x), back = x.folderId;
+  closeAll();
+  (d.kind === 'm' ? dM(d.id) : dD(d.id)).catch(() => toast('Couldn’t delete it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  if (route().id === d.id) go(back && area(back) ? areaHref(back) : '#/today');
+  toast(`Moved “${name}” to Deleted`, { icon: 'trash', action: { label: 'Open Deleted', act: 'go-deleted' } });
+});
+on('go-deleted', () => go('#/deleted'));
+/* The restricted gate's form (kind 'a': an area). Opens it for this session. */
+onForm('unlock', async (f) => {
+  const { kind, id } = f.dataset;
+  const pw = (f.elements.password && f.elements.password.value) || '';
+  const target = kind === 'a' ? gf(id) : D.find(d => d.id === id);
+  if (!target) return;
+  if (pw && (await hw(pw)) === target.pw) {
+    (kind === 'a' ? UF : UD).add(id);
+    closeAll();
+    render();
+    return;
+  }
+  const field = f.querySelector('.field');
+  if (field) {
+    field.classList.add('err');
+    const input = f.elements.password;
+    input.setAttribute('aria-invalid', 'true');
+    if (!field.querySelector('.ferr')) field.insertAdjacentHTML('beforeend', `<span class="ferr" role="alert" id="${input.id}-err">${ic('alert', 'sm')}That password isn’t right. Try again.</span>`);
+    input.setAttribute('aria-describedby', input.id + '-err');
+    input.value = ''; input.focus();
+  }
+});
 
 /* ---------- Store events and boot ---------- */
 Store.onChange(what => {
