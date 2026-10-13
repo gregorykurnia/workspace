@@ -571,8 +571,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 
 | Phase | Task | Model · effort | Why |
 |---|---|---|---|
-| 1 | Move data code into `js/data/`, `Store.onChange`, write promises | **Opus · high** | Every Firebase call must move with no visible change; a slip breaks production |
-| 1 | `sw.js` navigation-cache fix | Sonnet · high | Small, but service-worker bugs are hard to see |
+| 1 | ✅ Move data code into `js/data/`, `Store.onChange`, write promises | **Opus · high** | Every Firebase call must move with no visible change; a slip breaks production |
+| 1 | ✅ `sw.js` navigation-cache fix | Sonnet · high | Small, but service-worker bugs are hard to see |
 | 2 | Copy `tokens.css`, port the 3 stylesheets, `app.css`, fonts, icons sprite | **Haiku · high** | Copying with exact references |
 | 2 | `next.html` shell, theme boot script | Haiku · high | Copying from `prototype/app.html` |
 | 2 | `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
@@ -601,6 +601,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
 | 8 | Fixing failures found in QA | The tier of the task the bug is in | — |
 
+✅ = done (ticked in the Phase 1 task list below as well).
+
 **Calibrate before committing to it.** Build one Sonnet-tier task (the Move dialog is a good one) twice: once with Sonnet · high and once with Haiku · xhigh. Run `/cost` after each session, check both against the prototype, and keep the cheaper one if it's just as good. Move a task up a tier the first time a cheaper model gets it wrong twice.
 
 ### Phase 1: Separate data from rendering (no visual change)
@@ -609,15 +611,17 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 - [x] 2. Make each write return its promise (no caller changes needed).
 - [x] 3. Replace the direct `render()` calls inside listeners with `Store.onChange` callbacks. The old `app.js` registers its own `render`.
 - [x] 4. `index.html` loads `js/data/*.js` before the old `js/app.js`.
-- [ ] 5. Fix `sw.js` so navigations are cached under their own URL (it currently stores every navigation as `index.html`, which would let `next.html` overwrite the offline copy later). Bump the cache name.
+- [x] 5. Fix `sw.js` so navigations are cached under their own URL (it currently stores every navigation as `index.html`, which would let `next.html` overwrite the offline copy later). Bump the cache name.
 
 **Notes from tasks 1–4 (2026-10-13):**
 - `Store.onChange(fn)` passes `fn(what, err)`. `what` is a collection name, `'loaded'` (once), `'error'`, or a session event (`'guest'`, `'role'`, `'access'`, `'users'`). `app.js` keeps the old per-collection render conditions in its handler, and the old chkLoad UI step is now `onStoreLoaded()`, which runs before any render so deep-link hashes survive.
 - New names: `watchMom` (the editor's per-MoM listener), `searchWorkspace` (search matching), `grantAccess`/`revokeAccess`, `signIn`/`sendReset`/`changePassword`/`signOut`, `startSession` (role/access loading, still started from `rbac.js` at the old timing).
 - Move, rename, flag, final, share and password changes are still inline field edits in the old UI followed by `sF`/`sM`/`sD`. No named action functions exist for them yet; they get added when the new UI needs them.
 - Left in `app.js` on purpose: `esc` and `uid` (the prototype's `core.js` declares `const esc` / `let uid`, so the data layer must not), and the two inline image uploads in the editor.
-- `index.html` loads `app.js`, `auth.js` and `rbac.js` with `?v=2`. The current `sw.js` serves app files cache-first under an unchanged cache name, so installed clients would otherwise run the old `app.js` and `auth.js` next to the new data files and fail on the redeclared `db` and `auth`. **Task 5 must add `js/data/*.js` to the precache list and stop app files from going stale like this.**
+- `index.html` loads `app.js`, `auth.js` and `rbac.js` with `?v=2`. The current `sw.js` serves app files cache-first under an unchanged cache name, so installed clients would otherwise run the old `app.js` and `auth.js` next to the new data files and fail on the redeclared `db` and `auth`. Task 5 fixed this on the service-worker side (see below).
 - Checked: `node -c` on every file, no global declared twice, and the auth tests that need no account pass locally. **Not yet run:** the signed-in Playwright tests (no `TEST_EMAIL`/`TEST_PASSWORD` on this machine). Run them against the preview before Phase 1 counts as done.
+
+**Notes from task 5 (2026-10-13):** `sw.js` now saves each page under its own address (only when the response is OK), so one page can never overwrite another's offline copy. Cache name is `workbench-static-v4`. The precache list has the 7 `js/data/*.js` files and the three `?v=2` scripts exactly as `index.html` names them (the cache key includes the query, so **if `?v=` ever changes in `index.html`, change it here too**). Our own files are now **network first** with the cache only as the offline fallback, so a deploy is never served from an old copy; Firebase, Quill and html2pdf stay cache first. An uncached page offline falls back to `index.html` only for `/` and `/index.html` addresses, so `next.html` will never show the old app. Tested in Chromium against a logging server: precache contents, own-address caching, `index.html` entry untouched, network-first while online, and offline opens for cached, uncached-old-app and uncached-other addresses. The same test fails on the old `sw.js`. Not tested: Safari and the installed app on a real phone (§8.4). The `?v=2` on the three scripts can be dropped once every installed copy has the new worker (it is harmless meanwhile).
 
 **Files:** `js/data/*` (new), `js/app.js`, `js/auth.js`, `js/rbac.js`, `index.html`, `sw.js`.
 **Done when:** the preview looks and behaves identically; all existing Playwright tests pass against the preview URL; `js/app.js` has no `db.collection` calls left.
