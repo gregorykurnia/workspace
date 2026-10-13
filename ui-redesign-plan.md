@@ -25,7 +25,7 @@ Design happens in **this same folder and Claude Code**, but on a separate **`des
 | `redesign/handoff/` | Where the handoff package is written | Synced copy (read-only input) |
 | `redesign/design/` | Imported after approval (Step 5b) | Where the designer works |
 
-Switching: `redesign/studio.sh enter` (from `main`) and `git switch main` (to leave).
+The studio is a separate folder, `../workspace-studio` (a git worktree on `design-studio`), so this folder never switches branches. `redesign/studio.sh enter` creates or syncs it.
 
 ### Allowed into the design session (the handoff package, `redesign/handoff/`)
 1. `inventory.md`: user needs, written as job stories (Step 1)
@@ -106,11 +106,10 @@ Fill in `redesign/handoff/brief.md` and set its status line to `FILLED`. It cove
 ### Step 4 — Design from zero (Agent B, in the design studio)
 
 **Starting a design session:**
-1. On `main`, with everything committed, run `redesign/studio.sh enter`. It switches to `design-studio` and syncs `redesign/handoff/` from `main`.
-2. Quit Claude Code completely (`/exit`).
-3. Start a **new** session in the same folder with `claude`. Never use `--continue` or `--resume`, because they would bring back a conversation that has seen the old app.
-4. First message: *"Start the design process described in CLAUDE.md."*
-5. To leave: `/exit`, then `git switch main`. Coming back later: repeat 1–3. The studio's own commits carry the design work between sessions.
+1. On `main`, with everything committed, run `redesign/studio.sh enter`. It creates `../workspace-studio` if needed and syncs `redesign/handoff/` from `main` into it.
+2. Open a **new terminal window**: `cd ~/projects/workspace-studio && claude`. Never use `--continue` or `--resume` there.
+3. First message: *"Start the design process described in CLAUDE.md."*
+4. The studio commits and pushes its own work automatically. To stop, just close that window; this codebase window stays on `main`. Coming back later: repeat 1–2.
 
 **Never** run a design session as a subagent spawned from a `main` session, and never paste anything from `main` into the studio.
 
@@ -136,7 +135,7 @@ In the studio, Agent B writes `redesign/design/coverage.md`, mapping every story
 
 - Review the design guide and approve it.
 - Freeze it with a version and date (e.g. `design-guide v1.0 — 2026-xx-xx`). Later changes go through Agent B and bump the version.
-- Leave the studio (`git switch main`), then run `redesign/studio.sh import`. This copies `redesign/design/` from `design-studio` into `main`, then commits and pushes it. The firewall only blocks old → new, so moving the finished design onto `main` is safe.
+- In the codebase window, start a new session and say *"Import the approved design"* (it runs `redesign/studio.sh import`). This copies `redesign/design/` from `design-studio` into `main`, then commits and pushes it. The firewall only blocks old → new, so moving the finished design onto `main` is safe.
 - Keep the `design-studio` branch. If Agent C finds gaps in Step 6, they get designed there, then imported again.
 
 ### Step 6 — Technical implementation plan (Agent C, sees repo + approved design)
