@@ -2,43 +2,40 @@
 
 What the new product should feel like. Together with `inventory.md` (what it does) and `priorities.md` (how often), this is everything the designer gets.
 
-**Status: TEMPLATE — not filled in yet.**
-
-Write about the product you *want*. Don't describe, compare to, or react against any existing version. When finished, change the status line above to **Status: FILLED**.
+**Status: FILLED** (2026-10-13)
 
 ---
 
 ## 1. Who uses it
-_Who are the people (admins, members, visitors)? Roughly how many? Where and on what devices do they use it, e.g. in a meeting room on a phone, at a desk on a laptop?_
+Mostly one person: the owner, who is also the admin. They use it mainly on a **Mac** and sometimes on a **phone**. Members and visitors exist (see the roles in `inventory.md`) but are occasional. Design for a single, frequent, desktop-first power user who must still be able to do everything on a phone.
 
 ## 2. Personality
-_3–5 words for how it should feel (e.g. calm, sharp, warm, editorial, playful, precise). Also 2–3 words for what it must never feel like._
+**Should feel:** light, professional, clean, modern, and visually polished, like a modern SaaS productivity tool. Modern typefaces and a modern treatment of every element.
+
+**Must never feel:** old-fashioned, traditional, outdated, cluttered, or dark and heavy.
 
 ## 3. References
-_2–3 apps or sites you admire, and specifically what you admire about each (e.g. "Linear: speed and keyboard flow", "Things: calm and focused", "Craft: beautiful documents")._
+None given. The designer may propose references as part of each direction.
 
 ## 4. Density
-_Spacious and calm, or compact and information-dense? Does it differ between phone and desktop?_
+**Spacious and calm**, on both desktop and phone.
 
 ## 5. Light and dark
-_Both are required. Which one should be the default, or should it follow the device setting?_
+**Light is the default and the priority.** Dark is still required as a secondary theme, but the design should be led by the light theme. The owner likes bright designs.
 
 ## 6. Branding
-Default is fully open: the designer chooses everything.
-- **Name:** open / keep: ___
+Everything is open. The designer chooses everything.
+- **Name:** open
 - **Logo:** open
-- **Colours:** open / must include: ___
-- **Typeface:** open / must use: ___
-
-_If you keep anything, write only the word or value. Don't attach existing logo files or palettes._
+- **Colours:** open
+- **Typeface:** open
 
 ## 7. Language
-_Which language(s) will the interface be in?_
+English.
 
 ## 8. Challenging the model
-The designer may propose merging, splitting, renaming, or removing concepts (areas, groupings, MoMs, files), as long as every job in the inventory is still covered. Proposals come back to you for a decision; nothing is changed silently.
-
-_Anything that must not be challenged?_
+Nothing is off-limits. The designer may propose merging, splitting, renaming, or removing concepts, as long as every job in the inventory is still covered. Proposals come back to the owner for a decision; nothing is changed silently.
 
 ## 9. Anything else
-_Must-haves, pet peeves, accessibility needs, things you've always wanted._
+- **No old-fashioned, classic serif feel** (e.g. Times New Roman) anywhere in the interface.
+- The owner likes **bright** designs.
