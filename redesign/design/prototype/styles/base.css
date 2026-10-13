@@ -541,7 +541,7 @@ body.visitor .shell { grid-template-columns: minmax(0, 1fr); }
 .tree-page .tree-row .more-tree { width: 44px; height: 52px; display: grid; place-items: center; color: var(--text-3); border-radius: 12px; }
 
 /* ============ Prototype panel (not part of the design) ============ */
-.proto { position: fixed; left: 14px; bottom: 14px; z-index: 150; font-family: var(--font-mono); font-size: 12px; }
+.proto { position: fixed; right: 14px; bottom: 14px; z-index: 150; font-family: var(--font-mono); font-size: 12px; }
 .proto-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 10px; background: #FFFBEA; border: 1.5px dashed #9C8F5E; color: #4A4220; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
 .proto-body { margin-top: 8px; width: 270px; max-height: 70vh; overflow: auto; padding: 12px; border-radius: 12px; background: #FFFBEA; border: 1.5px dashed #9C8F5E; box-shadow: var(--shadow-2); color: #2E2A18; }
 .proto-body[hidden] { display: none; }
