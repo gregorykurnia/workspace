@@ -578,7 +578,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 2 | ✅ `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
 | 2 | ✅ `ui/shell.js`: sidebar, rail, top bar, tabs, tree, crumbs | Sonnet · high | Real data, permissions, restricted areas, crumb folding |
 | 2 | ✅ Data additions: sync state, persistence, visibility rules (`canSee`, `lockedArea`, `hiddenItem`, …) | **Opus · high** | Decides what members and visitors can see (P3, P6); offline persistence |
-| 3 | Components and every state in `dev/gallery.html` | **Haiku · high** | Each one has an exact prototype counterpart |
+| 3 | ✅ Components and every state in `dev/gallery.html` | **Haiku · high** | Each one has an exact prototype counterpart |
 | 4 | **MoM editor**: Tiptap rebuild (toolbar, Aa, bubble, "/" menu, tables, Long text, remarks drawer, images), autosave and status | **Opus · high** | Daily tool and the riskiest part (C1–C3, W1–W8) |
 | 4 | Prospect-journal and legacy-content conversion (`content.js`) | **Opus · high** | Changes stored notes |
 | 4 | Area page: header, filter, sort, grid/list, cards, shelves | Sonnet · high | Many states and rules |
@@ -680,10 +680,23 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 
 ### Phase 3: Components (all variants and states)
 **Tasks**
-1. Build every component in §3 with every listed state.
-2. Add `dev/gallery.html`: one page rendering every component in every state, using only the new CSS and `ui/core.js` builders with fixed sample data. It's used for screenshot comparison and accessibility checks, and deleted in Phase 7.
+- [x] 1. Build every component in §3 with every listed state.
+- [x] 2. Add `dev/gallery.html`: one page rendering every component in every state, using only the new CSS and `ui/core.js` builders with fixed sample data. It's used for screenshot comparison and accessibility checks, and deleted in Phase 7.
 
 **Done when:** each §3 row is ticked in the gallery at phone and desktop, in light and dark; keyboard and focus work on every interactive component; no raw colour exists outside `tokens.css`.
+
+**Notes from Phase 3 (2026-10-13):**
+- **Where the builders are.** All Phase 3 builders are pure functions in `js/ui/core.js` (data in, markup out, no store reads, no inline styles or handlers): buttons, fields, pills, cards and rows, shelf, layers, toasts, banners, bulk bar, ⌘K rows, the editor parts (toolbar, Aa, bubble, "/" menu, table bar, tables, Long text cell, remarks drawer, journal bar, image, link pills, remote bar, A4) and the states. `ui/shell.js` keeps the navigation builders from Phase 2, now using `splitNewHTML`, `syncPillHTML` and `data-depth`. The plan's per-screen file names (`area.js`, `mom.js`, ...) apply when those screens are built (Phase 4); the Phase 3 names are kept distinct (`shelfBoxHTML`, `bulkPillHTML`, `lockedGateHTML`, `toolbar` as `editorToolbarHTML`) so they do not collide later. Rename at Phase 4 if a screen file takes the old name.
+- **Gallery** (`dev/gallery.html`): 138 states in nine sections (3.1–3.9), each cell captioned. It loads only `store.js`, `core.js`, `shell.js` and the icon sprite, with fixed sample data (no Firebase). Its own page styles only place the fixed-position layers, toasts and bars in the page; they are dev-only and go with the gallery in Phase 7.
+- **Fixed in this phase:** the shipped sheet uses `.locked` for the restricted gate, so `.mi.locked` drew menu items as gate cards. Greyed items now use `aria-disabled` only. Inline styles from the prototype are named rules in `app.css` (same values); the tree depth is `data-depth`.
+- **Focus** is the shared `--focus` ring on every control, including the ones that set their own shadow (sub-area and new-sub-area cards, soft and bulk buttons, tag field, ⌘K field, toast action). Enter and Space act on check boxes (`role=checkbox`) as a click.
+- **Touch** (checked with a coarse pointer at 390 px): every control is at least 44 × 44 px. The base sheet sized several below that (tag remove, tree toggles, link buttons, Aa segments, banner and bulk-bar buttons, toast action); `app.css` has a coarse-pointer block that raises them to `--hit`. Inline text links inside a sentence (the note's link pills) are exempt, as WCAG 2.5.8 allows.
+- **Checked (Chromium):** the gallery loads with no page errors; all nine sections filled; no inline style or handler in any cell; all 353 keyboard stops show a focus ring; no target under 44 px with a coarse pointer; no horizontal overflow at 390 px; light and dark differ; screenshots of the sections reviewed for layout (menus, layers, palette, sidebar and rail states, top bar, editor parts). Fixed in review: member sidebar in the gallery used the admin's id, the bubble animation hid its icons, tables needed the editor's content class.
+- **Not done (Phase 3 done-when is not yet met):**
+  - **No raw colour outside `tokens.css`.** Blocked on G11 (below): the inherited `base.css` and `editor.css` values, the six text colours and six highlights in `app.css` (`.sw-*`) and in `core.js` (`SWATCH_TEXT`, `SWATCH_HL`), and `js/data/content.js` (`#9CA3AF` in the empty-content placeholder, moved verbatim in Phase 1; it changes with the legacy-content work in Phase 4).
+  - **Radio groups** (emoji grid, kind tiles) are one tab stop per option. Arrow-key movement inside a group is for Phase 4 with the screens that use them.
+  - **Visual comparison with the prototype** (§8.2 side-by-side) and the **real tablet rail** at 768–1023 px are not yet checked; the rail is CSS only.
+  - **Not checked:** Safari, and VoiceOver (plan §8.3 is Phase 8).
 
 ### Phase 4: Screens, one at a time
 Order follows the owner's priorities (daily jobs first): **MoM editor → Area → Today → ⌘K → All areas / Areas tab → Flagged → Recent → Deleted → Account**, plus the dialogs each screen opens.
@@ -770,7 +783,7 @@ Each is worded as a need, safe to paste into the studio. The owner carries them 
 - **G8 · A restricted sub-area inside a shared area.** "When a visitor browses a shared area that contains a restricted sub-area, what do they see, and can they open it with the password?"
 - **G9 · Other failed actions.** "When a move, rename, flag, share or restriction change can't be saved (for example, permission refused by the server), what does the confirmation say, and what's the way forward?"
 - **G10 · Room to write on a computer.** "When I write on a computer, I sometimes want as much width as possible for the note, with the rest of the app out of the way."
-- **G11 · Colours outside the tokens.** "The prototype uses some colours that aren't tokens: white text on the accent colour, the lightbox overlay and its buttons, the success and warning ticks in toasts, the brand mark gradient, the install step numbers, and the paper colours of the A4 export. Every colour in the app must come from a named token, so each of these needs one, or the owner confirms it as an exception." (Plan §10 allows only the A4 paper.)
+- **G11 · Colours outside the tokens** (also covers the swatch colours in `app.css` and `ui/core.js`, and the placeholder colour in `data/content.js`; see Phase 3 notes). "The prototype uses some colours that aren't tokens: white text on the accent colour, the lightbox overlay and its buttons, the success and warning ticks in toasts, the brand mark gradient, the install step numbers, and the paper colours of the A4 export. Every colour in the app must come from a named token, so each of these needs one, or the owner confirms it as an exception." (Plan §10 allows only the A4 paper.)
 - **G12 · An area with no emoji.** "Some existing areas have no emoji at all. How should such an area look in the tree, in the path at the top, and on its card?" (Until answered the build shows no emoji for them.)
 
 ### 9.2 Questions for the owner

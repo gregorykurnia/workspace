@@ -73,3 +73,97 @@
 
 /* Create sheet: the smaller place chip under the title. */
 .place-chip.place-chip-sheet { min-height: 36px; padding: 0 12px; margin-top: 8px; font-size: 14px; }
+
+/* Phase 3: named rules for markup the prototype styled inline (same values). Tokens only,
+   except the swatch colours, which are an open gap (plan §9.1 G11). */
+
+/* Area card header row, and the restricted mark inside it. */
+.acard-top { display: flex; align-items: center; gap: 14px; }
+.acard-id { flex: 1; min-width: 0; }
+.acard-id .n { display: block; }
+.acard-id .restrictmark { margin-top: 6px; }
+
+/* Selection: the check box sits on the card, and selecting mode shifts the card content. */
+.cw > .sel-box { position: absolute; left: 12px; top: 12px; z-index: 2; }
+body.selecting .cw > .mcard { padding-left: 46px; }
+body.selecting .cw > .row { padding-left: 52px; }
+/* A file tile's Final mark sits in the tile's corner. */
+.thumb .finalmark { position: absolute; right: 10px; top: 10px; }
+/* The ⋯ button on a file tile sits in its top-right corner. */
+.more.on-thumb { top: 8px; right: 8px; }
+
+/* Search field with a clear button. */
+.search-wrap { position: relative; }
+.search-wrap .search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+
+/* Password field with a show/hide button. */
+.pw-row { position: relative; }
+.pw-row .input { padding-right: 52px; }
+.pw-row .icon-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+.pw-meter i.s0 { width: 0; }
+.pw-meter i.s1 { width: 25%; }
+.pw-meter i.s2 { width: 50%; }
+.pw-meter i.s3 { width: 75%; }
+.pw-meter i.s4 { width: 100%; }
+
+/* Shared-link pages: a centred card. */
+.vcard-center { text-align: center; padding: 48px 28px; }
+/* The action under a no-match message. */
+.noresult-act { margin-top: 12px; }
+/* The lightbox's buttons. */
+.lb-acts { display: flex; gap: 8px; }
+/* An empty grouping has no left inset. */
+.shelf .empty.small { padding-left: 0; }
+
+/* Tree depth (sidebar and Areas tab): 6 px plus 14 px per level, up to level 8. */
+.tree-row[data-depth="0"] { padding-left: 6px; }
+.tree-row[data-depth="1"] { padding-left: 20px; }
+.tree-row[data-depth="2"] { padding-left: 34px; }
+.tree-row[data-depth="3"] { padding-left: 48px; }
+.tree-row[data-depth="4"] { padding-left: 62px; }
+.tree-row[data-depth="5"] { padding-left: 76px; }
+.tree-row[data-depth="6"] { padding-left: 90px; }
+.tree-row[data-depth="7"] { padding-left: 104px; }
+.tree-row[data-depth="8"] { padding-left: 118px; }
+
+/* The Aa menu's typefaces (font stacks, same as the editor's FONTS). */
+.tm-font-sans { font-family: var(--font); }
+.tm-font-serif { font-family: Georgia, "Times New Roman", serif; }
+.tm-font-mono { font-family: var(--font-mono); }
+
+/* G11 (open): the six text colours and six highlights are raw values until the designer
+   names them as tokens. Remove this block when they are in tokens.css. */
+.sw-t1 { background: #161B2E; }
+.sw-t2 { background: #4338CA; }
+.sw-t3 { background: #1D5FB8; }
+.sw-t4 { background: #067647; }
+.sw-t5 { background: #B45309; }
+.sw-t6 { background: #B42318; }
+.sw-h1 { background: #FFF4E0; }
+.sw-h2 { background: #E4F6EC; }
+.sw-h3 { background: #E4F0FD; }
+.sw-h4 { background: #EEEAFD; }
+.sw-h5 { background: #FDECEB; }
+.sw-h6 { background: #F1F3FA; }
+
+/* Focus: every control shows the shared --focus ring (plan §3). Some components set their own
+   shadow or hairline, which would hide it, so the ring is restated for each of them. */
+.btn:focus-visible, .subcard:focus-visible, .acard:focus-visible, .mcard:focus-visible,
+.ftile:focus-visible, .qtile:focus-visible, .sel-box:focus-visible, .kind:focus-visible,
+.emoji-grid button:focus-visible, .swatch:focus-visible, .toast button:focus-visible,
+.tag-add:focus-visible, .pal-in input:focus-visible { box-shadow: var(--focus); }
+/* Touch target: the toast's action is 44 px like every other control (tokens --hit). */
+.toast button { min-height: var(--hit); }
+
+/* Touch targets (plan §8.3, design guide §7): at least 44 px on touch screens, for every control
+   the base sheet sizes smaller. Applies only under a coarse pointer, as the base sheet does. */
+@media (pointer: coarse) {
+  .btn, .btn-sm, .link-btn, .banner .btn, .bulkbar .btn, .bulkbar .link-btn, .toast button,
+  .status-pill .link-btn, .crumb-more { min-height: var(--hit); }
+  .crumb-more { min-width: var(--hit); }
+  .tree-row .tg { width: var(--hit); }
+  .mchip.tagc > button { width: var(--hit); height: var(--hit); margin: -10px -12px -10px 0; }
+  .side-empty .link-btn, .seg button { min-height: var(--hit); }
+}
+/* The dashed "New sub-area" card shows the focus ring too. */
+.subcard.new-card:focus-visible { box-shadow: var(--focus) !important; }

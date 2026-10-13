@@ -32,7 +32,7 @@ function treeHTML(r, opts = {}) {
     const toggle = children.length
       ? `<button type="button" class="tg" data-act="tree-toggle" data-id="${esc(a.id)}" aria-expanded="${open}" aria-label="${open ? 'Collapse' : 'Expand'} ${esc(a.name)}">${ic('chev-d', 'sm')}</button>`
       : `<span class="tg" disabled aria-hidden="true"></span>`;
-    let html = `<div class="tree-row" role="treeitem" aria-level="${depth + 1}"${children.length ? ` aria-expanded="${open}"` : ''} aria-current="${current}" style="padding-left:${6 + depth * 14}px">${toggle}<a class="nm" href="${areaHref(a.id)}" ${current ? 'aria-current="page"' : ''}>${locked ? `<span class="lk" aria-label="Restricted">${ic('lock', 'sm')}</span>` : ''}<span class="em" aria-hidden="true">${esc(areaEmoji(a))}</span><span>${esc(a.name)}</span>${count != null ? `<span class="ct">${count}</span>` : ''}</a></div>`;
+    let html = `<div class="tree-row" role="treeitem" aria-level="${depth + 1}" data-depth="${Math.min(depth, 8)}"${children.length ? ` aria-expanded="${open}"` : ''} aria-current="${current}">${toggle}<a class="nm" href="${areaHref(a.id)}" ${current ? 'aria-current="page"' : ''}>${locked ? `<span class="lk" aria-label="Restricted">${ic('lock', 'sm')}</span>` : ''}<span class="em" aria-hidden="true">${esc(areaEmoji(a))}</span><span>${esc(a.name)}</span>${count != null ? `<span class="ct">${count}</span>` : ''}</a></div>`;
     if (open && children.length) html += children.map(k => rowFor(k, depth + 1)).join('');
     return html;
   };
@@ -108,7 +108,7 @@ function topbarHTML(r) {
   const p = createPlace(r);
   const m = r.name === 'mom' ? mom(r.id) : null;
   const me = currentUser();
-  const sync = `<span class="sync ${info.cls}" role="status" title="${esc(info.text)}"><span class="dot" aria-hidden="true"></span><span>${info.short}</span></span>`;
+  const sync = syncPillHTML(info);
   const search = `<button class="cmd-trigger" type="button" data-act="palette" aria-label="Search or jump to (⌘K)">${ic('search', 'sm')}<span>Search</span><kbd>⌘K</kbd></button>`;
   const avatar = `<button class="avatar-btn" data-act="account" aria-label="Account: ${esc(me.name)}"><span class="avatar">${esc(me.ini)}</span></button>`;
 
@@ -133,10 +133,7 @@ function topbarHTML(r) {
     <div class="top-right">
       ${search}
       ${sync}
-      <div class="split" role="group" aria-label="New">
-        <button class="split-main" type="button" data-act="new-mom" data-area="${p ? esc(p.area) : ''}" data-group="${p && p.group ? esc(p.group) : ''}">${ic('plus', 'sm')}<span>New MoM</span></button>
-        <button class="split-caret" type="button" data-act="new-menu" aria-label="More ways to create" aria-haspopup="menu">${ic('chev-d', 'sm')}</button>
-      </div>
+      ${splitNewHTML(p)}
       <button class="icon-btn search-btn" data-act="palette" aria-label="Search">${ic('search')}</button>
       ${avatar}
     </div>`;
