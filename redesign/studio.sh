@@ -1,47 +1,62 @@
 #!/usr/bin/env bash
-# Moves between the codebase (main) and the isolated design studio branch.
+# The design studio lives in its own folder (a git worktree on the design-studio branch),
+# so the codebase folder never switches branches.
 #
-#   redesign/studio.sh enter    main → design-studio, syncing redesign/handoff/ from main
+#   redesign/studio.sh enter    create the studio folder if needed and sync redesign/handoff/ from main into it
 #   redesign/studio.sh import   on main: bring the approved redesign/design/ over from design-studio
-#
-# To leave the studio:  git switch main
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 branch="$(git branch --show-current)"
+STUDIO="$(dirname "$PWD")/$(basename "$PWD")-studio"
 
-require_clean() {
+require_main_clean() {
+  [ "$branch" = "main" ] || { echo "✋ Run this from main (currently on '$branch')." >&2; exit 1; }
   if [ -n "$(git status --porcelain)" ]; then
-    echo "✋ Uncommitted changes on '$branch'. Commit them first." >&2
+    echo "✋ Uncommitted changes on main. Commit them first." >&2
     exit 1
   fi
 }
 
 case "${1:-}" in
   enter)
-    [ "$branch" = "main" ] || { echo "✋ Run this from main (currently on '$branch')." >&2; exit 1; }
-    require_clean
-    git switch design-studio
-    git checkout main -- redesign/handoff
-    if ! git diff --cached --quiet; then
-      git commit -q -m "Update handoff inputs"
-      git push -q origin design-studio
-      echo "Synced handoff inputs into the studio."
+    require_main_clean
+    if [ ! -d "$STUDIO" ]; then
+      git worktree add -q "$STUDIO" design-studio
+      echo "Created the studio folder: $STUDIO"
     fi
-    cat <<'MSG'
+    (
+      cd "$STUDIO"
+      if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        git commit -q -m "Save unsaved studio work"
+      fi
+      git checkout main -- redesign/handoff
+      if ! git diff --cached --quiet; then
+        git commit -q -m "Update handoff inputs"
+        echo "Synced handoff inputs into the studio."
+      fi
+      git push -q origin design-studio
+    )
+    cat <<MSG
 
-✅ You're in the design studio (branch: design-studio).
+✅ The studio is ready.
 
-Next:
-  1. Quit Claude Code completely (/exit).
-  2. Start a NEW session in this folder:  claude
-     Never use --continue or --resume here.
-  3. Leave the studio later with:  git switch main
+Open a NEW terminal window and run:
+  cd $STUDIO
+  claude
+
+(Plain 'claude'. Never --continue or --resume.)
+This window stays your codebase on main.
 MSG
     ;;
   import)
-    [ "$branch" = "main" ] || { echo "✋ Run this from main (currently on '$branch')." >&2; exit 1; }
-    require_clean
+    require_main_clean
+    if [ -d "$STUDIO" ] && [ -n "$(git -C "$STUDIO" status --porcelain)" ]; then
+      git -C "$STUDIO" add -A
+      git -C "$STUDIO" commit -q -m "Save unsaved studio work"
+      git -C "$STUDIO" push -q origin design-studio
+    fi
     git checkout design-studio -- redesign/design
     if git diff --cached --quiet; then
       echo "Nothing new to import."

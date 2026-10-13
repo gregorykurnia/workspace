@@ -98,3 +98,8 @@ Inserted as `https://mom.local/{momId}` — intercepted on click, never actually
 ## Known issues
 - PDFs >10MB fail on Cloudinary free plan — workaround: use Add Link with Google Drive URL
 - Download attribute doesn't work cross-origin — app uses blob fetch with fallback to new tab
+
+## UI redesign (in progress)
+- The plan is in `ui-redesign-plan.md`. The design happens in a separate studio folder (`../workspace-studio`, branch `design-studio`) that never sees this codebase.
+- Never read from the studio folder, and never send anything from this codebase into it.
+- When the owner says **"Import the approved design"**: run `redesign/studio.sh import`, confirm `redesign/design/` arrived (design guide, tokens, prototype, coverage, decisions), tick Step 5b in the plan's checklist, and then offer to start Step 6 (the implementation plan).
