@@ -14,20 +14,32 @@ Redesign the Workbench UI from scratch, as if it were a brand-new product nobody
 
 ## The firewall: what crosses and what doesn't
 
-### Allowed into the design session (the handoff package)
-Only these files, copied into an **empty folder outside the repo**:
+Design happens in **this same folder and Claude Code**, but on a separate **`design-studio` branch**. It's an *orphan* branch: it shares no history with `main`, and the old app's files aren't on it. When you switch to it, the old code disappears from disk.
 
-1. `inventory.md` — user needs, written as job stories (Step 1)
-2. `priorities.md` — how often each job happens (Step 2)
-3. `brief.md` — personality, outside references, constraints (Step 3)
+| | `main` (the codebase) | `design-studio` (the design environment) |
+|---|---|---|
+| Old app code, tests, brand assets | ✅ | ❌ not on disk |
+| `CLAUDE.md` | Describes the old app | Studio-only rules: designer role, firewall, process, deliverables |
+| `.claude/settings.json` | (none) | Deny rules that block reading old files, git history, other branches, transcripts, the GitHub repo, and the live site |
+| Git history shown to new sessions | Old commits | Studio commits only |
+| `redesign/handoff/` | Where the handoff package is written | Synced copy (read-only input) |
+| `redesign/design/` | Imported after approval (Step 5b) | Where the designer works |
+
+Switching: `redesign/studio.sh enter` (from `main`) and `git switch main` (to leave).
+
+### Allowed into the design session (the handoff package, `redesign/handoff/`)
+1. `inventory.md`: user needs, written as job stories (Step 1)
+2. `priorities.md`: how often each job happens (Step 2)
+3. `brief.md`: who, personality, outside references, branding (Step 3)
 
 ### Never allowed into the design session
-- The repo, or any session started inside it (it auto-loads `CLAUDE.md`, which describes the old UI)
-- `CLAUDE.md`, `AGENTS.md`, `index.html`, `css/`, `js/`, `tests/`
+- The `main` branch, or any session that has been on it. Always start a **brand-new** Claude Code session in the studio, never `--continue` or `--resume`.
+- `CLAUDE.md` (main version), `AGENTS.md`, `index.html`, `css/`, `js/`, `tests/`, this plan, `redesign/inventory-notes.md`
 - Screenshots, screen recordings, or descriptions of the current app
-- `brand-proposal/`, `favicon.svg`, the Dock icon, current colors or fonts (unless deliberately kept, see Step 3)
+- `brand-proposal/`, `favicon.svg`, the Dock icon, current colours or fonts (unless deliberately kept, see Step 3)
 - Class names, element IDs, `data-testid`s, Firestore field names
 - Phrases like "like the current one but…" or "improve the existing…"
+- Memories about the old UI: Claude Code's memory folder is shared by both branches, so **sessions on `main` must not save memories describing the current UI**
 
 ---
 
@@ -35,7 +47,9 @@ Only these files, copied into an **empty folder outside the repo**:
 
 ### Step 1 — Capability inventory (Agent A, has repo access)
 
-Agent A reads the code (`js/app.js`, `js/auth.js`, `js/rbac.js`, `js/tiptap.js`, `js/pwa.js`, `sw.js`, `tests/`) and writes `inventory.md`.
+Agent A reads the code (`js/app.js`, `js/auth.js`, `js/rbac.js`, `js/tiptap.js`, `js/pwa.js`, `sw.js`, `tests/`) and writes `redesign/handoff/inventory.md`. Anything that references code or current behaviour goes into the owner-only `redesign/inventory-notes.md`, which never leaves `main`.
+
+✅ **Done.** A second leak review rewrote the stories that still implied the current layout (F3–F7, F9, O1, O7, O8, P2, P3, W8, A1, A2, A6). The removed details are logged in `inventory-notes.md` §7 for Agent C.
 
 **Rule 1: no layout vocabulary.** Banned words: sidebar, tab, drawer, modal, popup, dialog, menu, ⋯, toolbar, panel, pane, list, grid, card, header, footer, column, row, button, icon, badge, toggle, dropdown, arrow, tree, page, screen, view, left, right, top, bottom.
 
@@ -64,31 +78,47 @@ The inventory must also list, in neutral language:
 
 ### Step 1b — Sanitisation pass (you, plus a fresh agent)
 
-1. Search `inventory.md` for every banned word from Rule 1. Rewrite any hit.
-2. A **fresh agent that has never seen the repo** reads the inventory and is asked: *"Describe what you imagine this app's current layout looks like."* If it can guess the current layout, something leaked. Find it and rewrite it.
+1. Search `inventory.md` for every banned word from Rule 1. Rewrite any hit. ✅ Done (clean).
+2. **Guess-the-layout test.** Run `redesign/studio.sh enter`, quit Claude Code, start a new `claude` session, and send:
+   > Read only `redesign/handoff/inventory.md`. Don't design anything. Describe, as specifically as you can, what you imagine the *current* version of this app's layout looks like.
+
+   Then `/exit` that session (never reuse it for design) and run `git switch main`. Compare its guess with the real app. If it describes the real layout, something leaked: rewrite that story on `main`.
 
 ### Step 2 — Priorities (you)
 
-Tag every job story **daily / weekly / rare** in `priorities.md`. Do this from memory of *what you do*, not by opening the app.
+First, decide the open questions in `redesign/inventory-notes.md` §4 (placeholders) and §5 (bugs and unclear intent). Add any newly confirmed needs to `inventory.md` as job stories, written by the same rules.
+
+Then fill in the Frequency column in `redesign/handoff/priorities.md`: **daily / weekly / rare / drop** for every job story. Do this from memory of *what you do*, not by opening the app. When finished, set its status line to `FILLED`.
 
 These rankings decide visual hierarchy and should drive the design more than anything else.
 
 ### Step 3 — Design brief (you)
 
-Write `brief.md`:
+Fill in `redesign/handoff/brief.md` and set its status line to `FILLED`. It covers:
+- **Who uses it** — people, roles, devices, context
+- **Language** — which language(s) the interface uses
 - **Personality** — calm/editorial? dense/tool-like? playful? warm or clinical?
 - **References** — 2–3 apps you admire that are *not* this one (e.g. Linear, Notion, Things, Craft, Arc)
 - **Constraints** — phone + desktop, installable, light + dark mode, signed-in vs. visiting-via-link, role-based visibility
 - **Branding decision** — default for maximum blank slate: **name, logo, and colors are all open**. If you decide to keep something (e.g. the name "Workbench"), write only that word in the brief. Never pass the existing logo files or palette.
 - **Permission to challenge the model** — the designer may propose merging, splitting, or removing concepts (e.g. "should notes and files really be separate things?", "are folders the right structure?"). Proposals get flagged for your decision; they are not silently adopted.
 
-### Step 4 — Design from zero (Agent B, no repo access)
+### Step 4 — Design from zero (Agent B, in the design studio)
 
-- Run in a **new claude.ai chat or Claude Code started in an empty folder**, never a subagent spawned from this repo
-- Give it only the handoff package (inventory, priorities, brief)
-- First produce **3 deliberately divergent directions** (e.g. different navigation models, densities, and personalities), each as a standalone HTML prototype with mock data
-- Pick one direction, then expand it to every job story and every state: nothing yet, loading, failure, no connection, password-restricted, read-only role, shared-link visitor, bulk selection, phone + desktop, light + dark
-- Agent B also produces the **design guide**, the package that gets approved and handed to implementation:
+**Starting a design session:**
+1. On `main`, with everything committed, run `redesign/studio.sh enter`. It switches to `design-studio` and syncs `redesign/handoff/` from `main`.
+2. Quit Claude Code completely (`/exit`).
+3. Start a **new** session in the same folder with `claude`. Never use `--continue` or `--resume`, because they would bring back a conversation that has seen the old app.
+4. First message: *"Start the design process described in CLAUDE.md."*
+5. To leave: `/exit`, then `git switch main`. Coming back later: repeat 1–3. The studio's own commits carry the design work between sessions.
+
+**Never** run a design session as a subagent spawned from a `main` session, and never paste anything from `main` into the studio.
+
+The studio's `CLAUDE.md` gives Agent B the full process. In short:
+- It reads only the handoff package (inventory, priorities, brief)
+- It first produces **3 deliberately divergent directions** (e.g. different navigation models, densities, and personalities), each as a standalone HTML prototype with mock data
+- You pick one direction, and it expands it to every job story and every state: nothing yet, loading, failure, no connection, password-restricted, read-only role, shared-link visitor, bulk selection, phone + desktop, light + dark
+- It produces the **design guide** in `redesign/design/`, the package that gets approved and handed to implementation:
   - **Tokens:** color (light + dark), type scale, spacing, radius, elevation, motion, breakpoints
   - **Components:** every reusable piece, with all its variants and states (default, hover, focus, active, disabled, loading, error, selected, empty)
   - **Screens:** every screen in the new design, each shown in every state, on phone and desktop, in light and dark
@@ -100,13 +130,14 @@ Write `brief.md`:
 
 ### Step 5 — Coverage audit
 
-Go through `inventory.md` line by line against the prototype. Every job story and every state must have a home. Anything missing is a design gap to send back to Agent B as a *need*, not solved by borrowing from the old UI.
+In the studio, Agent B writes `redesign/design/coverage.md`, mapping every story ID and state to the prototype. You check it by walking through the prototype yourself. Every job story and every state must have a home. Anything missing is a design gap to send back to Agent B as a *need*, not solved by borrowing from the old UI.
 
 ### Step 5b — Approve and freeze the design guide (you)
 
 - Review the design guide and approve it.
 - Freeze it with a version and date (e.g. `design-guide v1.0 — 2026-xx-xx`). Later changes go through Agent B and bump the version.
-- Copy the approved package into the repo at `redesign/design/`. The firewall only blocks old → new, so moving the finished design into the repo is safe.
+- Leave the studio (`git switch main`), then run `redesign/studio.sh import`. This copies `redesign/design/` from `design-studio` into `main`, then commits and pushes it. The firewall only blocks old → new, so moving the finished design onto `main` is safe.
+- Keep the `design-studio` branch. If Agent C finds gaps in Step 6, they get designed there, then imported again.
 
 ### Step 6 — Technical implementation plan (Agent C, sees repo + approved design)
 
@@ -143,7 +174,7 @@ A table of every **screen × state × device (phone / desktop) × theme (light /
 
 **6. Reverse coverage (code → design)**
 Agent C searches the code for **every place that produces visible UI**, so nothing keeps its old look, and maps each one to its new design counterpart. Easy to miss:
-- Login, sign-up, and forgot-password flows (`js/auth.js`)
+- Sign-in and forgot-password flows (`js/auth.js`; there is no sign-up)
 - Role-gated UI (`js/rbac.js`)
 - Native `alert()`, `confirm()`, `prompt()` calls
 - Toasts and inline error messages
@@ -202,8 +233,12 @@ The rebuild follows `ui-implementation-plan.md` phase by phase. It is also where
 
 | Leak | Why | Guard |
 |---|---|---|
-| **AI reading the code** | Markup, class names, screen order | Agent A only writes needs; Agent B never sees the repo |
-| **`CLAUDE.md` auto-loading** | Any session in this repo loads it, and it describes the old UI | Agent B runs outside the repo |
+| **AI reading the code** | Markup, class names, screen order | Agent A only writes needs; Agent B works on an orphan branch where the old code isn't on disk |
+| **`CLAUDE.md` auto-loading** | Any session on `main` loads it, and it describes the old UI | The studio branch has its own `CLAUDE.md` with no trace of the old app |
+| **Git history** | New sessions see recent commit messages ("Fix context menu…"); git can show other branches | Orphan branch has no old history; deny rules block `git log/show/diff/checkout…` |
+| **Old conversations** | `--continue`/`--resume` or reading transcripts brings back old-UI discussion | Always a brand-new session; transcripts under `~/.claude/projects/` are deny-listed |
+| **Shared memory** | Claude Code memory is per folder, so it's shared by both branches | Sessions on `main` never save memories about the current UI; the studio is told to ignore and report any |
+| **Online copies** | The GitHub repo and live site show the old app | Deny rules block GitHub, `gh`, `curl`, `wget`, Vercel |
 | **Inventory wording** | "Tab", "menu", "Starred" bring the layout back | Banned-word rules + sanitisation pass + "guess the layout" test |
 | **Inventory structure** | Grouping by current screens recreates them | Group by user jobs |
 | **Your memory** | Daily use makes the current layout feel natural | Don't open the app during Steps 2–5; translate habits into needs |
@@ -220,22 +255,27 @@ The only influence that should remain is the feature set itself, which the new d
 
 ## Checklist
 
+**Setup**
+- [x] `design-studio` orphan branch created with studio `CLAUDE.md`, deny rules, and `.gitignore`
+- [x] `redesign/studio.sh` (enter / import) on `main`
+
 **Discovery (sees old app)**
-- [x] Step 1: `inventory.md` written as job stories, grouped by jobs (Agent A) — `redesign/inventory.md`; owner-only notes in `redesign/inventory-notes.md` (never hand off)
+- [x] Step 1: `redesign/handoff/inventory.md` written as job stories, grouped by jobs (Agent A); owner-only notes in `redesign/inventory-notes.md` (never hand off)
+- [x] Step 1: second leak review; removed details logged in `inventory-notes.md` §7
 - [x] Step 1b: banned-word scan clean
-- [ ] Step 1b: fresh agent can't guess the current layout
+- [ ] Step 1b: guess-the-layout test passed (fresh studio session can't guess the current layout)
 
 **Brief (you, without opening the app)**
-- [ ] Step 2: `priorities.md`, every job tagged daily / weekly / rare
-- [ ] Step 3: `brief.md` written, including the branding decision
-- [ ] Handoff package copied to an empty folder outside the repo
+- [ ] Step 2: open questions in `inventory-notes.md` §4–§5 decided; new needs added to `inventory.md`
+- [ ] Step 2: `priorities.md` filled in, every job tagged daily / weekly / rare / drop, status `FILLED`
+- [ ] Step 3: `brief.md` filled in, including the branding decision, status `FILLED`
 
-**Design (never sees old app)**
-- [ ] Step 4: 3 divergent directions prototyped (Agent B)
+**Design (in `design-studio`, never sees old app)**
+- [ ] Step 4: `redesign/studio.sh enter` → brand-new session → 3 divergent directions prototyped (Agent B)
 - [ ] Direction chosen; all job stories and states prototyped
 - [ ] Design guide complete: tokens, components, screens, patterns, copy, accessibility
 - [ ] Step 5: coverage audit passed; gaps sent back as needs
-- [ ] Step 5b: design guide approved, versioned, and copied to `redesign/design/`
+- [ ] Step 5b: design guide approved and versioned; `redesign/studio.sh import` run on `main`
 
 **Implementation plan (sees repo + approved design)**
 - [ ] Step 6: `redesign/ui-implementation-plan.md` written (Agent C)

@@ -48,14 +48,14 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **W4.** When a picture helps, I want to add an image to a MoM from a web address, from my device, or by pasting it. I want to resize it by dragging, keep it flowing with the text or let it float freely anywhere over the note and drag it into place, switch between the two, and remove it, so that visuals sit exactly where they make sense.
 
-**W5.** When I mention something on the web, I want to turn any text into a link and remove links again, so that references are one click away.
+**W5.** When I mention something on the web, I want to turn any text into a link and remove links again, so that references are one step away.
 
 **W6.** When a meeting relates to files in the workspace, I want to search all files by name, see where each one lives, pick several at once, and insert them into the MoM as named links, so that notes point to the material discussed.
 
 **W7.** When a meeting continues an earlier one, I want to pick one or more other MoMs (newest first, showing their area and date) and insert them as named links. Following such a link should open that MoM inside the app, saving the current one first, so that a series of meetings reads as a chain.
 
-**W8.** When I keep a running client-prospect journal as a table in a MoM, I want every entry to have a "Detailed Remarks" field. It should be added automatically if missing, open into a roomy writing space beside the entry that saves itself as I type and closes when I'm done, and stay collapsed when only reading, with the option to expand each remark, so that the table stays scannable while each prospect still has room for long context.
-  *Today this applies only to the one journal named "Clients - Prospect Journal".*
+**W8.** When I keep a running client-prospect journal as a table in a MoM, I want every entry to have a "Detailed Remarks" field. It should be added automatically if missing, give me roomy space to write long remarks that saves itself as I type, and stay compact when I'm only reading while letting me read any remark in full, so that the table stays scannable while each prospect still has room for long context.
+  *This currently applies only to one specific journal, identified by its title. A more general mechanism is welcome as a proposal.*
 
 **W9.** When I need to send minutes to someone outside, I want to export a MoM as an A4 PDF with its title, area, date, tags, full body, and an export date stamp, named after the title, so that I can email or archive it. This must work for MoMs I can only read, too.
 
@@ -71,19 +71,19 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **F2.** When I'm inside an area, I want to narrow its MoMs by title or content, its files by name, and its sub-areas by name, and sort each by newest or A–Z. If nothing matches, I want to be told so, so that I can find things in a busy area.
 
-**F3.** When something matters a lot, I want to flag a MoM or file as important and find all flagged things in an area together, with a count, and remove the flag from there, so that I can get back to them fast.
+**F3.** When something matters a lot, I want to flag a MoM or file as important, see all flagged things in an area together, and unflag them, so that I can get back to them fast.
 
-**F4.** When I open the app, I want a starting point that shows my outermost areas with how many things each contains (or that it is password-restricted), and, for admins, the five most recently added MoMs and files across the workspace with their kind, location, and date, so that I can jump straight into today's work.
+**F4.** When I open the app, I want to see my highest-level areas with how much each contains (or that it is password-restricted), and, for admins, what was most recently added across the workspace (with kind, location, and date), so that I can jump straight into today's work.
 
-**F5.** When I'm deep inside nested areas, I want to always see the full path from the workspace root to where I am, with restricted areas marked, jump to any level of that path, and go up one level, so that I never lose context.
+**F5.** When I'm deep inside nested areas, I want to always know where I am within the nesting (with restricted areas marked) and get to any enclosing area quickly, so that I never lose context.
 
-**F6.** When I have many nested areas, I want to reach any of them quickly from anywhere, and expand or collapse nested areas without opening them, remembered on this device, so that moving around stays fast.
+**F6.** When I have many nested areas, I want to reach any of them quickly from anywhere, without opening every level on the way, so that moving around stays fast.
 
-**F7.** When I want to come back to or send someone a specific place, I want every area (including which part of it and which grouping is open) and every MoM to have its own web address. The browser's back and forward should work, and reloading should return me to the same place, so that the app behaves like the web.
+**F7.** When I want to come back to or send someone a specific place, I want every place in the app, including exactly what I'm looking at inside an area and every MoM, to have its own web address. The browser's back and forward should work, and reloading should return me to the same place, so that the app behaves like the web.
 
 **F8.** When I look at an area, I want to see when it was created and how many sub-areas, MoMs, and files it holds, and how many items each grouping holds, so that I can judge its size at a glance.
 
-**F9.** When I open a file, I want images to show full-size inside the app (dismissed with Escape or a click outside) and everything else to open in a new browser window, so that I can check things without losing my place.
+**F9.** When I open a file, I want images to show at full size without leaving the app (and to dismiss them easily, including with Escape), and other kinds of files to open in the browser, so that I can check things without losing my place.
 
 **F10.** When I need a copy, I want to download a file to my device, falling back to opening it if a direct download isn't allowed, so that I can use it offline or attach it elsewhere.
 
@@ -95,11 +95,11 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 ## 4. Organise
 
-**O1.** When a new subject comes up, I want to create an area with a name and an emoji (from a set of 24), either at the outermost level or inside another area, so that work has a home. *(Admin only)*
+**O1.** When a new subject comes up, I want to create an area with a name and an emoji, either at the highest level or inside another area, so that work has a home. *(Admin only)*
 
 **O2.** When a subject changes, I want to rename an area and change its emoji, so that the structure stays accurate.
 
-**O3.** When the structure needs rearranging, I want to move an area, with everything inside it, to any other area or to the outermost level. Moving it into itself or into anything inside it must be impossible, so that reorganising is safe. *(Admin only)*
+**O3.** When the structure needs rearranging, I want to move an area, with everything inside it, to any other area or to the highest level. Moving it into itself or into anything inside it must be impossible, so that reorganising is safe. *(Admin only)*
 
 **O4.** When an area has many MoMs or files, I want to create, rename, and remove groupings for them inside that area. Removing a grouping keeps its contents in the area as ungrouped, so that I can bunch things without deeper nesting. *(Removing is admin only)*
 
@@ -107,9 +107,9 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **O6.** When a name is wrong, I want to rename a MoM or file without opening it, so that small fixes are quick.
 
-**O7.** When I tidy up, I want to select several areas, MoMs, or files (one kind at a time), select everything that currently matches my filter, see how many are selected, and then move them all to one destination or delete them all, so that clean-ups aren't one-by-one. *(Deleting, and selecting areas, are admin only)*
+**O7.** When I tidy up, I want to select several areas, MoMs, or files, select everything that currently matches my filter, see how many are selected, and then move them all to one destination or delete them all, so that clean-ups aren't one-by-one. *(Deleting, and selecting areas, are admin only)*
 
-**O8.** When I delete an area, MoM, file, or grouping, I want to be asked first with a clear statement of the impact (e.g. "this area and all 14 items inside"; for several items, the first six names plus "and N more"), so that I never delete by accident. *(Admin only)*
+**O8.** When I delete an area, MoM, file, or grouping, I want to be asked first with a clear statement of the impact (e.g. that an area will go with everything inside it and how much that is; for several items, which ones), so that I never delete by accident. *(Admin only)*
 
 **O9.** When I've deleted something by mistake, I want it to stay recoverable for 7 days. I want to see every deleted thing with its kind, when it was deleted, and how many days remain, restore any of them, permanently remove one, or empty everything at once (with a warning that this can't be undone), so that mistakes are reversible and clutter still goes away. Anything older than 7 days is removed automatically.
 
@@ -119,9 +119,9 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **P1.** When something is sensitive, I want to restrict an area or a file with a password (typed twice to confirm), change it or remove it (both require the current password), so that only people who know it can open it. Passwords are never stored in readable form.
 
-**P2.** When I open a restricted area, or anything inside it, I want to be asked for the password, told clearly if it's wrong, and allowed to try again. Once I've opened it, it should stay open for this session until I restrict it again. Restricting the area I'm in takes me back to the start, so that protection is real but not a constant nuisance.
+**P2.** When I open a restricted area, or anything inside it, I want to be asked for the password, told clearly if it's wrong, and allowed to try again. Once I've opened it, it should stay open for this session until I restrict it again, and restricting it again shuts it immediately, even if I'm inside it, so that protection is real but not a constant nuisance.
 
-**P3.** While an area is restricted, I want its contents hidden everywhere: in navigation, in counts (which say "password protected" instead), and inside it, so that nothing leaks.
+**P3.** While an area is restricted, I want its contents hidden everywhere (wherever areas are listed, in counts and summaries, in search, and inside it), with only the fact that it is restricted showing, so that nothing leaks.
 
 **P4.** When a file is restricted, I want its name to stay visible but its note hidden, and to be unable to open, look inside, or download it until the password is entered, so that I know it exists without exposing it.
 
@@ -147,9 +147,9 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 ## 7. Work anywhere
 
-**A1.** When I'm on my phone, I want every capability to work, with navigation that gets out of the way and comes back after I've chosen where to go, and all actions available by touch (no hovering), so that I can take minutes in a meeting room.
+**A1.** When I'm on my phone, I want every capability to work, with as much room as possible for what I'm reading or writing, and all actions available by touch (no hovering), so that I can take minutes in a meeting room.
 
-**A2.** When I use the app daily, I want to install it on my phone or my computer's dock and have it open on its own like a native app, so that it's one tap away.
+**A2.** When I use the app daily, I want to install it on my phone or computer and have it open on its own like a native app, so that it's one tap away.
 
 **A3.** When I have no connection, I want the app itself to still open, so that I'm not staring at a browser error.
 
@@ -157,7 +157,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **A5.** When I prefer less motion, I want animation reduced, so that the app is comfortable to use.
 
-**A6.** When I use a keyboard, I want Escape to dismiss whatever is open, Enter to confirm short forms, and Cmd/Ctrl+S to save a MoM, so that I can work without a mouse.
+**A6.** When I use a keyboard, I want Escape to back out of whatever I'm in the middle of, Enter to confirm short inputs, and Cmd/Ctrl+S to save a MoM, so that I can work without a mouse.
 
 ---
 
@@ -211,7 +211,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | Capability | Admin | Member | Visitor |
 |---|---|---|---|
 | See areas | All | Only areas granted (and everything inside them) | Only the shared area and what's inside |
-| Create outermost area; create sub-area | ✓ | | |
+| Create highest-level area; create sub-area | ✓ | | |
 | Rename area, change emoji | ✓ | ✓ | |
 | Move area | ✓ | | |
 | Password-restrict / unrestrict area or file | ✓ | ✓ (files: not if read-only) | |
@@ -226,7 +226,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | Mark MoM / file read-only | ✓ | | |
 | Create / turn off shared links | ✓ | | |
 | Grant / revoke member access | ✓ | | |
-| See "recently added" on the starting point | ✓ | | |
+| See what was recently added across the workspace | ✓ | | |
 | Export MoM to PDF | ✓ | ✓ | |
 | Account details, change password, sign out | ✓ | ✓ | |
 
@@ -237,7 +237,7 @@ When a member attempts something admin-only, they are told plainly that only adm
 ## Hard constraints
 
 - Works fully on phones and on desktop computers.
-- Installable on phones and to the computer dock; runs on its own like a native app; portrait on phones.
+- Installable on phones and computers; runs on its own like a native app.
 - App opens without a connection; data needs a connection.
 - Real-time sync between everyone in the workspace.
 - Rich text editing as described in W1–W8, including tables and freely positioned images.

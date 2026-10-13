@@ -2,7 +2,7 @@
 
 > ⛔ **Never put this file in the design handoff package.** It references code, current labels, and current behaviour. It exists for you (Steps 1b–2) and for Agent C (Step 6).
 
-Written by Agent A while extracting `inventory.md` from the code at commit `47e9f44`.
+Written by Agent A while extracting `redesign/handoff/inventory.md` from the code at commit `47e9f44`.
 
 ---
 
@@ -94,3 +94,24 @@ The inventory describes the **intended** behaviour. Here the code differs, or th
 
 ## 6. Deliberately left out of the inventory
 Product name, logo, colours, fonts, current labels ("Starred", "Trash", "Lock", "Workspaces", "Subfolders", "Meeting notes", "Files"), the order of sections, and the per-area colour tints derived from IDs.
+
+## 7. Sanitisation pass 2: details removed from the inventory
+A second leak review removed wording that described the current layout. The current behaviour is recorded here so Agent C can still match or deliberately change it in Step 6:
+
+| Story | Removed detail (current behaviour) |
+|---|---|
+| W8 | Remark editor opens beside the table entry; remarks are collapsed in read mode with per-remark expand |
+| F3 | Flagged items have their own section per area, with a count badge, and are unflagged from there |
+| F4 | Home shows outermost areas and, for admins, exactly 5 most recently added MoMs and files |
+| F5 | Breadcrumb path from the root plus a "back up one level" control |
+| F6 | Collapsible area tree with expand/collapse remembered on the device (`G_exp`) |
+| F7 | Hash URL encodes the open area section ("which part of it") and the open grouping |
+| F9 | Lightbox overlay, dismissed by Escape or a click outside; other files open in a new window |
+| O1 | Emoji chosen from a fixed set of 24 |
+| O7 | Selection works on one kind at a time (areas, MoMs, or files) |
+| O8 | Bulk delete confirmation lists the first six names plus "and N more" |
+| P2 | Re-restricting the open area navigates back to the home view |
+| P3 | Area counts read "password protected" while restricted |
+| A1 | Navigation is a drawer on phones that closes after choosing a destination |
+| A2 | "Dock" wording |
+| Hard constraints | Manifest locks orientation to portrait |
