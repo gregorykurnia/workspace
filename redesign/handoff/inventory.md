@@ -77,7 +77,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **F4b.** As an admin, I want to notice what was recently added across the workspace (what it is, where it lives, and when it was added), so that I stay aware of what my team is producing.
 
-**F5.** When I'm deep inside nested areas, I want to always know where I am within the nesting (with restricted areas marked) and get to any enclosing area quickly, so that I never lose context.
+**F5.** When I'm deep inside nested areas, I want to always know where I am within the nesting and get to any enclosing area quickly, so that I never lose context.
 
 **F6.** When I have many nested areas, I want to reach any of them quickly from anywhere, without opening every level on the way, so that moving around stays fast.
 

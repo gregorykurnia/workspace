@@ -263,7 +263,7 @@ The only influence that should remain is the feature set itself, which the new d
 - [x] Step 1: `redesign/handoff/inventory.md` written as job stories, grouped by jobs (Agent A); owner-only notes in `redesign/inventory-notes.md` (never hand off)
 - [x] Step 1: second leak review; removed details logged in `inventory-notes.md` §7
 - [x] Step 1b: banned-word scan clean
-- [ ] Step 1b: guess-the-layout test passed (fresh studio session can't guess the current layout)
+- [x] Step 1b: guess-the-layout test passed (fresh studio session can't guess the current layout) — run 2, see `inventory-notes.md` §8
 
 **Brief (you, without opening the app)**
 - [ ] Step 2: open questions in `inventory-notes.md` §4–§5 decided; new needs added to `inventory.md`

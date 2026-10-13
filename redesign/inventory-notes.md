@@ -129,3 +129,10 @@ Isolated `claude -p --tools "" --setting-sources local` in an empty folder, give
 - F12 (today's date shown) was dropped. The MoM date defaults to today (C4).
 - F3: flags were grouped per area only. The inventory now says "everything I've flagged", widening the scope to the whole workspace (owner approved).
 - F7: deep links also encode the open section (`t=`) and grouping (`df=` / `mf=`).
+
+### Run 2 (after rewrites) — passed
+Full answer: `~/inventory-test/guess-run2.md`.
+- **Gone:** Home contents, date chip, hover-revealed actions, the "Ungrouped" label, the exact sync labels, and the 4 sections that included flagged items. Home is now guessed "low" and wrong.
+- **Wrong:** files as a grid, collapsible groupings, the bottom bulk bar, ⋯ menus on each item, and Home showing "continue where you left off". Tabs vs. stacked sections is now a toss-up.
+- **Still correct, but only through convention (accepted):** a sidebar tree for nested areas (run 1 guessed the opposite, so the inventory doesn't determine this), a breadcrumb, the size/age line for an area (it follows directly from the F8 need), a full-screen editor with save status, the sign-in form, and a drawer on mobile.
+- **Follow-up fix:** removed "(with restricted areas marked)" from F5, because it was what put a padlock in the guessed breadcrumb. P3 already covers restricted status.
