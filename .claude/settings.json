@@ -77,6 +77,15 @@
       "Bash(git notes:*)",
       "Read(~/inventory-test/**)",
       "Read(~/brief-session/**)"
+    ],
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git push origin design-studio)",
+      "Bash(git status:*)",
+      "Bash(python3 -m http.server:*)",
+      "Bash(open redesign/design/:*)"
     ]
   }
 }

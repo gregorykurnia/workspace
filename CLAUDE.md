@@ -74,3 +74,23 @@ When the owner approves the guide, add a version line at the top of `design-guid
 
 - Locally: `open redesign/design/prototype/index.html`, or run `python3 -m http.server 8000` inside `redesign/design/` and open http://localhost:8000.
 - Pushes to `design-studio` may also produce a Vercel preview URL, which is handy for checking on a phone.
+
+## Saving your work (automatic, don't wait to be asked)
+
+After every meaningful piece of work (a direction finished, a decision recorded, a round of changes the owner asked for), immediately run:
+
+```
+git add -A
+git commit -m "<short description of what changed>"
+git push
+```
+
+- This folder is always on the `design-studio` branch. Only ever push there. Never switch branches and never push to `main`.
+- Before ending any reply in which you changed files, make sure everything is committed and pushed, and end the reply with **"✅ Saved and pushed."**
+
+## When the design guide is approved
+
+1. Add the version line to `design-guide.md` (see Deliverables), then commit and push.
+2. Tell the owner, word for word:
+   > The design is finished and saved. Close this window. In your codebase window (`~/projects/workspace`), start a new Claude session and say: **"Import the approved design."**
+3. Don't try to do the import yourself. It happens on the codebase side.
