@@ -103,3 +103,16 @@ Inserted as `https://mom.local/{momId}` — intercepted on click, never actually
 - The plan is in `ui-redesign-plan.md`. The design happens in a separate studio folder (`../workspace-studio`, branch `design-studio`) that never sees this codebase.
 - Never read from the studio folder, and never send anything from this codebase into it.
 - When the owner says **"Import the approved design"**: run `redesign/studio.sh import`, confirm `redesign/design/` arrived (design guide, tokens, prototype, coverage, decisions), tick Step 5b in the plan's checklist, and then offer to start Step 6 (the implementation plan).
+
+## UI rebuild (Step 7, in progress)
+Parts of this file describe the old app and are out of date (for example, the editor is Tiptap, not Quill). For rebuild work, the plan and the design win.
+
+- **The route:** `redesign/ui-implementation-plan.md` (approved 2026-10-13). **The spec:** `redesign/design/` (design guide v1.0, tokens, prototype). The prototype is the reference rendering; the old app is never a reference.
+- **Branch:** all rebuild work happens on the `redesign` branch. At the start of a rebuild session, run `git switch redesign`, and `git merge main` if `main` has moved. The auto-push rule then pushes to `redesign`, which deploys a Vercel preview, never production. Never merge `redesign` into `main` until Phase 8 is done and the owner says so.
+- **One task per session.** Read only what the task needs: its plan sections, the design-guide section, and the matching prototype file and function. Only read `js/app.js`, `js/auth.js`, `js/rbac.js` or `css/styles.css` when the task's plan row names them (Phase 1 moves code out of them; later phases replace them).
+- **Model check:** plan §7.0 names the model and effort for each task. If the current model is a lower tier than the task needs, say so before starting and suggest switching.
+- **Never copy from the old UI:** no markup, CSS, class names, element ids or wording from the old files go into new files. New code follows the plan's §2.3–2.4.
+- **Design gaps:** if the prototype and design guide don't answer something, stop and add it to the plan's §9.1 as a need. Don't fill it from the old app. Never send anything to the studio folder; the owner carries needs over.
+- **Before each commit:** `node -c` on changed JS files, the relevant Playwright tests, and (once it exists) the old-names check from plan §10.
+- **Track progress:** tick the plan's §5 and §10 rows as they're done, and the phase checkboxes in `ui-redesign-plan.md`.
+- Don't save memories that describe the old UI.

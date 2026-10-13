@@ -280,10 +280,10 @@ The only influence that should remain is the feature set itself, which the new d
 - [x] Step 6: `redesign/ui-implementation-plan.md` written (Agent C)
 - [x] Component map, screen map, and coverage matrix complete
 - [ ] Reverse coverage: every UI-producing code path mapped; gaps sent to Agent B as needs
-- [ ] Implementation plan approved
+- [x] Implementation plan approved
 
 **Rebuild**
-- [ ] Step 7: `redesign` branch created
+- [x] Step 7: `redesign` branch created
 - [ ] Phase 1: data logic separated from rendering, no visual change, tests green
 - [ ] Phases 2–6: tokens, shell, components, screens, states, edge surfaces
 - [ ] Phase 7: old CSS, rendering code, and class names deleted

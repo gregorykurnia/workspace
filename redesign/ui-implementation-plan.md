@@ -2,7 +2,7 @@
 
 How the frozen design guide gets built into this codebase, so that every component, state and screen gets the new design and nothing keeps the old look.
 
-**Status: DRAFT, waiting for owner approval.** Step 7 doesn't start until it's approved.
+**Status: APPROVED by the owner on 2026-10-13.** Step 7 (the rebuild) may start.
 
 This plan maps **design → code**. It makes no design decisions. Where the design is silent, the gap is listed in §9.1 as a *need* for the designer (Agent B), worded so it can be pasted into the studio without carrying anything from the old app.
 
