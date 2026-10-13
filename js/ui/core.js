@@ -821,8 +821,7 @@ on('flag', d => {
 on('final', d => {
   const x = itemOf(d.kind, d.id); if (!x) return;
   const now = !x.readOnly;
-  setFinal(d.kind, d.id, now).then(() => toast(now ? 'Marked final. Members can read it but not change it.' : 'Final mark removed', { icon: 'lock' }),
-    () => toast('Couldn’t change the final mark. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(setFinal(d.kind, d.id, now), [now ? 'Marked final. Members can read it but not change it.' : 'Final mark removed', { icon: 'lock' }], 'Couldn’t change the final mark. Check your connection, then try again.');
 });
 on('delete-item', d => {
   const x = itemOf(d.kind, d.id); if (!x) return;
@@ -910,10 +909,17 @@ const recentEntries = () => CURR_USER_RECENT.filter(x => (x.k === 'm' ? M.find(m
 /* Undo (S4): toasts carry { act: 'undo', data: { key } }; whoever offers it registers the way back. */
 const UNDO = {};
 const offerUndo = (key, fn) => { UNDO[key] = fn; };
+/* A write the screen already shows: Firestore applies it on this device at once, but its promise
+   settles only when the server answers, which offline can be much later. So confirm now (ok:
+   [text, toast options]) and speak up only if the server later refuses it. */
+function afterWrite(p, ok, failText = 'Couldn’t save that change. Check your connection, then try again.') {
+  if (ok) toast(ok[0], ok[1]);
+  return Promise.resolve(p).then(() => true, () => { toast(failText, { icon: 'alert', tone: 'warn' }); return false; });
+}
 on('undo', d => {
   const f = UNDO[d.key]; if (!f) return;
   delete UNDO[d.key];
-  Promise.resolve(f()).then(() => toast('Undone', { icon: 'restore' }), () => toast('Couldn’t undo that. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(f(), ['Undone', { icon: 'restore' }], 'Couldn’t undo that. Check your connection, then try again.');
 });
 
 /* ---------- Store events and boot ---------- */
@@ -921,7 +927,7 @@ Store.onChange(what => {
   if (what === 'role' || what === 'guest') UI.roleReady = true;
   if (what === 'access' || what === 'guest') UI.accessReady = true;
   if (what === 'error') console.error('A live listener failed');
-  if (what !== 'users') scheduleRender();
+  if (what !== 'users' && what !== 'pending') scheduleRender();   // 'pending' only changes the editor's pill
 });
 /* Called once, by the last script on the page, after every view file has registered. */
 function boot() {

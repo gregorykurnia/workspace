@@ -41,6 +41,7 @@ window.addEventListener('offline',_syncUpdate);
 // collection event, so the old page sees exactly the events it saw before.
 function _onSnap(col,key,set,snap){
   var meta=snap.metadata||{};
+  if(key==='m')_pendingMoms(snap);
   _fromCache[key]=!!meta.fromCache;
   if(!meta.fromCache)_fromServer[key]=true;
   if(!LOADED[key]||snap.docChanges().length){
@@ -50,6 +51,14 @@ function _onSnap(col,key,set,snap){
     Store._emit(col);
   }else chkLoad();
   _syncUpdate();
+}
+// MoMs with edits kept on this device that the server hasn't confirmed yet (for example, written
+// offline before the page was reloaded). Emits 'pending' when the set changes.
+Store.pendingMoms=new Set();
+function _pendingMoms(snap){
+  var now=new Set();snap.docs.forEach(function(d){if(d.metadata&&d.metadata.hasPendingWrites)now.add(d.id);});
+  var same=now.size===Store.pendingMoms.size;now.forEach(function(id){if(!Store.pendingMoms.has(id))same=false;});
+  if(!same){Store.pendingMoms=now;Store._emit('pending');}
 }
 var _listenersStarted=false;
 function startListeners(){

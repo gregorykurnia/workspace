@@ -590,7 +590,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 4 | ✅ Upload dialog with progress and the 4 failure reasons | Sonnet · high | Error mapping and Cloudinary edge cases |
 | 4 | ✅ Password dialogs, restricted gates, Lock again | Sonnet · high | Security-sensitive logic |
 | 5 | ✅ Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
-| 5 | Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
+| 5 | ✅ Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
 | 5 | Remote change bar (S2), colleague toast (S1) | **Opus · high** | Applying someone else's changes while you type, without losing your place or unsaved edits; the most subtle logic in the app |
 | 6 | Sign in, Reset, New member, Missing page | Haiku · high | Fixed screens |
 | 6 | Guest views, `visitor` role, old share-link redirects | Sonnet · high | Access rules for people without accounts |
@@ -772,12 +772,21 @@ Each screen is done when its §4 map is implemented against real data, its defau
 - **Not in this task.** The new-member screen (`#/new-member`, §5.1 row 53) and the Missing page are Phase 6. Until then, a signed-in person with no access is sent to `#/new-member`, which shows "This screen isn't built yet (newmember)". That is a placeholder, not the design's screen, so a new member will see it before Phase 6. The "Check again" action on that screen is unbuilt for the same reason.
 - **Checked:** Chromium, fake workspace data, desktop width, light theme only. §5 boxes stay open until the phone and dark-theme comparison is done, as with the earlier tasks. Earlier suites rerun and passing: states audit 25, pages and dialogs 71, upload and password 75, area 87, Today and ⌘K 52, editor 101, core and shell 149, data 42, gallery, shell smoke, drag, conversion, and the read-only run on the real workspace.
 
+**Notes from offline, "Saved on this device", couldn't save + Retry, catching up (2026-10-13):**
+- **Most of it was in place** (sync pill, offline and catching-up banners, the save pill's four states, Retry, "Back online"). This task made it follow Firestore's real behaviour: a write is kept on this device at once, but its promise settles only when the server answers, and never offline.
+- **Save pill (`js/ui/mom.js`).** "Saved on this device" now appears (a) straight away when offline, (b) when a save has had no answer for 3 s (the connection is gone even if the browser still says online), (c) when the connection drops while a save waits, and (d) when a MoM is opened with edits still queued on this device from an earlier visit or another tab (`Store.pendingMoms`, from the listener's per-document `hasPendingWrites`, in `js/data/store.js`; emits `pending`). It turns to Saved when the server confirms. It is shown **only when the offline copy is on** (`PERSISTENCE === 'on'`); otherwise the pill stays "Saving…" (gap G15). ⌘S offline says "Saved on this device. It syncs when you're back online." instead of "Saved".
+- **Couldn't save + Retry.** A refused save puts its fields back under anything typed since; Retry (or the next save) sends them all. A known reason is said once in a toast: no permission, the MoM was removed by someone else, or too large to save. Unknown reasons show the pill alone. A failure stays on the pill while typing until the next save goes out.
+- **Other actions.** Rename, grouping, restore, remove forever, empty Deleted, final mark, Undo, share on/off, access grant/revoke and passwords used to confirm only after the server answered, so offline nothing was said until reconnecting (then everything at once). They now confirm at once through `afterWrite(promise, [text, options], failText)` in `core.js`, and speak up only if the server later refuses. Share offline says the link "starts / stops working once you're back online".
+- **Catching up** is unchanged (data shown from this device's copy, not yet confirmed by the server: pill + banner, cleared when confirmed). Changing a password is a server-only step and still needs a connection.
+- **Checked:** Chromium, fake data and controllable saves: 38 checks (online save, no answer for 3 s with and without the offline copy, offline typing and ⌘S, reconnect, drop mid-save, refused with a reason and Retry, unknown reason, typing after a failure, queued edits on open and from another tab, browser offline/online, offline rename and share confirm at once, later refusal, catching up). Data layer: 6 checks on the pending-MoM tracking with fake snapshots. All earlier suites rerun and pass (including the real-Firestore offline-copy run this time; its purge check is still intermittently flaky, see the earlier note).
+- **Not checked:** a real offline session on the live database (writes in tests never reach Firestore), Safari's offline copy, and a real refused write (rules).
+
 ### Phase 5: Every state on every screen
 **Tasks:** the remaining rows of §4's state table and §5.1/§5.2: nothing yet, loading, failure, offline, restricted, read-only, selection, no results, remote change, colleague toast, Undo flows, member and new-member roles.
 **Done when:** every row in §5.1 and §5.2 is ticked except the edge surfaces in Phase 6. This needs a **member test account** (see Q4).
 
 - [x] Empty, loading, no-match and member states
-- [ ] Offline, "Saved on this device", couldn't save + Retry, catching up
+- [x] Offline, "Saved on this device", couldn't save + Retry, catching up
 - [ ] Remote change bar (S2), colleague toast (S1)
 
 ### Phase 6: Edge surfaces
@@ -860,6 +869,7 @@ Each is worded as a need, safe to paste into the studio. The owner carries them 
 - **G12 · An area with no emoji.** "Some existing areas have no emoji at all. How should such an area look in the tree, in the path at the top, and on its card?" (Until answered the build shows no emoji for them.)
 - **G13 · The empty note's hint.** "When a new MoM opens with an empty body, what does the first line say before I type?" (The build shows "Type / to add a table, an image or a link" until answered.)
 - **G14 · An old note that can't be opened right now.** "Some old notes need a connection the first time they are opened. When I open one offline, what do I see, and what can I do?" (The build shows "This note couldn't be opened" with Try again.)
+- **G15 · Offline without the offline copy.** "In a private window (or a browser that refuses the offline copy), what I type offline lives only in this tab until the connection is back. What should the save pill and the offline banner say, so I don't close the tab thinking it's saved?" Interim: the pill stays "Saving…" (it never claims "Saved on this device"), and the banner keeps the design's wording.
 
 ### 9.2 Questions for the owner
 - **Q1 · PDF export** (design open question 4): generate the PDF in the app (exact layout, file named after the title, no print dialog; the current library already does this), or print to PDF from the A4 preview? The designer recommends generating. Needed before Phase 6.

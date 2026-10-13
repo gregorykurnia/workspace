@@ -153,7 +153,7 @@ const KIND_ICON = { a: 'shelf', m: 'doc', f: 'file', gm: 'folder-plus', gf: 'fol
 
 on('restore', d => {
   const list = entryList(d.kind)(d.id);
-  restoreBatch(list).then(() => toast('Restored', { icon: 'restore' }), () => toast('Couldn’t restore. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(restoreBatch(list), ['Restored', { icon: 'restore' }], 'Couldn’t restore. Check your connection, then try again.');
 });
 on('purge', d => {
   const e = deletedEntries().find(x => x.kind === d.kind && x.id === d.id); if (!e) return;
@@ -162,7 +162,7 @@ on('purge', d => {
 on('purge-now', d => {
   const list = entryList(d.kind)(d.id);
   closeAll();
-  purgeBatch(list).then(() => toast('Removed for good', { icon: 'trash' }), () => toast('Couldn’t remove it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(purgeBatch(list), ['Removed for good', { icon: 'trash' }], 'Couldn’t remove it. Check your connection, then try again.');
 });
 on('empty-deleted', () => {
   const n = deletedEntries().length;
@@ -170,7 +170,7 @@ on('empty-deleted', () => {
 });
 on('empty-deleted-now', () => {
   closeAll();
-  clearTrash().then(() => toast('Deleted is empty', { icon: 'trash' }), () => toast('Couldn’t empty Deleted. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(clearTrash(), ['Deleted is empty', { icon: 'trash' }], 'Couldn’t empty Deleted. Check your connection, then try again.');
 });
 
 VIEWS.deleted = {

@@ -34,8 +34,11 @@ on('copy-share', d => {
 onInput('share-toggle', el => {
   const on = !!el.checked, k = shareKey(el.dataset.kind, el.dataset.id);
   const write = setShared(k.kind, k.id, on);
-  write.then(() => toast(on ? 'Link is on. Anyone with it can open it.' : 'Link turned off. It stops working straight away.', { icon: on ? 'share' : 'lock', tone: on ? '' : 'warn' }),
-    () => { el.checked = !on; toast('Couldn’t change the link. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }); });
+  // Offline, the change reaches the server (and so the link) only when the connection is back.
+  const later = syncState() === 'offline';
+  toast(on ? (later ? 'Link turned on. It starts working once you’re back online.' : 'Link is on. Anyone with it can open it.')
+    : (later ? 'Link turned off. It stops working once you’re back online.' : 'Link turned off. It stops working straight away.'), { icon: on ? 'share' : 'lock', tone: on ? '' : 'warn' });
+  write.then(() => {}, () => { el.checked = !on; toast('Couldn’t change the link. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }); });
 });
 
 /* ---------- Access: who can see an area (P6) ---------- */
@@ -64,15 +67,11 @@ onForm('grant', f => {
   const uid = f.elements.uid.value, a = f.dataset.area;
   const u = WORKSPACE_USERS.find(x => x.uid === uid); if (!u) return;
   const name = u.displayName || u.email || 'Member';
-  grantAccess({ id: newId(), folderId: a, uid: u.uid, email: u.email || '', displayName: name }).then(
-    () => toast(`Access granted to ${name}`, { icon: 'users' }),
-    () => toast('Couldn’t grant access. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(grantAccess({ id: newId(), folderId: a, uid: u.uid, email: u.email || '', displayName: name }), [`Access granted to ${name}`, { icon: 'users' }], 'Couldn’t grant access. Check your connection, then try again.');
   closeAll();
 });
 on('revoke-access', d => {
-  revokeAccess(d.id).then(
-    () => toast(`Access removed for ${d.name}`, { icon: 'users' }),
-    () => toast('Couldn’t remove access. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(revokeAccess(d.id), [`Access removed for ${d.name}`, { icon: 'users' }], 'Couldn’t remove access. Check your connection, then try again.');
   closeAll();
 });
 
@@ -110,15 +109,14 @@ onForm('password', async f => {
   const { kind, id } = f.dataset, it = pwTarget(kind, id); if (!it) return;
   const has = !!it.pw, cur = has ? f.elements.pwCur.value : '', pw = f.elements.pwNew.value, conf = f.elements.pwConf.value;
   if (has && !(cur && (await hw(cur)) === it.pw)) { fieldError(f, 'pwCur', 'That isn’t the current password.'); f.elements.pwCur.value = ''; f.elements.pwCur.focus(); return; }
-  const fail = e => toast('Couldn’t save the password. Check your connection, then try again.', { icon: 'alert', tone: 'warn' });
   if (has && !pw) {   // blank new password: remove it
     closeAll(); (kind === 'a' ? UF : UD).delete(id);
-    setPassword(kind, id, null).then(() => toast('Password removed', { icon: 'unlock' }), fail);
+    afterWrite(setPassword(kind, id, null), ['Password removed', { icon: 'unlock' }], 'Couldn’t save the password. Check your connection, then try again.');
     return;
   }
   if (pw.length < 6) { fieldError(f, 'pwNew', 'Use at least 6 characters.'); f.elements.pwNew.focus(); return; }
   if (pw !== conf) { fieldError(f, 'pwConf', 'The two passwords don’t match.'); f.elements.pwConf.focus(); return; }
   const hash = await hw(pw);
   closeAll(); (kind === 'a' ? UF : UD).delete(id);   // a changed or new password closes it for this session, as the design shows
-  setPassword(kind, id, hash).then(() => toast(has ? 'Password changed' : 'Restricted with a password', { icon: 'lock' }), fail);
+  afterWrite(setPassword(kind, id, hash), [has ? 'Password changed' : 'Restricted with a password', { icon: 'lock' }], 'Couldn’t save the password. Check your connection, then try again.');
 });

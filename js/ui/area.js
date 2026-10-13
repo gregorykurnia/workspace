@@ -446,7 +446,7 @@ onForm('rename', f => {
     : kind === 'mom' ? updateMom(id, { title: name })
     : renameFile(id, name);
   closeAll();
-  done.then(() => toast('Renamed', { icon: 'pencil' }), () => toast('Couldn’t rename it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(done, ['Renamed', { icon: 'pencil' }], 'Couldn’t rename it. Check your connection, then try again.');
 });
 
 /* ---------- Groupings (O4) ---------- */
@@ -473,7 +473,7 @@ onForm('new-group', f => {
   const doc = { id: newId(), folderId: f.dataset.area, name };
   const write = kind === 'mom' ? sMF(doc) : sDF(doc);
   closeAll();
-  write.then(() => toast(`Added grouping “${name}”`, { icon: 'folder-plus' }), () => toast('Couldn’t create the grouping. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(write, [`Added grouping “${name}”`, { icon: 'folder-plus' }], 'Couldn’t create the grouping. Check your connection, then try again.');
 });
 const groupOf = id => { const m = MF.find(g => g.id === id); return m ? { kind: 'mom', g: m } : (() => { const f = DF.find(g => g.id === id); return f ? { kind: 'file', g: f } : null; })(); };
 on('rename-group', d => {
@@ -491,7 +491,7 @@ onForm('rename-group', f => {
   if (!name) { fieldError(f, 'rgIn', 'Give the grouping a name.'); return; }
   const { id, kind } = f.dataset;
   closeAll();
-  renameGroup(kind, id, name).then(() => toast('Renamed', { icon: 'pencil' }), () => toast('Couldn’t rename it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  afterWrite(renameGroup(kind, id, name), ['Renamed', { icon: 'pencil' }], 'Couldn’t rename it. Check your connection, then try again.');
 });
 on('remove-group', d => {
   const hit = groupOf(d.id); if (!hit) return;

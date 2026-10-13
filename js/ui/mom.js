@@ -12,8 +12,16 @@ const ED = {
 };
 const FONT_STACK = { serif: 'Georgia, "Times New Roman", serif', mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' };
 const SAVE_DELAY = 800;
+/* A save the server hasn't answered after this long is waiting for a connection. */
+const STALL_MS = 3000;
 
 /* ---------- Status pill (C2) ---------- */
+/* Firestore keeps a write on this device at once, but its promise settles only when the server
+   answers. "Saved on this device" is only true when the offline copy is on (PERSISTENCE, see
+   js/data/firebase.js); without it (a private window), the write lives in this tab until the
+   connection is back, so the pill keeps saying Saving…. */
+const keptHere = () => typeof PERSISTENCE !== 'undefined' && PERSISTENCE === 'on';
+const waitingStatus = () => (syncState() === 'offline' && keptHere() ? 'local' : 'saving');
 function setStatus(kind) {
   UI.edStatus = kind;
   $$('.js-status').forEach(el => { const t = document.createElement('div'); t.innerHTML = statusPillHTML(kind); el.replaceWith(t.firstElementChild); });
@@ -183,6 +191,7 @@ async function openEditor(m) {
   ED.editor = editor;
   refreshChrome(); paintJournal();
   ED.unwatch = watchMom(m.id, onRemoteSnap);
+  paintQueued();
   touchRecent('m', m.id);
   // The prospect journal is converted once and saved, with the original kept (plan 2.8).
   ED.backup = null;
@@ -199,6 +208,7 @@ function closeEditor() {
   ED.token++;
   if (ED.unwatch) { ED.unwatch(); ED.unwatch = null; }
   clearTimeout(ED.timer); clearTimeout(ED.rmTimer);
+  ED.inflight = 0;
   closeSlash();
   if (ED.editor) { try { ED.editor.destroy(); } catch (e) { /* already gone */ } ED.editor = null; }
   ED.id = null; ED.cell = null; ED.remote = null; ED.pending = {}; ED.bodyDirty = false;
@@ -208,7 +218,7 @@ on('ed-reopen', () => render());
 /* ---------- Autosave (C2, C3) ---------- */
 function schedule() {
   if (ED.ro) return;
-  setStatus(syncState() === 'offline' ? 'local' : 'saving');
+  if (UI.edStatus !== 'failed') setStatus(waitingStatus());   // a failure stays until Retry or the next save
   clearTimeout(ED.timer);
   ED.timer = setTimeout(() => saveNow(false), SAVE_DELAY);
 }
@@ -224,19 +234,51 @@ function saveNow(withToast) {
   if (!Object.keys(fields).length) { if (withToast) toast('Saved', { icon: 'check', ms: 2000 }); return Promise.resolve(); }
   ED.pending = {}; ED.bodyDirty = false;
   Object.keys(fields).forEach(k => { ED.known[k] = k === 'tags' ? JSON.stringify(fields[k]) : fields[k]; });
-  setStatus(syncState() === 'offline' ? 'local' : 'saving');
+  setStatus(waitingStatus());
+  ED.inflight = (ED.inflight || 0) + 1;
+  // No answer yet: the connection is probably gone even if the browser hasn't noticed.
+  const stall = setTimeout(() => { if (ED.id === id && UI.edStatus === 'saving' && keptHere()) setStatus('local'); }, STALL_MS);
+  const settled = () => { clearTimeout(stall); if (ED.id === id) ED.inflight = Math.max(0, ED.inflight - 1); };
+  if (withToast && syncState() === 'offline' && keptHere()) { toast('Saved on this device. It syncs when you’re back online.', { icon: 'cloud-off', ms: 2600 }); withToast = false; }
   return updateMom(id, fields).then(() => {
-    if (ED.id === id && !ED.bodyDirty && !Object.keys(ED.pending).length) setStatus('saved');
+    settled();
+    if (ED.id === id && !ED.inflight && !ED.bodyDirty && !Object.keys(ED.pending).length && UI.edStatus !== 'failed') setStatus('saved');
     if (withToast) toast('Saved', { icon: 'check', ms: 2000 });
-  }, () => {
+  }, e => {
+    settled();
     if (ED.id !== id) return;
     // Put what failed back, under anything typed since, so Retry sends it.
     ED.pending = { ...fields, ...ED.pending };
     if ('content' in ED.pending) { delete ED.pending.content; ED.bodyDirty = true; }
     setStatus('failed');
+    const why = saveFailReason(e);
+    if (why) toast(why, { icon: 'alert', tone: 'warn', ms: 6000 });
   });
 }
-on('retry-save', () => saveNow(true));
+/* The reason a save was refused, when it's one Retry alone won't fix. */
+function saveFailReason(e) {
+  const code = e && e.code, msg = String((e && e.message) || '');
+  if (code === 'permission-denied') return 'You don’t have permission to change this MoM any more. Copy your text before leaving.';
+  if (code === 'not-found') return 'This MoM was removed by someone else. Copy your text before leaving.';
+  if (code === 'invalid-argument' && /maximum|exceeds|too large/i.test(msg)) return 'This MoM is too large to save. Remove a large image or split it, then press Retry.';
+  return '';
+}
+on('retry-save', () => { if (UI.edStatus === 'failed') setStatus(waitingStatus()); saveNow(true); });
+/* Edits queued on this device from an earlier visit (or another tab) that the server hasn't
+   confirmed: the pill says so, and turns to Saved when they arrive. Only when this tab isn't
+   saving something itself (its own saves are tracked above). */
+function paintQueued() {
+  if (!ED.id || ED.ro || ED.inflight || ED.bodyDirty || Object.keys(ED.pending).length || UI.edStatus === 'failed') return;
+  const queued = Store.pendingMoms && Store.pendingMoms.has(ED.id);
+  if (queued && UI.edStatus === 'saved') setStatus(keptHere() ? 'local' : 'saving');
+  else if (!queued && (UI.edStatus === 'local' || UI.edStatus === 'saving')) setStatus('saved');
+}
+Store.onChange(what => { if (what === 'pending') paintQueued(); });
+/* The connection drops while a save waits: say it's kept here. Saves already answered need nothing. */
+Store.onChange(what => {
+  if (what !== 'sync' || !ED.id || !ED.inflight) return;
+  if (UI.edStatus === 'saving' && syncState() !== 'ok' && keptHere()) setStatus('local');
+});
 KEYS.save = () => { if (route().name === 'mom') saveNow(true); };
 on('done', () => {
   const m = mom(ED.id);
