@@ -56,3 +56,20 @@
   pointer-events: none;
 }
 .ed-body .selectedCell { background: var(--accent-tint); }
+
+/* Rules for markup the prototype styled inline. Same values, now named. */
+
+/* Skeleton (loading state): the title, line and three cards. */
+.skel-title { height: 44px; width: 40%; }
+.skel-line { height: 22px; width: 60%; margin-top: 14px; }
+.skel-cards { margin-top: 28px; }
+.skel-card { height: 150px; }
+
+/* Toast: fades out before it is removed. */
+.toast.is-leaving { opacity: 0; transition: opacity .2s; }
+
+/* Sidebar foot: the larger avatar. */
+.who.side-who { width: 36px; height: 36px; font-size: 13px; background: var(--accent-tint-2); color: var(--accent-strong); }
+
+/* Create sheet: the smaller place chip under the title. */
+.place-chip.place-chip-sheet { min-height: 36px; padding: 0 12px; margin-top: 8px; font-size: 14px; }

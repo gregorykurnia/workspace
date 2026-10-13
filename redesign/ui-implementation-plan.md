@@ -575,8 +575,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 1 | ✅ `sw.js` navigation-cache fix | Sonnet · high | Small, but service-worker bugs are hard to see |
 | 2 | ✅ Copy `tokens.css`, port the 3 stylesheets, `app.css`, fonts, icons sprite | **Haiku · high** | Copying with exact references |
 | 2 | ✅ `next.html` shell, theme boot script | Haiku · high | Copying from `prototype/app.html` |
-| 2 | `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
-| 2 | `ui/shell.js`: sidebar, rail, top bar, tabs, tree, crumbs | Sonnet · high | Real data, permissions, restricted areas, crumb folding |
+| 2 | ✅ `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
+| 2 | ✅ `ui/shell.js`: sidebar, rail, top bar, tabs, tree, crumbs | Sonnet · high | Real data, permissions, restricted areas, crumb folding |
 | 2 | Data additions: sync state, persistence, visibility rules (`canSee`, `lockedArea`, `hiddenItem`, …) | **Opus · high** | Decides what members and visitors can see (P3, P6); offline persistence |
 | 3 | Components and every state in `dev/gallery.html` | **Haiku · high** | Each one has an exact prototype counterpart |
 | 4 | **MoM editor**: Tiptap rebuild (toolbar, Aa, bubble, "/" menu, tables, Long text, remarks drawer, images), autosave and status | **Opus · high** | Daily tool and the riskiest part (C1–C3, W1–W8) |
@@ -601,7 +601,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
 | 8 | Fixing failures found in QA | The tier of the task the bug is in | — |
 
-✅ = done (ticked in the Phase 1 task list below as well).
+✅ = done (also ticked in that phase's task list below).
 
 **Calibrate before committing to it.** Build one Sonnet-tier task (the Move dialog is a good one) twice: once with Sonnet · high and once with Haiku · xhigh. Run `/cost` after each session, check both against the prototype, and keep the cheaper one if it's just as good. Move a task up a tier the first time a cheaper model gets it wrong twice.
 
@@ -630,8 +630,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 **Tasks**
 - [x] 1. `css/tokens.css` (copy), `css/base.css`, `css/views.css`, `css/editor.css`, `css/app.css` (2.3 rules); `fonts/` with `@font-face`.
 - [x] 2. `next.html` with the shell skeleton (2.6), the theme boot script, and script tags.
-3. `js/ui/icons.js`, `js/ui/core.js` (delegation, `layer`, `menu`, `confirmDialog`, `toast`, router + guard + legacy-address redirect, `render`, skeleton, banners, keyboard model).
-4. `js/ui/shell.js`: sidebar, tablet rail, top bar (breadcrumb, ⌘K trigger, sync pill, split New, avatar), phone top bar, tab bar, tree. Use placeholders only for screens that don't exist yet.
+- [x] 3. `js/ui/icons.js`, `js/ui/core.js` (delegation, `layer`, `menu`, `confirmDialog`, `toast`, router + guard + legacy-address redirect, `render`, skeleton, banners, keyboard model).
+- [x] 4. `js/ui/shell.js`: sidebar, tablet rail, top bar (breadcrumb, ⌘K trigger, sync pill, split New, avatar), phone top bar, tab bar, tree. Use placeholders only for screens that don't exist yet.
 5. Data-layer additions: sync state, `enablePersistence`, the visibility rules from 2.5.
 6. Signed-out visitors to `next.html` are sent to `index.html` (temporary, removed in Phase 6).
 
@@ -640,10 +640,28 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 **Notes from Phase 2 tasks 1–2 (2026-10-13):**
 - **Stylesheets.** `css/tokens.css` is a byte-for-byte copy (`cmp` identical). `css/views.css` and `css/editor.css` are copied unchanged from the prototype. `css/base.css` is the prototype file minus the `.demo-link` rules and the "Prototype panel" section, including its `.proto` lines inside the two responsive blocks (16 lines removed). `css/app.css` holds the `@font-face` rules and the Tiptap internals, scoped under `.ed-body` (the editor root is `.ed-body.ProseMirror`). Colours in `app.css` are tokens only.
 - **Font.** There were no font files in the repo, so `fonts/PlusJakartaSans-latin.woff2` and `fonts/PlusJakartaSans-latin-ext.woff2` were downloaded from Google Fonts (variable 400–800, OFL licence). The `unicode-range` values are Google's. Phase 6 checks the Google Fonts link is gone everywhere.
-- **Icons (part of task 3).** `js/ui/icons.js` is the prototype sprite (87 icons), with a guard so it is injected once and an id `icon-sprite`. `js/ui/core.js` is still to do.
+- **Icons (part of task 3).** `js/ui/icons.js` is the prototype sprite (87 icons), with a guard so it is injected once and an id `icon-sprite`.
 - **`next.html`.** Skeleton from §2.6 with the prototype's `.proto` panel removed. The `#topbar` id is not used (`topbar` is an old element id under §10); the `.topbar` class is kept. The prototype's description and the manifest and icon links are left out until Phase 6. The `<title>` is a placeholder ("Workbench") until Q2. The theme boot script is the 3-line inline script in `<head>`, before the stylesheets, and reads `G_theme`. The Firebase compat scripts carry SRI hashes (9.23.0). Script tags cover `js/ui/icons.js` and `js/data/*.js`; `ui/core.js`, `ui/shell.js` and the others get their tags with their own tasks. Quill, html2pdf and Tiptap are not loaded here.
-- **Not done yet:** task 3 (core.js), 4 (shell.js), 5 (data-layer additions) and 6 (signed-out redirect to `index.html`).
 - **Checked:** Chromium smoke test (30 checks) at 390, 900 and 1280 px: no page errors, shell elements present, no prototype panel, sprite injected once with 87 symbols, the font loads from `fonts/`, body font is Plus Jakarta Sans, none of the 31 old ids are present, `G_theme` dark / light / system / unset behaves as specified, dark and light backgrounds differ, the boot script sits before the stylesheets, and no horizontal scroll at any width. `index.html` is unchanged. Not checked yet: a visual comparison with the prototype (Phase 3 gallery and §8.2), and the font's latin-ext subset (it loads only for non-Latin text).
+
+**Notes from Phase 2 tasks 3–4 (2026-10-13):**
+- **Files.** `js/ui/core.js`: helpers, the `UI` state object, roles, delegation (`on` / `onForm` / `onInput`), `layer`, `menu`, `confirmDialog`, `toast`, router, `guard`, `legacyAddress`, `render`, skeleton, banners, keyboard, and `boot()`. `js/ui/shell.js`: sidebar (the tablet rail is the same markup under the CSS), top bar (breadcrumb with folding, ⌘K trigger, sync pill, split New, avatar; the editor bar and the phone bar), tab bar, tree, split New menu, create sheet, and the Esc climb. Both have script tags in `next.html` after the data files.
+- **Nothing runs until `boot()` is called** by the last script on the page (`ui/app.js`, not written yet; it will load the view files and call `boot()`). Before that the files only register handlers, so `next.html` stays quiet.
+- **Contract for the data-layer task (Opus, task 5).** The shell and core call these **by name** and do not define them. They are not defined yet:
+  - `canSee(areaId)` → boolean.
+  - `lockedArea(areaId)` → the restricted area (this one or an ancestor) that is not opened this session, else `null` (reads `UF`).
+  - `hiddenItem(kind, item)` → boolean. `kind` is `'m'` (MoM) or `'f'` (file); the item has `folderId`.
+  - `visibleAreas()` → folder objects this viewer may see.
+  - `crumbPath(areaId)` → folder objects, ancestor first, starting at the viewer's grant (member) or shared root (visitor). Esc and the crumbs use it, so it also decides how far up anyone can climb.
+  - `Store.sync` → `'ok' | 'catchup' | 'offline'`, plus a `'sync'` event through `Store.onChange`. Until it exists the browser's online flag decides (tested).
+  - Fields read: area `icon`, `pw`, `parent`, `name`; MoM `folderId`, `momFolderId`, `title`, `starred`, `readOnly`; file `folderId`, `starred`.
+  - The roles (`admin`, `member`, `newmember`, `visitor`, `signedout`, `loading`) are derived in `core.js` `sessionRole()` from `auth.currentUser`, `CURR_USER_ROLE`, `FA` and the session events `'role'`, `'access'`, `'guest'`. `session.js` is unchanged. Task 5 may move that function into the data layer.
+- **Decisions.** The prototype's derived reads (`area`, `mom`, `chainOf`, `visibleRoots`, `countsOf`, `deletedCount`) live in `core.js`, over the real collections, because the old page also loads `store.js`. The data layer's own `momsOf` and `docsOf` are not redeclared. Unlock state stays in `UF` / `UD`, so `UI.unlocked` from the plan's list does not exist. Flagged is `starred`, Final is `readOnly`. The top bar is found by its `.topbar` class (`topbar` is an old id).
+- **Beyond the prototype, on purpose.** Route parts are split before they are decoded, and a bad `%` escape is ignored (a pasted address cannot break the page). Tab stays inside the top layer (the dialogs are `aria-modal`). After navigating, focus lands on the page, and redrawing the bars keeps focus on the same control. Esc goes up only as far as `crumbPath` allows, so a member never climbs above their grant. A role is `loading` until Auth, the user record and the access list are read, and the skeleton shows until all five collections have loaded (so a member never sees "No areas shared with you yet" by mistake). An action registered twice, or clicked before it exists, warns in the console. A signed-out visitor on a `#/s/…` address is let through, because the anonymous sign-in is still on its way (Phase 6 finishes this).
+- **Placeholder:** a route with no registered view shows "This screen isn't built yet (name)". Remove it when the screens exist (Phases 4–6).
+- **Not in these tasks, still to do:** the ⌘K bar (`palette`), `destPicker` and the place chip's `pick-place`, the dialogs behind `new-mom`, `upload`, `save-link`, `new-group` and `new-area`, and the editor's `flag`, `editor-menu` and `done`. Clicking one of them logs a warning for now. Also Phase 2 tasks 5 and 6.
+- **New classes** (in `app.css`): `skel-title`, `skel-line`, `skel-cards`, `skel-card`, `is-leaving`, `side-who`, `place-chip-sheet`. Check them against `redesign/old-names.txt` once it exists (not done: the old stylesheet was not opened).
+- **Checked (Chromium, 142 checks, plus the 30 shell checks):** with stand-ins for the five functions above (prototype rules, fake data): router for every address; guard for every role; legacy addresses (13 cases, including encoding and precedence); layers, focus trap, focus return, Esc order (layer, then Select, then editor, then area); menu with admin-only lock and the plain message for members; confirmation; toasts (3 at most, action, fade); hostile area names and emoji shown as text and running nothing; tree roles, levels, expansion saved to `G_exp`, locked rows, counts; crumb folding and its menu; editor bar (Saved, Final · read only, flag pressed); phone bar and create sheet; skeleton, empty states, member view, coalesced redraws; banners for offline, catching up and update. Real boot with no session lands on `#/signin` with no errors, rewrites `?folder=` to `#/s/a/…`, and shows and clears the offline banner when the browser goes offline and back. **Not checked:** the real visibility rules (task 5), a real signed-in session, and a visual comparison with the prototype.
 
 ### Phase 3: Components (all variants and states)
 **Tasks**
@@ -738,6 +756,7 @@ Each is worded as a need, safe to paste into the studio. The owner carries them 
 - **G9 · Other failed actions.** "When a move, rename, flag, share or restriction change can't be saved (for example, permission refused by the server), what does the confirmation say, and what's the way forward?"
 - **G10 · Room to write on a computer.** "When I write on a computer, I sometimes want as much width as possible for the note, with the rest of the app out of the way."
 - **G11 · Colours outside the tokens.** "The prototype uses some colours that aren't tokens: white text on the accent colour, the lightbox overlay and its buttons, the success and warning ticks in toasts, the brand mark gradient, the install step numbers, and the paper colours of the A4 export. Every colour in the app must come from a named token, so each of these needs one, or the owner confirms it as an exception." (Plan §10 allows only the A4 paper.)
+- **G12 · An area with no emoji.** "Some existing areas have no emoji at all. How should such an area look in the tree, in the path at the top, and on its card?" (Until answered the build shows no emoji for them.)
 
 ### 9.2 Questions for the owner
 - **Q1 · PDF export** (design open question 4): generate the PDF in the app (exact layout, file named after the title, no print dialog; the current library already does this), or print to PDF from the A4 preview? The designer recommends generating. Needed before Phase 6.
