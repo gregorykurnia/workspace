@@ -116,7 +116,7 @@ A second leak review removed wording that described the current layout. The curr
 | A2 | "Dock" wording |
 | Hard constraints | Manifest locks orientation to portrait |
 
-## 7. Leak test (Step 1b), run 1 — 2026-10-13
+## 8. Leak test (Step 1b), run 1 — 2026-10-13
 Isolated `claude -p --tools "" --setting-sources local` in an empty folder, given only `handoff/inventory.md`. Full answer: `~/inventory-test/guess.md`.
 
 **Recovered correctly (leaks, now rewritten):** the area summary line plus four switchable sections (F2, F3, F7, F8); Home contents (F4); the date chip (F12); hover-revealed actions (A1, constraints); the "Ungrouped" label (glossary, O4); the Connecting / Live / Offline labels (S3, states); the full-screen editor with save-and-back (C3); font and size dropdowns (W1).
