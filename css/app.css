@@ -191,3 +191,28 @@ body.selecting .cw > .row { padding-left: 52px; }
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h4'/%3E%3C/svg%3E"); }
 /* An image with no stored width keeps its own size, never wider than the note. */
 .ed-body .img img { max-width: 100%; }
+
+/* ---------- Phase 4: Area, Today, All areas, Move ---------- */
+/* Page headings: the title sits close under its eyebrow. */
+.eyebrow + .h-page { margin-top: 4px; }
+.page-head-main { flex: 1; }
+.phone-new { margin-top: 16px; }
+/* Spacing the prototype set inline. */
+.noresult-spaced { margin-top: 20px; }
+.empty-spaced { margin-top: 28px; }
+.section .empty.small { padding-left: 0; }
+/* The restricted gate and "no access" message sit lower on the page. */
+.locked-top { margin-top: 56px; }
+.locked-plain .art { background: var(--surface-2); color: var(--text-2); }
+/* The right-hand end of a row: who added it, and when. */
+.row-right { margin-left: auto; padding-left: 10px; display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 13px; }
+/* Move picker: each level indents by 18 px. */
+.dest[data-depth="0"] { padding-left: 12px; }
+.dest[data-depth="1"] { padding-left: 30px; }
+.dest[data-depth="2"] { padding-left: 48px; }
+.dest[data-depth="3"] { padding-left: 66px; }
+.dest[data-depth="4"] { padding-left: 84px; }
+.dest[data-depth="5"] { padding-left: 102px; }
+.dest[data-depth="6"] { padding-left: 120px; }
+/* An area's emoji slot never grows into its neighbours, whatever is stored there. */
+.tree-row .nm .em, .dest .em { overflow: hidden; white-space: nowrap; }

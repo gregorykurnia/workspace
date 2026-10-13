@@ -1,6 +1,6 @@
 // Data layer: Firebase Auth, the signed-in user's role, folder access and workspace users. No DOM.
 const auth=firebase.auth();
-var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
+var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[],CURR_USER_RECENT=[];   // recent: [{k:'m'|'f', id, at}], newest first, 8 at most (F13)
 
 // Share link: sign in anonymously so no login screen is needed
 (function(){
@@ -30,7 +30,7 @@ function signOut(){return auth.signOut();}
 // 'users' (WORKSPACE_USERS changed).
 function startSession(){
   auth.onAuthStateChanged(function(user){
-    if(!user){CURR_USER_ROLE='member';FA=[];return;}
+    if(!user){CURR_USER_ROLE='member';FA=[];CURR_USER_RECENT=[];return;}
 
     // Anonymous share-link guests skip user record lookup
     if(user.isAnonymous){
@@ -43,6 +43,7 @@ function startSession(){
     db.collection('users').doc(user.uid).get().then(function(doc){
       if(doc.exists){
         CURR_USER_ROLE=doc.data().role||'member';
+        CURR_USER_RECENT=Array.isArray(doc.data().recent)?doc.data().recent:[];
       }else{
         _w(db.collection('users').doc(user.uid).set({
           uid:user.uid,

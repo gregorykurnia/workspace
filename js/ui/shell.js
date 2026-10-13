@@ -3,12 +3,22 @@
 'use strict';
 
 /* ---------- Where "create" lands ---------- */
+/* Where "create" lands: the area you are in, the MoM's area, the place you chose, or the area you
+   opened last. group is a grouping of that area; gkind says whether it holds MoMs or files. */
 function createPlace(r) {
-  if (r && r.name === 'area' && area(r.id)) return { area: r.id, group: null };
+  const usable = id => id && area(id) && canSee(id) && !lockedArea(id);
+  if (r && r.name === 'area' && usable(r.id)) return { area: r.id, group: null };
   const m = r && r.name === 'mom' ? mom(r.id) : null;
-  if (m) return { area: m.folderId, group: m.momFolderId || null };
-  return UI.place && UI.place.area && area(UI.place.area) ? UI.place : null;
+  if (m && usable(m.folderId)) return { area: m.folderId, group: m.momFolderId || null, gkind: 'mom' };
+  if (UI.place && usable(UI.place.area)) return UI.place;
+  const last = recentEntries()[0];
+  const lastArea = last && (last.k === 'm' ? (mom(last.id) || {}).folderId : (D.find(d => d.id === last.id) || {}).folderId);
+  if (usable(lastArea)) return { area: lastArea, group: null };
+  const first = visibleRoots().find(a => !lockedArea(a.id));
+  return first ? { area: first.id, group: null } : null;
 }
+/* The grouping to use for one kind of new item ('mom' or 'file'), or ''. */
+const groupFor = (p, kind) => (p && p.group && p.gkind === kind ? p.group : '');
 function placeName(p) {
   if (!p || !p.area) return 'Choose a place';
   const a = area(p.area); if (!a) return 'Choose a place';
@@ -165,9 +175,9 @@ on('tree-toggle', (d) => {
 on('new-menu', (d, el) => {
   const p = createPlace(route()) || UI.place;
   menu(el, [
-    { label: 'New MoM here', icon: 'doc', act: 'new-mom', data: { area: p && p.area, group: p && p.group || '' } },
-    { label: 'Upload a file', icon: 'upload', act: 'upload', data: { area: p && p.area, group: p && p.group || '' } },
-    { label: 'Save a link', icon: 'link', act: 'save-link', data: { area: p && p.area, group: p && p.group || '' } },
+    { label: 'New MoM here', icon: 'doc', act: 'new-mom', data: { area: p && p.area, group: groupFor(p, 'mom') } },
+    { label: 'Upload a file', icon: 'upload', act: 'upload', data: { area: p && p.area, group: groupFor(p, 'file') } },
+    { label: 'Save a link', icon: 'link', act: 'save-link', data: { area: p && p.area, group: groupFor(p, 'file') } },
     '-',
     { label: 'New grouping', icon: 'folder-plus', act: 'new-group', data: { area: p && p.area } },
     { label: 'New sub-area', icon: 'shelf', act: 'new-area', data: { parent: p && p.area }, admin: { k: 'createArea', label: 'create areas' } },
@@ -176,14 +186,14 @@ on('new-menu', (d, el) => {
 
 function createSheet() {
   const p = createPlace(route());
-  const area0 = p ? esc(p.area) : '', group0 = p && p.group ? esc(p.group) : '';
+  const area0 = p ? esc(p.area) : '', gMom = esc(groupFor(p, 'mom')), gFile = esc(groupFor(p, 'file'));
   layer({
     label: 'Create',
     html: `<div class="dlg-head"><div class="tt2"><h2>Create</h2><button type="button" class="place-chip place-chip-sheet" data-act="pick-place">${ic('folder-plus', 'sm')}<span>Creating in ${esc(placeName(p))}</span></button></div><button class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button></div>
-      <button class="create-hero" data-act="new-mom" data-area="${area0}" data-group="${group0}"${p ? '' : ' disabled'}><span class="qi">${ic('doc', 'lg')}</span><span><b>New MoM</b><small>Starts with today’s date, ready to type</small></span></button>
+      <button class="create-hero" data-act="new-mom" data-area="${area0}" data-group="${gMom}"${p ? '' : ' disabled'}><span class="qi">${ic('doc', 'lg')}</span><span><b>New MoM</b><small>Starts with today’s date, ready to type</small></span></button>
       <div class="create-grid">
-        <button class="cg" data-act="upload" data-area="${area0}" data-group="${group0}"${p ? '' : ' disabled'}><span class="qi">${ic('upload')}</span>Upload</button>
-        <button class="cg" data-act="save-link" data-area="${area0}" data-group="${group0}"${p ? '' : ' disabled'}><span class="qi">${ic('link')}</span>Save a link</button>
+        <button class="cg" data-act="upload" data-area="${area0}" data-group="${gFile}"${p ? '' : ' disabled'}><span class="qi">${ic('upload')}</span>Upload</button>
+        <button class="cg" data-act="save-link" data-area="${area0}" data-group="${gFile}"${p ? '' : ' disabled'}><span class="qi">${ic('link')}</span>Save a link</button>
         <button class="cg" data-act="new-group" data-area="${area0}"${p ? '' : ' disabled'}><span class="qi">${ic('folder-plus')}</span>Grouping</button>
         <button class="cg" data-act="new-area" data-parent="${area0}" ${adminAttr('createArea', 'create areas')}><span class="qi">${ic('shelf')}</span>Sub-area</button>
       </div>
@@ -191,6 +201,92 @@ function createSheet() {
   });
 }
 on('create', () => createSheet());
+
+/* ---------- ⌘K command bar (F1) ---------- */
+/* Actions first, then what matches in Areas, MoMs and Files and links. Only what this viewer may
+   see (search.js); a restricted area shows by name, with a lock, and nothing inside it. */
+function paletteResults(q) {
+  const term = q.trim().toLowerCase();
+  const place = createPlace(route());
+  const nothing = !visibleAreas().length;
+  const acts = [];
+  if (place) {
+    const dm = { area: place.area, group: groupFor(place, 'mom') }, df = { area: place.area, group: groupFor(place, 'file') };
+    acts.push({ title: `New MoM in ${placeName(place)}`, sub: 'Opens at today’s date', icon: 'doc', act: 'new-mom', data: dm });
+    acts.push({ title: `Upload to ${placeName(place)}`, sub: 'Choose or drop a file', icon: 'upload', act: 'upload', data: df });
+    acts.push({ title: `Save a link in ${placeName(place)}`, sub: 'Name, kind and address', icon: 'link', act: 'save-link', data: df });
+  }
+  if (isAdmin()) acts.push({ title: 'New area', sub: 'At the top level or inside another area', icon: 'shelf', act: 'new-area', data: {} });
+  if (term && place) acts.push({ title: `New MoM ‘${q.trim()}’`, sub: `in ${placeName(place)}`, icon: 'doc', act: 'new-mom-title', data: { title: q.trim(), area: place.area, group: groupFor(place, 'mom') } });
+  const sections = [];
+  const shownActs = acts.filter(a => !term || a.title.toLowerCase().includes(term) || a.act === 'new-mom-title');
+  if (shownActs.length) sections.push(['Actions', shownActs.map(a => ({ kind: 'act', ...a }))]);
+  if (term && !nothing) {
+    const f = searchAll(term);
+    const path = id => crumbPath(id).slice(0, -1).map(x => x.name).join(' › ');
+    if (f.areas.length) sections.push(['Areas', f.areas.map(a => ({ kind: 'area', id: a.id, title: a.name, emoji: areaEmoji(a), tile: tintOf(a), sub: path(a.id) || 'Top level', icon: 'shelf', locked: !!lockedArea(a.id) }))]);
+    if (f.moms.length) sections.push(['MoMs', f.moms.map(m => ({ kind: 'mom', id: m.id, title: m.title || 'Untitled meeting', sub: `${area(m.folderId) ? area(m.folderId).name : ''} · ${fmtDate(isoOf(m.date))}`, icon: 'doc' }))]);
+    if (f.files.length) sections.push(['Files and links', f.files.map(d => ({ kind: 'file', id: d.id, title: d.name || 'Untitled file', sub: `${area(d.folderId) ? area(d.folderId).name : ''}${d.docFolderId && groupName(d.docFolderId) ? ' · ' + groupName(d.docFolderId) : ''}`, tile: KINDS[docKind(d)].tile, icon: KINDS[docKind(d)].icon }))]);
+  }
+  return { sections, term, nothing };
+}
+function paletteListHTML(q) {
+  const { sections, term, nothing } = paletteResults(q);
+  // Enter acts on the selected row. With a typed word, that is the first match, never "New MoM ‘word’":
+  // a search must not create something by accident.
+  const flat = sections.flatMap(([, items]) => items);
+  const pre = Math.max(0, flat.findIndex(it => it.kind !== 'act'));
+  let i = 0;
+  const rows = sections.map(([cap, items]) => paletteCapHTML(cap) + items.map(it => {
+    const sel = i++ === (term ? pre : 0);
+    if (it.kind === 'act') return paletteRowHTML({ icon: it.icon, title: it.title, sub: it.sub, selected: sel, act: 'palette-act', data: { cmd: it.act, ...it.data } });
+    return paletteRowHTML({ tile: it.tile, icon: it.icon, emoji: it.emoji, title: it.title, sub: it.locked ? 'Restricted' : it.sub, selected: sel, act: 'palette-go', data: { kind: it.kind, id: it.id } });
+  }).join('')).join('');
+  if (nothing && !term) return noResultHTML({ title: 'Nothing yet', text: 'Create an area to get started.' });
+  if (term && !sections.some(s => s[0] !== 'Actions')) return rows + noResultHTML({ title: `No matches for “${q.trim()}”`, text: 'Try another word, or create a MoM with this title above.' });
+  return rows;
+}
+on('palette', () => {
+  const role = sessionRole();
+  if (role === 'visitor' || role === 'signedout' || role === 'loading' || LAYERS.some(l => l.el.classList.contains('layer-palette'))) return;
+  closeAll();
+  layer({
+    cls: 'layer-palette', label: 'Search or jump to',
+    html: paletteFrameHTML({ results: paletteListHTML('') }),
+    onMount(panel) {
+      const input = panel.querySelector('input[type="search"]');
+      input.setAttribute('autofocus', '');
+      input.addEventListener('input', () => { panel.querySelector('#palRes').innerHTML = paletteListHTML(input.value); input.removeAttribute('aria-activedescendant'); });
+      input.addEventListener('keydown', e => {
+        const rows = $$('.pal-row', panel);
+        const cur = rows.findIndex(r => r.getAttribute('aria-selected') === 'true');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const n = (cur + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % Math.max(rows.length, 1);
+          rows.forEach((r, i) => r.setAttribute('aria-selected', String(i === n)));
+          if (rows[n]) { rows[n].scrollIntoView({ block: 'nearest' }); rows[n].id = rows[n].id || 'pal-' + n; input.setAttribute('aria-activedescendant', rows[n].id); }
+        }
+        if (e.key === 'Enter') { e.preventDefault(); const row = rows[cur >= 0 ? cur : 0]; if (row) row.click(); }
+      });
+    },
+  });
+});
+on('palette-go', d => {
+  closeAll();
+  if (d.kind === 'area') return go(areaHref(d.id));
+  if (d.kind === 'mom') return go('#/mom/' + encodeURIComponent(d.id));
+  if (d.kind === 'file' && ACT['open-file']) ACT['open-file']({ id: d.id });
+});
+on('palette-act', d => {
+  closeAll();
+  const act = d.cmd === 'new-mom-title' ? 'new-mom-title' : d.cmd;
+  if (ACT[act]) ACT[act](d); else console.warn(`No handler for data-act="${act}" yet`);
+});
+on('new-mom-title', d => {
+  const p = d.area ? { area: d.area, group: d.group || null } : createPlace(route());
+  if (!p || !p.area) { toast('Create an area first, then add a MoM to it.', { icon: 'alert', tone: 'warn' }); return; }
+  newMomIn(p.area, d.area ? p.group : groupFor(p, 'mom') || null, d.title || 'Untitled meeting');
+});
 
 /* ---------- Escape backs out of the current page ---------- */
 /* Layers close first (core.js). Then: leave Select, leave the editor for its area, go up one

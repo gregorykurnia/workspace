@@ -112,3 +112,24 @@ function journalize(html){
   if(head&&head.getAttribute('data-coltype')!=='longtext'){head.setAttribute('data-coltype','longtext');changed=true;}
   return{html:changed?body.innerHTML:html,changed:changed};
 }
+
+// The plain text of a stored note (HTML or old Quill Delta), with no markup. Parsed in an inert
+// document, and remembered per MoM until its content changes.
+var _plainCache=new Map();
+function plainText(content,cacheKey){
+  if(!content)return'';
+  var hit=cacheKey&&_plainCache.get(cacheKey);
+  if(hit&&hit.c===content)return hit.t;
+  var t;
+  if(content.charAt(0)==='{'&&isDeltaContent(content)){
+    t=JSON.parse(content).ops.map(function(o){return typeof o.insert==='string'?o.insert:' ';}).join('');
+  }else{
+    var d=new DOMParser().parseFromString('<!doctype html><body>'+content,'text/html');
+    d.querySelectorAll('script,style,template,noscript').forEach(function(n){n.remove();});
+    d.querySelectorAll('br,p,div,li,tr,td,th,h1,h2,h3,h4,blockquote').forEach(function(n){n.append(' ');});
+    t=d.body.textContent||'';
+  }
+  t=t.replace(/\s+/g,' ').trim();
+  if(cacheKey)_plainCache.set(cacheKey,{c:content,t:t});
+  return t;
+}

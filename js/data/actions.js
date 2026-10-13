@@ -88,3 +88,44 @@ function convertMomContent(id,original,converted){
     });
   });
 }
+
+// Move MoMs ('m'), files ('f') and areas ('a') in one all-or-nothing write. keys: ['m:id', ...].
+// dest: { area, group } (area null = top level, areas only; group is a grouping of that area).
+// Returns { ok, done, undo }: ok is false when nothing could be moved (an area into itself, or a
+// missing item); done resolves when written; undo() writes every old place back.
+function moveItems(keys,dest){
+  var FV=firebase.firestore.FieldValue,batch=db.batch(),back=[];
+  var destChain=dest.area?areaChain(dest.area).map(function(a){return a.id;}):[];
+  for(var i=0;i<keys.length;i++){
+    var t=keys[i].charAt(0),id=keys[i].slice(2),col,cur,now={},old={};
+    if(t==='a'){
+      cur=gf(id);if(!cur)continue;col='folders';
+      if(dest.area&&(dest.area===id||destChain.indexOf(id)>-1))return{ok:false,done:Promise.reject(new Error('cycle')),undo:function(){return Promise.resolve();}};
+      now.parent=dest.area||FV.delete();
+      old.parent='parent' in cur?cur.parent:FV.delete();
+    }else if(t==='m'){
+      cur=M.find(function(x){return x.id===id;});if(!cur||!dest.area)continue;col='moms';
+      now.folderId=dest.area;now.momFolderId=dest.group||FV.delete();
+      old.folderId=cur.folderId;old.momFolderId='momFolderId' in cur?cur.momFolderId:FV.delete();
+    }else{
+      cur=D.find(function(x){return x.id===id;});if(!cur||!dest.area)continue;col='docs';
+      now.folderId=dest.area;now.docFolderId=dest.group||FV.delete();
+      old.folderId=cur.folderId;old.docFolderId='docFolderId' in cur?cur.docFolderId:FV.delete();
+    }
+    batch.update(db.collection(col).doc(id),now);back.push([col,id,old]);
+  }
+  if(!back.length)return{ok:false,done:Promise.resolve(),undo:function(){return Promise.resolve();}};
+  return{
+    ok:true,
+    done:_w(batch.commit()),
+    undo:function(){var b=db.batch();back.forEach(function(x){b.update(db.collection(x[0]).doc(x[1]),x[2]);});return _w(b.commit());}
+  };
+}
+// Remember that this person opened a MoM ('m') or file ('f'): newest first, 8 at most (F13).
+// Visitors keep none. A refused write only logs: Recent is a convenience.
+function touchRecent(kind,id){
+  var u=sessionUser();if(!u||u.isAnonymous)return;
+  if(CURR_USER_RECENT[0]&&CURR_USER_RECENT[0].k===kind&&CURR_USER_RECENT[0].id===id)return;
+  CURR_USER_RECENT=[{k:kind,id:id,at:Date.now()}].concat(CURR_USER_RECENT.filter(function(x){return!(x.k===kind&&x.id===id);})).slice(0,8);
+  _w(db.collection('users').doc(u.uid).set({recent:CURR_USER_RECENT},{merge:true}));
+}

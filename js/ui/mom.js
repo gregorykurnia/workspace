@@ -13,15 +13,6 @@ const ED = {
 const FONT_STACK = { serif: 'Georgia, "Times New Roman", serif', mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' };
 const SAVE_DELAY = 800;
 
-/* ---------- Dates: stored as milliseconds, as the old app does ---------- */
-const isoOf = v => {
-  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
-  const d = new Date(typeof v === 'number' ? v : Date.now());
-  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
-};
-/* Local midnight of the chosen day: every time zone shows the same day. */
-const msOf = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
-
 /* ---------- Status pill (C2) ---------- */
 function setStatus(kind) {
   UI.edStatus = kind;
@@ -29,12 +20,12 @@ function setStatus(kind) {
 }
 
 /* ---------- Creating a MoM (C1) ---------- */
-function newMomIn(areaId, groupId) {
+function newMomIn(areaId, groupId, title) {
   const a = area(areaId);
   if (!a || !canSee(areaId)) { toast('Create an area first, then add a MoM to it.', { icon: 'alert', tone: 'warn' }); return; }
   if (lockedArea(areaId)) { toast(`Open ${lockedArea(areaId).name} first, then add a MoM to it.`, { icon: 'lock', tone: 'warn' }); return; }
   const today = isoOf(Date.now());
-  const fields = { folderId: areaId, title: `Meeting – ${fmtDate(today)}`, date: msOf(today) };
+  const fields = { folderId: areaId, title: title || `Meeting – ${fmtDate(today)}`, date: msOf(today) };
   if (groupId) fields.momFolderId = groupId;
   const { id, done } = createMom(fields);
   done.catch(() => toast('Couldn’t create the MoM. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
@@ -43,7 +34,8 @@ function newMomIn(areaId, groupId) {
   go('#/mom/' + encodeURIComponent(id));
 }
 on('new-mom', d => {
-  const p = d.area ? { area: d.area, group: d.group || null } : createPlace(route());
+  const cp = d.area ? null : createPlace(route());
+  const p = d.area ? { area: d.area, group: d.group || null } : cp && { area: cp.area, group: groupFor(cp, 'mom') || null };
   closeAll();
   if (!p || !p.area) { toast('Create an area first, then add a MoM to it.', { icon: 'alert', tone: 'warn' }); return; }
   newMomIn(p.area, p.group);
@@ -191,6 +183,7 @@ async function openEditor(m) {
   ED.editor = editor;
   refreshChrome(); paintJournal();
   ED.unwatch = watchMom(m.id, onRemoteSnap);
+  touchRecent('m', m.id);
   // The prospect journal is converted once and saved, with the original kept (plan 2.8).
   ED.backup = null;
   if (journal && journal.changed && !ED.ro) {

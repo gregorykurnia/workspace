@@ -170,7 +170,13 @@ function closeLayer(L) {
   const i = LAYERS.indexOf(L);
   if (i > -1) LAYERS.splice(i, 1);
   L.el.classList.remove('open');
-  const done = () => { L.el.remove(); L.onClose && L.onClose(); if (L.prev && L.prev.focus && document.body.contains(L.prev)) L.prev.focus({ preventScroll: true }); };
+  const done = () => {
+    L.el.remove(); L.onClose && L.onClose();
+    // Hand the focus back to what opened this layer, unless a newer layer (a dialog opened from this menu) already has it.
+    const a = document.activeElement;
+    const elsewhere = a && a !== document.body && LAYERS.some(x => x.el.contains(a));
+    if (!elsewhere && L.prev && L.prev.focus && document.body.contains(L.prev)) L.prev.focus({ preventScroll: true });
+  };
   reduceMotion() ? done() : setTimeout(done, 200);
 }
 const closeTop = () => closeLayer(LAYERS[LAYERS.length - 1]);
@@ -203,8 +209,12 @@ function menu(anchor, items, label = 'Actions') {
     html: `<div class="menu-list" role="menu">${menuHTML(items)}</div>`,
     onMount: (panel) => {
       if (isPhone()) return;
-      const r = anchor.getBoundingClientRect();
-      panel.style.top = Math.min(r.bottom + 6, window.innerHeight - 40) + 'px';
+      const r = anchor.getBoundingClientRect(), vh = window.innerHeight;
+      const h = Math.min(panel.offsetHeight, vh - 16);
+      let top = r.bottom + 6;                                        // below its button
+      if (top + h > vh - 8) top = r.top - 6 - h;                     // else above it
+      top = Math.max(8, Math.min(top, vh - 8 - h));                  // and always inside the window
+      panel.style.top = top + 'px';
       panel.style.left = Math.max(12, Math.min(r.right - 260, window.innerWidth - 280)) + 'px';
     },
   });
@@ -304,6 +314,21 @@ function keepFocus(fn) {
   fn();
   if (sel) { const n = $(sel, host); if (n) n.focus({ preventScroll: true }); }
 }
+/* A page that repaints in place (the filter, a sort, a data change) keeps the keyboard's place:
+   the field with its caret, or the control that was focused. */
+function viewFocus() {
+  const el = document.activeElement, view = $('#view');
+  if (!el || el === document.body || !view || !view.contains(el)) return null;
+  const sel = ['data-input', 'data-act'].map(a => el.hasAttribute(a) ? `[${a}="${CSS.escape(el.getAttribute(a))}"]` : '').find(Boolean);
+  if (!sel) return null;
+  const extra = ['data-key', 'data-v', 'data-id'].map(a => el.hasAttribute(a) ? `[${a}="${CSS.escape(el.getAttribute(a))}"]` : '').join('');
+  return { sel: sel + extra, start: el.selectionStart, end: el.selectionEnd };
+}
+function restoreViewFocus(k) {
+  const n = $(k.sel, $('#view')); if (!n) return;
+  n.focus({ preventScroll: true });
+  if (k.start != null && n.setSelectionRange) { try { n.setSelectionRange(k.start, k.end); } catch (e) { /* not a text field */ } }
+}
 const PLACEHOLDER = { html: r => `<div class="page"><p class="hint">${ic('info', 'sm')}This screen isn't built yet (${esc(r.name)}).</p></div>` };
 function render({ keepView = false } = {}) {
   if (!UI.booted) return;
@@ -315,14 +340,15 @@ function render({ keepView = false } = {}) {
   const bare = ['signin', 'reset', 'newmember'].includes(r.name) || role === 'loading';
   const shared = r.name === 'shared' || role === 'visitor';
   const waiting = !bare && !dataLoaded();
+  const key = r.name + ':' + (r.id || '');
+  const changed = key !== UI.lastKey;
+  if (changed && UI.lastKey) { UI.filter = ''; UI.selMode = false; UI.sel.clear(); }   // a new page starts clean
   document.body.dataset.route = r.name;
   document.body.classList.toggle('bare', bare);
   document.body.classList.toggle('visitor', shared);
   document.body.classList.toggle('route-mom', r.name === 'mom');
   document.body.classList.toggle('offline', syncState() === 'offline');
   document.body.classList.toggle('selecting', UI.selMode);
-  const key = r.name + ':' + (r.id || '');
-  const changed = key !== UI.lastKey;
   if (!bare && !shared && !waiting) keepFocus(() => renderShell(r));
   else { $('#side').innerHTML = ''; $('.topbar').innerHTML = ''; $('#tabbar').innerHTML = ''; }
   const el = $('#view');
@@ -331,12 +357,14 @@ function render({ keepView = false } = {}) {
   UI.mounted = null; UI.shownKey = '';
   const v = VIEWS[r.name] || VIEWS.missing || PLACEHOLDER;
   const html = waiting || role === 'loading' ? null : v.html(r);
+  const kept = !changed && html != null ? viewFocus() : null;
   if (html == null) el.innerHTML = skeletonHTML();   // loading, or the view isn't ready yet
   else {
     el.innerHTML = html;
     UI.shownKey = key; UI.mounted = v;
     v.mount && v.mount(r, el);
   }
+  if (kept) restoreViewFocus(kept);
   if (changed) {
     window.scrollTo({ top: 0 });
     if (UI.lastKey) el.focus({ preventScroll: true });   // screen readers land on the new page
@@ -526,9 +554,9 @@ function statusPillHTML(kind) {
 function syncPillHTML(info) {
   return `<span class="sync ${info.cls}" role="status" title="${esc(info.text)}"><span class="dot" aria-hidden="true"></span><span>${esc(info.short)}</span></span>`;
 }
-function lockPillHTML({ open = false }) {
+function lockPillHTML({ open = false, id = '' }) {
   return open
-    ? `<span class="lock-pill open">${ic('unlock', 'sm')}Open for this session · <button type="button" class="link-btn" data-act="relock">Lock again</button></span>`
+    ? `<span class="lock-pill open">${ic('unlock', 'sm')}Open for this session · <button type="button" class="link-btn" data-act="relock"${id ? ` data-id="${esc(id)}"` : ''}>Lock again</button></span>`
     : `<span class="lock-pill">${ic('lock', 'sm')}Restricted</span>`;
 }
 const finalMarkHTML = () => `<span class="finalmark">${ic('lock', 'sm')}Final</span>`;
@@ -546,8 +574,9 @@ function areaCardHTML({ id, name, emoji, tint, moms = 0, files = 0, locked = fal
   const body = `<a class="acard" href="${areaHref(id)}"${selectable ? ` data-act="sel-card" data-key="a:${esc(id)}"` : ''}><span class="acard-top"><span class="blob ${esc(tint)}">${esc(emoji)}</span><span class="acard-id"><span class="n">${esc(name)}</span>${locked ? restrictMarkHTML() : `<span class="c">${plural(moms, 'MoM')} · ${plural(files, 'file')}</span>`}</span></span><span class="kids">${kids.slice(0, 4).map(k => `<span class="kid">${esc(k.emoji)} ${esc(k.name)}</span>`).join('')}${kids.length > 4 ? `<span class="kid">+${kids.length - 4}</span>` : ''}</span></a>`;
   return selectable ? `<div class="cw${selected ? ' is-selected' : ''}">${selBoxHTML({ key: 'a:' + id, label: name, checked: selected })}${body}</div>` : body;
 }
-function subCardHTML({ id, name, emoji, tint, moms = 0, files = 0 }) {
-  return `<a class="subcard" href="${areaHref(id)}"><span class="blob ${esc(tint)}">${esc(emoji)}</span><span><b>${esc(name)}</b><small>${plural(moms, 'MoM')} · ${plural(files, 'file')}</small></span></a>`;
+function subCardHTML({ id, name, emoji, tint, moms = 0, files = 0, locked = false, selectable = false, selected = false }) {
+  const body = `<a class="subcard" href="${areaHref(id)}"${selectable ? ` data-act="sel-card" data-key="a:${esc(id)}"` : ''}><span class="blob ${esc(tint)}">${esc(emoji)}</span><span><b>${esc(name)}</b><small>${locked ? ic('lock', 'sm') + 'Restricted' : `${plural(moms, 'MoM')} · ${plural(files, 'file')}`}</small></span></a>`;
+  return selectable ? `<div class="cw${selected ? ' is-selected' : ''}">${selBoxHTML({ key: 'a:' + id, label: name, checked: selected })}${body}</div>` : body;
 }
 /* Admin only: a member sees it greyed, and a click says so. */
 function newSubCardHTML({ parentId }) {
@@ -567,20 +596,20 @@ function fileTileHTML({ id, name, kind, note = '', locked = false, flagged = fal
   const big = locked ? `<span class="lockbig">${ic('lock', 'xl')}</span>` : `<span class="big-ic">${ic(k.icon, 'lg')}</span>`;
   const media = `<span class="thumb ${locked ? '' : k.tile}">${img}${big}<span class="ext">${k.ext}</span>${flagged ? flagMarkHTML() : ''}${final ? finalMarkHTML() : ''}</span>`;
   const text = `<span class="fbody"><span class="t">${esc(name)}</span><span class="p">${locked ? 'Restricted · note hidden' : esc(note || k.label)}</span></span>`;
-  return `<div class="cw${selected ? ' is-selected' : ''}">${sel}<button type="button" class="ftile" data-act="open-file" data-id="${esc(id)}" aria-label="${esc(name)}, ${k.label}">${media}${text}</button><button type="button" class="more on-thumb" data-act="item-menu" data-kind="f" data-id="${esc(id)}" aria-label="More for ${esc(name)}" aria-haspopup="menu">${ic('more', 'sm')}</button></div>`;
+  return `<div class="cw${selected ? ' is-selected' : ''}">${sel}<button type="button" class="ftile" ${selectable ? `data-act="sel-card" data-key="f:${esc(id)}"` : `data-act="open-file" data-id="${esc(id)}"`} aria-label="${esc(name)}, ${k.label}">${media}${text}</button><button type="button" class="more on-thumb" data-act="item-menu" data-kind="f" data-id="${esc(id)}" aria-label="More for ${esc(name)}" aria-haspopup="menu">${ic('more', 'sm')}</button></div>`;
 }
 function fileRowHTML({ id, name, kind, note = '', size = 0, date = '', locked = false, flagged = false, final = false, selectable = false, selected = false }) {
   const k = KINDS[kind];
   const sel = selectable ? selBoxHTML({ key: 'f:' + id, label: name, checked: selected }) : '';
   const meta = [locked ? 'Restricted' : note, size ? fmtSize(size) : '', date ? fmtDate(date) : ''].filter(Boolean).join(' · ');
-  return `<div class="cw${selected ? ' is-selected' : ''}">${sel}<button type="button" class="row" data-act="open-file" data-id="${esc(id)}"><span class="ktile ${k.tile}">${ic(k.icon)}</span><span class="mid"><span class="t">${flagged ? ic('flag-fill', 'sm') : ''}${esc(name)}</span><span class="p">${k.label} · ${esc(meta)}</span></span>${final ? finalMarkHTML() : ''}</button></div>`;
+  return `<div class="cw${selected ? ' is-selected' : ''}">${sel}<button type="button" class="row" ${selectable ? `data-act="sel-card" data-key="f:${esc(id)}"` : `data-act="open-file" data-id="${esc(id)}"`}><span class="ktile ${k.tile}">${ic(k.icon)}</span><span class="mid"><span class="t">${flagged ? ic('flag-fill', 'sm') : ''}${esc(name)}</span><span class="p">${k.label} · ${esc(meta)}</span></span>${final ? finalMarkHTML() : ''}</button></div>`;
 }
 /* A row in a list (Flagged, Recent, Today). Shows where the item lives. */
-function itemRowHTML({ href, tile = 'k-other', icon = 'doc', emoji = '', title, where = '', meta = '', flagged = false, final = false, restricted = false }) {
-  return `<a class="row" href="${esc(href)}"><span class="ktile ${tile}"${emoji ? ' aria-hidden="true"' : ''}>${emoji ? esc(emoji) : ic(icon)}</span><span class="mid"><span class="t">${flagged ? flagMarkHTML() : ''}${esc(title)}</span><span class="p">${esc(where)}${meta ? ' · ' + esc(meta) : ''}</span></span>${restricted ? restrictMarkHTML() : ''}${final ? finalMarkHTML() : ''}</a>`;
+function itemRowHTML({ href, tile = 'k-other', icon = 'doc', emoji = '', title, where = '', meta = '', flagged = false, final = false, restricted = false, right = '', act = '', data = {} }) {
+  return `<a class="row" href="${esc(href)}"${act ? ` data-act="${act}"` : ''}${attrs(data)}><span class="ktile ${tile}"${emoji ? ' aria-hidden="true"' : ''}>${emoji ? esc(emoji) : ic(icon)}</span><span class="mid"><span class="t">${flagged ? flagMarkHTML() : ''}${esc(title)}</span><span class="p">${esc(where)}${meta ? ' · ' + esc(meta) : ''}</span></span>${restricted ? restrictMarkHTML() : ''}${final ? finalMarkHTML() : ''}${right}</a>`;
 }
-function continueCardHTML({ href, tile = 'k-other', icon = 'doc', title, where = '' }) {
-  return `<a class="ccard" href="${esc(href)}"><span class="ktile ${tile}">${ic(icon)}</span><span class="t">${esc(title)}</span><span class="p">${esc(where)}</span></a>`;
+function continueCardHTML({ href, tile = 'k-other', icon = 'doc', title, where = '', act = '', data = {} }) {
+  return `<a class="ccard" href="${esc(href)}"${act ? ` data-act="${act}"` : ''}${attrs(data)}><span class="ktile ${tile}">${ic(icon)}</span><span class="t">${esc(title)}</span><span class="p">${esc(where)}</span></a>`;
 }
 
 /* 3.5 Grouping shelf and permissions */
@@ -737,11 +766,11 @@ function a4HTML({ title, area, date, tags = [], body = '', stamp = '' }) {
 }
 
 /* 3.9 States and feedback */
-function emptyHTML({ small = false, icon, title, text, actions = '' }) {
-  return `<div class="empty${small ? ' small' : ''}"><div class="art">${ic(icon)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p>${actions ? `<div class="acts">${actions}</div>` : ''}</div>`;
+function emptyHTML({ small = false, icon, title, text, actions = '', cls = '' }) {
+  return `<div class="empty${small ? ' small' : ''}${cls ? ' ' + cls : ''}"><div class="art">${ic(icon)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p>${actions ? `<div class="acts">${actions}</div>` : ''}</div>`;
 }
-function noResultHTML({ title, text, action = '' }) {
-  return `<div class="noresult"><b>${esc(title)}</b>${esc(text)}${action ? `<div class="noresult-act">${action}</div>` : ''}</div>`;
+function noResultHTML({ title, text, action = '', cls = '' }) {
+  return `<div class="noresult${cls ? ' ' + cls : ''}"><b>${esc(title)}</b>${esc(text)}${action ? `<div class="noresult-act">${action}</div>` : ''}</div>`;
 }
 /* tone: info | warn | danger. title is optional. */
 function noticeHTML({ tone = 'info', icon = 'info', title = '', text, role = '' }) {
@@ -818,6 +847,7 @@ onForm('unlock', async (f) => {
     (kind === 'a' ? UF : UD).add(id);
     closeAll();
     render();
+    if (kind === 'f' && ACT['open-file']) ACT['open-file']({ id });
     return;
   }
   const field = f.querySelector('.field');
@@ -829,6 +859,60 @@ onForm('unlock', async (f) => {
     input.setAttribute('aria-describedby', input.id + '-err');
     input.value = ''; input.focus();
   }
+});
+
+/* ---------- Page helpers (Area, Today, All areas, the picker) ---------- */
+/* Dates are stored as milliseconds. isoOf gives the day in local time; msOf the local midnight of a day. */
+const isoOf = v => {
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+  const d = new Date(typeof v === 'number' ? v : Date.now());
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+};
+const msOf = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+/* An area's soft colour. Areas have none stored yet (open gap G3), so each gets a steady one from its id. */
+const TINTS = ['tint-mint', 'tint-sky', 'tint-lilac', 'tint-rose', 'tint-sun', 'tint-peach'];
+function tintOf(a) {
+  if (a && TINTS.includes(a.tint)) return a.tint;
+  let h = 0; String((a && a.id) || '').split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; });
+  return TINTS[h % TINTS.length];
+}
+const sizeText = id => { const c = countsOf(id); return `${plural(c.areas, 'sub-area')} · ${plural(c.moms, 'MoM')} · ${plural(c.files, 'file')}`; };
+/* "4 months old"; nothing for an area made this month or with no date. */
+function ageText(ms) {
+  if (!ms) return '';
+  const d = new Date(ms), n = new Date();
+  const months = (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth() - (n.getDate() < d.getDate() ? 1 : 0);
+  return months < 1 ? '' : `${plural(months, 'month')} old`;
+}
+const firstWord = s => String(s || '').split(/[\s._-]+/).filter(Boolean)[0] || '';
+const firstName = () => { const n = firstWord(currentUser().name); return n ? n.charAt(0).toUpperCase() + n.slice(1) : ''; };
+/* The start of a note, as plain text, for cards. */
+const notePreview = (content, id) => { const t = plainText(content, id); return t.length > 150 ? t.slice(0, 150).trim() + '…' : t; };
+/* A small image for a tile (Cloudinary can resize on the way out). */
+const thumbUrl = d => {
+  if (!d.url) return '';
+  return /^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(d.url) ? d.url.replace('/image/upload/', '/image/upload/w_480,h_300,c_fill,q_auto/') : d.url;
+};
+/* Everything inside an area, for the delete confirmation (nothing is skipped: an admin is deleting it all). */
+function contents(areaId) {
+  const ids = descIds(areaId);
+  return {
+    areas: ids.length - 1,
+    moms: M.filter(m => ids.includes(m.folderId)).length,
+    files: D.filter(d => ids.includes(d.folderId)).length,
+    groups: MF.filter(g => ids.includes(g.folderId)).length + DF.filter(g => ids.includes(g.folderId)).length,
+  };
+}
+/* What this viewer may see that is flagged (workspace-wide), and what they opened lately. */
+const flaggedItems = () => M.filter(m => m.starred && !hiddenItem('m', m)).map(m => ['m', m.id]).concat(D.filter(d => d.starred && !hiddenItem('f', d)).map(d => ['f', d.id]));
+const recentEntries = () => CURR_USER_RECENT.filter(x => (x.k === 'm' ? M.find(m => m.id === x.id && !hiddenItem('m', m)) : D.find(d => d.id === x.id && !hiddenItem('f', d))));
+/* Undo (S4): toasts carry { act: 'undo', data: { key } }; whoever offers it registers the way back. */
+const UNDO = {};
+const offerUndo = (key, fn) => { UNDO[key] = fn; };
+on('undo', d => {
+  const f = UNDO[d.key]; if (!f) return;
+  delete UNDO[d.key];
+  Promise.resolve(f()).then(() => toast('Undone', { icon: 'restore' }), () => toast('Couldn’t undo that. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
 });
 
 /* ---------- Store events and boot ---------- */
