@@ -133,3 +133,60 @@ function plainText(content,cacheKey){
   if(cacheKey)_plainCache.set(cacheKey,{c:content,t:t});
   return t;
 }
+
+// ---------- Notes shown without the editor (guest view, A4 export) ----------
+// The editor filters a note through its schema; these views show the stored HTML directly, so it
+// is filtered here first: only the tags, attributes, classes and style properties real notes use
+// (checked against every MoM in the workspace). Works on an inert parsed copy; nothing in the
+// note can run or load while it is filtered. opts.momHref(id) turns a link to another MoM into an
+// address (return '' to show it as plain text); without it such links are plain text.
+var NOTE_TAGS='p br h1 h2 h3 h4 h5 h6 strong b em i u s del strike mark code pre blockquote hr ul ol li a img table thead tbody tfoot tr th td colgroup col span div sub sup'.split(' ');
+var NOTE_DROP='script style iframe frame frameset object embed template noscript form svg math link meta base title head audio video source'.split(' ');
+var NOTE_STYLE=['min-width','color','font-family','font-size','text-align','width','background-color'];
+var NOTE_ATTRS={a:['href'],img:['src','alt','data-px','data-py'],table:['data-template'],th:['colspan','rowspan','colwidth','data-coltype'],td:['colspan','rowspan','colwidth'],ol:['start'],ul:['data-checked'],li:['data-list','data-checked']};
+function _noteStyle(v){
+  return String(v||'').split(';').map(function(p){
+    var i=p.indexOf(':');if(i<1)return'';
+    var k=p.slice(0,i).trim().toLowerCase(),val=p.slice(i+1).trim();
+    if(NOTE_STYLE.indexOf(k)<0||!val)return'';
+    if(/url\s*\(|expression|javascript|@import|[\\{}<>]/i.test(val))return'';
+    return k+':'+val;
+  }).filter(Boolean).join(';');
+}
+function safeNoteHTML(html,opts){
+  opts=opts||{};
+  if(!html)return'';
+  var doc=new DOMParser().parseFromString('<!doctype html><html><body>'+html+'</body></html>','text/html');
+  (function walk(parent){
+    Array.from(parent.childNodes).forEach(function(node){
+      if(node.nodeType===3)return;
+      if(node.nodeType!==1){node.remove();return;}
+      var tag=node.tagName.toLowerCase();
+      if(NOTE_DROP.indexOf(tag)>=0){node.remove();return;}
+      if(NOTE_TAGS.indexOf(tag)<0){walk(node);while(node.firstChild)parent.insertBefore(node.firstChild,node);node.remove();return;}
+      var allowed=NOTE_ATTRS[tag]||[];
+      Array.from(node.attributes).forEach(function(a){
+        var n=a.name.toLowerCase(),v=a.value,keep=false;
+        if(n==='style'){v=_noteStyle(v);if(v){node.setAttribute('style',v);keep=true;}}
+        else if(n==='class'){v=v.split(/\s+/).filter(function(c){return/^ql-[a-z0-9-]+$/.test(c)||c==='journal';}).join(' ');if(v){node.setAttribute('class',v);keep=true;}}
+        else if(n==='colspan'||n==='rowspan'||n==='start'||n==='data-px'||n==='data-py'){keep=allowed.indexOf(n)>=0&&/^-?\d{1,6}$/.test(v);}
+        else if(n==='colwidth'){keep=/^\d{1,5}(,\d{1,5})*$/.test(v);}
+        else if(n==='href'&&tag==='a'){keep=/^(https?:|mailto:|tel:)/i.test(v.trim());}
+        else if(n==='src'&&tag==='img'){keep=/^https:\/\//i.test(v.trim())||/^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+\/=]+$/i.test(v.trim());}
+        else keep=allowed.indexOf(n)>=0&&n!=='href'&&n!=='src';
+        if(!keep)node.removeAttribute(a.name);
+      });
+      if(tag==='a'){
+        var href=node.getAttribute('href')||'',m=/^https:\/\/mom\.local\/([^/?#]+)/i.exec(href);
+        if(m){
+          var to=opts.momHref?opts.momHref(decodeURIComponent(m[1])):'';
+          if(to){node.setAttribute('href',to);node.removeAttribute('target');node.removeAttribute('rel');}
+          else{var sp=doc.createElement('span');while(node.firstChild)sp.appendChild(node.firstChild);parent.replaceChild(sp,node);walk(sp);return;}
+        }else if(href){node.setAttribute('target','_blank');node.setAttribute('rel','noopener noreferrer');}
+        else{while(node.firstChild)parent.insertBefore(node.firstChild,node);node.remove();return;}
+      }
+      walk(node);
+    });
+  })(doc.body);
+  return doc.body.innerHTML;
+}

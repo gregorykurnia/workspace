@@ -350,8 +350,12 @@ on('open-file', d => {
   window.open(f.url, '_blank', 'noopener');
   toast(`“${f.name || 'File'}” opened in a new tab`, { icon: 'external' });
 });
-on('download', async d => {
+on('download', d => {
   const f = D.find(x => x.id === d.id); if (!f || lockedFile(f) || !f.url) return;
+  downloadFile(f);
+});
+/* Save a file to the device (guest pages use it too, after their own checks). */
+async function downloadFile(f) {
   const name = f.name || 'file';
   if (docKind(f) === 'link' || f.type === 'link') { window.open(f.url, '_blank', 'noopener'); toast(`Links can’t be downloaded, so “${name}” opened in a new tab`, { icon: 'external' }); return; }
   toast(`Downloading “${name}”`, { icon: 'download' });
@@ -360,7 +364,7 @@ on('download', async d => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   } catch (e) { window.open(f.url, '_blank', 'noopener'); toast(`“${name}” opened in a new tab`, { icon: 'external' }); }   // the file's host may refuse a direct fetch
-});
+}
 on('copy-address', d => {
   const f = D.find(x => x.id === d.id); if (!f || lockedFile(f) || !f.url) return;
   const done = () => toast('Address copied', { icon: 'copy' });

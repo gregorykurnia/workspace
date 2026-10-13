@@ -2,11 +2,25 @@
 const auth=firebase.auth();
 var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[],CURR_USER_RECENT=[];   // recent: [{k:'m'|'f', id, at}], newest first, 8 at most (F13)
 
-// Share link: sign in anonymously so no login screen is needed
+// Share link: sign in anonymously so no login screen is needed. The old app's links carry
+// ?folder= ?doc= ?mom=; the new ones are #/s/a|m|f/:id.
+var _visitorTry=null;
+// Waits for Auth to report who is signed in (a saved session is restored asynchronously), and
+// signs in anonymously only when nobody is. A signed-in colleague opening a link stays signed in.
+function signInAsVisitor(){
+  if(!_visitorTry)_visitorTry=new Promise(function(res,rej){
+    var off=auth.onAuthStateChanged(function(u){
+      off();
+      if(u)return res();
+      auth.signInAnonymously().then(function(){res();},function(e){console.error(e);_visitorTry=null;rej(e);});
+    });
+  });
+  return _visitorTry;
+}
 (function(){
   var p=new URLSearchParams(window.location.search);
-  if(p.has('folder')||p.has('doc')||p.has('mom')){
-    auth.signInAnonymously().catch(console.error);
+  if(p.has('folder')||p.has('doc')||p.has('mom')||/^#\/s\//.test(window.location.hash)){
+    signInAsVisitor().catch(function(){});
   }
 })();
 

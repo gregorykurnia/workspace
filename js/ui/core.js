@@ -40,6 +40,7 @@ const UI = {
   onRefresh: null,         // pwa.js: apply the waiting version
   lastKey: '',             // route name and id of the last render
   sharedHome: null,        // the shared address a visitor arrived on
+  visitorFailed: false,    // the anonymous sign-in for a share address was refused
   wasOffline: false,
 };
 
@@ -334,9 +335,14 @@ function render({ keepView = false } = {}) {
   if (!UI.booted) return;
   const r = route();
   const role = sessionRole();
+  /* A guest session left over from an old share link has no business in the app: end it, so the
+     sign-in screen shows instead of a redirect that has nowhere to go. */
+  if (role === 'visitor' && r.name !== 'shared' && !UI.sharedHome) { signOut(); return; }
   const redirect = guard(r);
   if (redirect) { location.replace(redirect); return; }
   if (role === 'visitor' && r.name === 'shared') UI.sharedHome = location.hash;
+  /* A share address with nobody signed in: sign in as a guest (waits for a saved session first). */
+  if (role === 'signedout' && r.name === 'shared' && !UI.visitorFailed) signInAsVisitor().catch(() => { UI.visitorFailed = true; scheduleRender(); });
   const bare = ['signin', 'reset', 'newmember'].includes(r.name) || role === 'loading';
   const shared = r.name === 'shared' || role === 'visitor';
   const waiting = !bare && !dataLoaded();
@@ -356,7 +362,8 @@ function render({ keepView = false } = {}) {
   if (UI.mounted && UI.mounted.unmount) { const m = UI.mounted; UI.mounted = null; m.unmount(); }
   UI.mounted = null; UI.shownKey = '';
   const v = VIEWS[r.name] || VIEWS.missing || PLACEHOLDER;
-  const html = waiting || role === 'loading' ? null : v.html(r);
+  const guestFailed = role === 'signedout' && shared && UI.visitorFailed && navigator.onLine !== false;   // couldn't sign in as a guest: say so
+  const html = (waiting || role === 'loading') && !guestFailed ? null : v.html(r);
   const kept = !changed && html != null ? viewFocus() : null;
   if (html == null) el.innerHTML = skeletonHTML();   // loading, or the view isn't ready yet
   else {

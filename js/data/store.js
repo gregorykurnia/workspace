@@ -146,3 +146,42 @@ function crumbPath(areaId){
   var i=chain.findIndex(a=>_granted(a,u));
   return i>-1?chain.slice(i):[];
 }
+
+// ---------- Share links (guest views, plan 2.8 P5): the item's own link wins ----------
+// `shared` is three-state: true = link on, false = link turned off, missing = follows its area.
+// The area whose link opens `areaId`: walking up from the area, the first explicit value decides
+// (false = closed, which also closes everything under it; true = that area is the share root).
+// Null when no link opens it.
+function shareRootOf(areaId){
+  var chain=areaChain(areaId);
+  for(var i=chain.length-1;i>=0;i--){
+    if(chain[i].shared===false)return null;
+    if(chain[i].shared===true)return chain[i];
+  }
+  return null;
+}
+function visitorCanArea(areaId){return!!shareRootOf(areaId);}
+function _visitorCanItem(it){
+  if(!it)return false;
+  if(it.shared===true)return true;
+  if(it.shared===false)return false;
+  return visitorCanArea(it.folderId);
+}
+function visitorCanMom(m){return _visitorCanItem(m);}
+function visitorCanFile(f){return _visitorCanItem(f);}
+// Restrictions for a guest: the share root's own password and any restricted area below it apply;
+// areas above the root don't (the owner chose to share from there). An item with its own link on
+// skips the areas' passwords altogether (its own password, for a file, still applies).
+function visitorLockedArea(areaId){
+  var root=shareRootOf(areaId);if(!root)return null;
+  var c=areaChain(areaId),i=c.findIndex(function(a){return a.id===root.id;});
+  for(var j=Math.max(i,0);j<c.length;j++)if(c[j].pw&&!UF.has(c[j].id))return c[j];
+  return null;
+}
+// What stands between a guest and this item: {area} (a restricted area to open first), {file}
+// (the file's own password), or null.
+function visitorGate(kind,item){
+  if(item.shared!==true){var la=visitorLockedArea(item.folderId);if(la)return{area:la};}
+  if(kind==='f'&&item.pw&&!UD.has(item.id))return{file:true};
+  return null;
+}

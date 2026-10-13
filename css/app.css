@@ -106,8 +106,26 @@ body.selecting .cw > .row { padding-left: 52px; }
 .pw-meter i.s3 { width: 75%; }
 .pw-meter i.s4 { width: 100%; }
 
-/* Shared-link pages: a centred card. */
+/* Shared-link pages (guest views). The centred "link unavailable" card: */
 .vcard-center { text-align: center; padding: 48px 28px; }
+.vcard-center .empty.small { padding: 0; }
+.vcard-center .empty .art { margin: 0 auto 18px; }
+.vcard-center .empty h3 { font-size: 22px; }
+.vcard-center .empty p { margin: 10px auto 0; }
+/* A shared file or note: spacing inside the card. */
+.vcard-narrow { max-width: 520px; margin: 0 auto; }
+.vcard-narrow .field { margin-top: 20px; }
+.vcard-narrow .btn { width: 100%; }
+.ktile-lg { width: 56px; height: 56px; border-radius: 18px; }
+.vcard .ktile-lg + .h-page { margin-top: 16px; }
+.vcard .h-page + .muted { margin-top: 8px; }
+.vtitle { margin-top: 4px; }
+.vtags { margin-top: 14px; }
+.vbody { margin-top: 22px; caret-color: transparent; }
+.vnote { margin-top: 14px; color: var(--text-2); }
+.vimg { margin-top: 20px; width: 100%; border-radius: var(--r-lg); }
+.vcard .aactions { margin-top: 22px; }
+.vempty { margin-top: 28px; }
 /* The action under a no-match message. */
 .noresult-act { margin-top: 12px; }
 /* The lightbox's buttons. */
