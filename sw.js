@@ -1,25 +1,45 @@
-const STATIC_CACHE = 'workbench-static-v4';
-const RUNTIME_CACHE = 'workbench-runtime-v2';
+const STATIC_CACHE = 'workbench-static-v5';
+const RUNTIME_CACHE = 'workbench-runtime-v3';
 
-// The ?v= on the three app scripts must match index.html: the cache key includes the query.
+// The app shell: the page, its styles, fonts, icons and every script, so the installed app opens
+// with no connection. Firebase, Tiptap and Quill come from other hosts and are kept the first time
+// they load (cache first, below). Data comes from Firestore's own offline copy, never from here.
 const APP_SHELL = [
   './',
   './index.html',
-  './favicon.svg',
+  './next.html',
   './manifest.webmanifest',
-  './css/styles.css',
+  './icon.svg',
+  './icons/apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './css/tokens.css',
+  './css/base.css',
+  './css/views.css',
+  './css/editor.css',
+  './css/app.css',
+  './fonts/PlusJakartaSans-latin.woff2',
+  './fonts/PlusJakartaSans-latin-ext.woff2',
   './js/data/firebase.js',
   './js/data/store.js',
   './js/data/actions.js',
   './js/data/uploads.js',
   './js/data/content.js',
+  './js/data/merge.js',
   './js/data/search.js',
   './js/data/session.js',
-  './js/app.js?v=2',
-  './js/auth.js?v=2',
-  './js/rbac.js?v=2',
-  './js/pwa.js',
-  './js/tiptap.js'
+  './js/ui/icons.js',
+  './js/ui/core.js',
+  './js/ui/shell.js',
+  './js/ui/mom.js',
+  './js/ui/area.js',
+  './js/ui/files.js',
+  './js/ui/access.js',
+  './js/ui/home.js',
+  './js/ui/account.js',
+  './js/ui/app.js',
+  './js/editor/tiptap.js',
+  './js/pwa.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -43,11 +63,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Offline fallback for a page that was never cached: only the old app's own address.
+// Offline fallback for a page that was never cached: the app's own address (the page is hash-routed).
 function shellFallback(url) {
   const path = url.pathname;
-  const isOldAppAddress = path.endsWith('/') || path.endsWith('/index.html');
-  return isOldAppAddress ? caches.match('./index.html') : undefined;
+  const isAppAddress = path.endsWith('/') || path.endsWith('/index.html');
+  return isAppAddress ? caches.match('./index.html') : undefined;
 }
 
 self.addEventListener('fetch', (event) => {
