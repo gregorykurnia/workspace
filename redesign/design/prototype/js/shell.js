@@ -36,21 +36,22 @@ function treeHTML(r, opts = {}) {
 function sidebarHTML(r) {
   const flaggedCount = DB.moms.filter(m => m.flagged && canSee(m.area) && !hiddenItem('m', m)).length + DB.files.filter(f => f.flagged && canSee(f.area) && !hiddenItem('f', f)).length;
   const nav = (href, icon, label, active, count) => `<a class="nav-item" href="${href}" ${active ? 'aria-current="page"' : ''}>${ic(icon)}<span>${label}</span>${count ? `<span class="count">${count}</span>` : ''}</a>`;
-  const me = SEED.me;
+  const me = currentUser();
   return `<div class="side-brand"><span class="brand-mark">${ic('book')}</span><span>Daybook</span></div>
     <nav class="side-nav" aria-label="Main">
       ${nav('#/today', 'sun', 'Today', r.name === 'today')}
       ${nav('#/flagged', 'flag', 'Flagged', r.name === 'flagged', flaggedCount || '')}
       ${nav('#/recent', 'clock', 'Recent', r.name === 'recent')}
+      ${nav('#/areas', 'grid', 'All areas', r.name === 'areas')}
     </nav>
-    <div class="side-cap"><span>Areas</span><button class="icon-btn" style="width:32px;height:32px;min-height:32px" data-act="new-area" ${adminAttr('createArea', 'create areas')} aria-label="New area">${ic('plus', 'sm')}</button></div>
-    ${treeHTML(r)}
+    <div class="side-cap"><span>Areas</span>${isAdmin() ? `<button class="icon-btn side-add" data-act="new-area" aria-label="New area">${ic('plus', 'sm')}</button>` : ''}</div>
+    ${visibleAreas().length ? treeHTML(r) : `<div class="side-empty">${isAdmin() ? `No areas yet. <button class="link-btn" data-act="new-area">Create one</button>` : 'No areas shared with you yet.'}</div>`}
     <div class="side-bottom">
       <nav class="side-nav" aria-label="Recovery">${nav('#/deleted', 'bin', 'Deleted', r.name === 'deleted', DB.deleted.length || '')}</nav>
       <div class="side-foot">
         <span class="who" style="width:36px;height:36px;font-size:13px;background:var(--accent-tint-2);color:var(--accent-strong)">${me.ini}</span>
-        <div class="who-name"><b>${esc(me.name)}</b><small>${S.role === 'admin' ? 'Admin' : 'Member'}</small></div>
-        <button class="icon-btn" style="width:36px;height:36px;min-height:36px" data-act="account" aria-label="Account and settings">${ic('user', 'sm')}</button>
+        <div class="who-name"><b>${esc(me.name)}</b><small>${me.roleLabel}</small></div>
+        <button class="icon-btn side-acct" data-act="account" aria-label="Account and settings">${ic('user', 'sm')}</button>
       </div>
     </div>`;
 }
@@ -69,37 +70,67 @@ function titleFor(r) {
     default: return ['Daybook', ''];
   }
 }
-function crumbsHTML(areaId) {
+/* Breadcrumb (F5). Deep paths keep the first and the last two levels; the
+   middle collapses into a "…" button that lists the hidden levels. */
+function crumbsHTML(areaId, current = null) {
   const path = crumbPath(areaId);
-  const items = path.map((a, i) => ({ a, last: i === path.length - 1 }));
+  const items = path.map((a, i) => ({ a, last: !current && i === path.length - 1 }));
   let parts = items;
-  if (items.length > 3) parts = [items[0], 'more', ...items.slice(-2)];
+  let hidden = [];
+  if (current && items.length > 1) { hidden = items.slice(0, -1); parts = ['more', items[items.length - 1]]; }
+  else if (items.length > 3) { hidden = items.slice(1, -2); parts = [items[0], 'more', ...items.slice(-2)]; }
+  const sep = `<span class="crumb-sep" aria-hidden="true">${ic('chev-r', 'sm')}</span>`;
   const html = parts.map((p, i) => {
-    if (p === 'more') return `<span class="crumb-sep">${ic('chev-r', 'sm')}</span><span class="crumb-more" aria-hidden="true">…</span>`;
-    const sep = i === 0 ? '' : `<span class="crumb-sep">${ic('chev-r', 'sm')}</span>`;
-    return `${sep}<a class="crumb" href="#/areas/${p.a.id}" ${p.last ? 'aria-current="page"' : ''} title="${esc(p.a.name)}">${p.a.emoji} ${esc(p.a.name)}</a>`;
-  }).join('');
-  return `<nav class="crumbs" aria-label="Where you are" style="margin:0">${html}</nav>`;
+    const s = i === 0 ? '' : sep;
+    if (p === 'more') return `${s}<button type="button" class="crumb-more" data-act="crumb-more" data-ids="${hidden.map(h => h.a.id).join(',')}" aria-label="Show ${hidden.length} more levels">…</button>`;
+    return `${s}<a class="crumb" href="#/areas/${p.a.id}" ${p.last ? 'aria-current="page"' : ''} title="${esc(p.a.name)}">${p.a.emoji} ${esc(p.a.name)}</a>`;
+  }).join('') + (current ? `${sep}<span class="crumb crumb-now" aria-current="page" title="${esc(current)}">${esc(current)}</span>` : '');
+  return `<nav class="crumbs" aria-label="Where you are">${html}</nav>`;
 }
+on('crumb-more', (d, el) => {
+  menu(el, d.ids.split(',').map(id => ({ label: `${area(id).emoji} ${area(id).name}`, act: 'go-area', data: { id } })), 'Enclosing areas');
+});
+on('go-area', (d) => go(`#/areas/${d.id}`));
+
+/* The top-level tabs on phone have no back arrow. */
+const TAB_ROUTES = ['today', 'areas', 'flagged'];
+
 function topbarHTML(r) {
   const info = syncInfo();
-  const [title, sub] = titleFor(r);
+  const [title] = titleFor(r);
   const p = createPlace(r);
-  const crumbs = r.name === 'area' ? crumbsHTML(r.id) : r.name === 'mom' && mom(r.id) ? crumbsHTML(mom(r.id).area) : `<span class="muted" style="font-weight:600">${esc(title)}</span>`;
-  const showBack = r.name !== 'today';
+  const m = r.name === 'mom' ? mom(r.id) : null;
+  const sync = `<span class="sync ${info.cls}" role="status" title="${esc(info.text)}"><span class="dot" aria-hidden="true"></span><span>${info.short}</span></span>`;
+  const search = `<button class="cmd-trigger" type="button" data-act="palette" aria-label="Search or jump to (⌘K)">${ic('search', 'sm')}<span>Search</span><kbd>⌘K</kbd></button>`;
+  const avatar = `<button class="avatar-btn" data-act="account" aria-label="Account: ${esc(currentUser().name)}"><span class="avatar">${currentUser().ini}</span></button>`;
+
+  // In a MoM, the top bar is the editor's header: where it lives, save state, and Done.
+  if (m && canSee(m.area) && !lockedArea(m.area)) {
+    const ro = readOnly(m);
+    return `
+      <div class="top-crumbs">${crumbsHTML(m.area, m.title)}</div>
+      <div class="top-right">
+        ${ro ? `<span class="ed-readonly">${ic('lock', 'sm')}Final · read only</span>` : `<span class="status-pill js-status" role="status" aria-live="polite">${ic('cloud-check', 'sm')}Saved</span>`}
+        ${search}
+        <button class="icon-btn" data-act="flag" data-kind="m" data-id="${m.id}" aria-pressed="${!!m.flagged}" aria-label="${m.flagged ? 'Unflag' : 'Flag as important'}">${ic(m.flagged ? 'flag-fill' : 'flag', 'sm')}</button>
+        <button class="icon-btn" data-act="editor-menu" data-id="${m.id}" aria-haspopup="menu" aria-label="More for this MoM">${ic('more', 'sm')}</button>
+        <button class="btn btn-soft btn-sm" data-act="done">Done</button>
+      </div>`;
+  }
+  const crumbs = r.name === 'area' && area(r.id) && canSee(r.id) ? crumbsHTML(r.id) : `<span class="top-title-d">${esc(title)}</span>`;
   return `
-    <button class="icon-btn back-btn" data-act="back" aria-label="Back">${ic('arrow-left')}</button>
-    <div class="phone-title"><span>${esc(title)}</span>${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
+    ${TAB_ROUTES.includes(r.name) ? '' : `<button class="icon-btn back-btn" data-act="back" aria-label="Back">${ic('arrow-left')}</button>`}
+    <div class="phone-title">${esc(title)}</div>
     <div class="top-crumbs">${crumbs}</div>
-    <button class="cmd-trigger" type="button" data-act="palette" aria-label="Search or jump to (⌘K)">${ic('search', 'sm')}<span>Search or jump to…</span><kbd>⌘K</kbd></button>
     <div class="top-right">
-      <span class="sync ${info.cls}" role="status" title="Sync status"><span class="dot"></span><span>${info.text}</span></span>
+      ${search}
+      ${sync}
       <div class="split" role="group" aria-label="New">
         <button class="split-main" type="button" data-act="new-mom" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}">${ic('plus', 'sm')}<span>New MoM</span></button>
         <button class="split-caret" type="button" data-act="new-menu" aria-label="More ways to create" aria-haspopup="menu">${ic('chev-d', 'sm')}</button>
       </div>
       <button class="icon-btn search-btn" data-act="palette" aria-label="Search">${ic('search')}</button>
-      <button class="avatar-btn" data-act="account" aria-label="Account: ${esc(SEED.me.name)}"><span class="avatar">${SEED.me.ini}</span></button>
+      ${avatar}
     </div>`;
 }
 function tabbarHTML(r) {
@@ -142,10 +173,10 @@ function createSheet() {
     html: `<div class="dlg-head"><div class="tt2"><h2>Create</h2><button type="button" class="place-chip" style="min-height:36px;padding:0 12px;margin-top:8px;font-size:14px" data-act="pick-place">${ic('folder-plus', 'sm')}<span>Creating in ${esc(placeName(p))}</span></button></div><button class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button></div>
       <button class="create-hero" data-act="new-mom" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('doc', 'lg')}</span><span><b>New MoM</b><small>Starts with today’s date, ready to type</small></span></button>
       <div class="create-grid">
-        <button class="cg" data-act="upload" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('upload')}</span>Upload a file</button>
+        <button class="cg" data-act="upload" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('upload')}</span>Upload</button>
         <button class="cg" data-act="save-link" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('link')}</span>Save a link</button>
-        <button class="cg" data-act="new-group" data-area="${p ? p.area : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('folder-plus')}</span>New grouping</button>
-        <button class="cg" data-act="new-area" data-parent="${p ? p.area : ''}" ${adminAttr('createArea', 'create areas')}><span class="qi">${ic('shelf')}</span>New sub-area</button>
+        <button class="cg" data-act="new-group" data-area="${p ? p.area : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('folder-plus')}</span>Grouping</button>
+        <button class="cg" data-act="new-area" data-parent="${p ? p.area : ''}" ${adminAttr('createArea', 'create areas')}><span class="qi">${ic('shelf')}</span>Sub-area</button>
       </div>
       ${p ? '' : `<p class="hint">${ic('info', 'sm')}Create an area first, then add MoMs and files to it.</p>`}`,
   });
@@ -166,12 +197,12 @@ function paletteResults(q) {
     acts.push({ kind: 'act', label: `Upload to ${placeName(p)}`, sub: 'Choose or drop a file', ico: 'upload', act: 'upload', data: { area: p.area, group: p.group || '' } });
     acts.push({ kind: 'act', label: `Save a link in ${placeName(p)}`, sub: 'Name, kind and address', ico: 'link', act: 'save-link', data: { area: p.area, group: p.group || '' } });
   }
-  acts.push({ kind: 'act', label: 'New area', sub: 'Admins create areas', ico: 'shelf', act: 'new-area', data: {}, admin: 'createArea' });
+  acts.push({ kind: 'act', label: 'New area', sub: 'At the top level or inside another area', ico: 'shelf', act: 'new-area', data: {}, admin: 'createArea' });
   if (term) acts.push({ kind: 'act', label: `New MoM ‘${q.trim()}’`, sub: p ? `in ${placeName(p)}` : 'Choose a place first', ico: 'doc', act: 'new-mom-title', data: { title: q.trim() } });
   const sections = [];
   if (!term || acts.some(a => match(a.label))) sections.push(['Actions', acts.filter(a => !term || match(a.label))]);
   if (!empty) {
-    const areas = visibleAreas().filter(a => match(a.name) && !lockedArea(a.id)).slice(0, 6).map(a => ({ kind: 'area', id: a.id, label: `${a.emoji} ${a.name}`, sub: crumbPath(a.id).slice(0, -1).map(x => x.name).join(' › ') || 'Top level', ico: 'shelf' }));
+    const areas = visibleAreas().filter(a => match(a.name) && !lockedArea(a.id)).slice(0, 6).map(a => ({ kind: 'area', id: a.id, label: a.name, emoji: a.emoji, tint: a.tint, sub: crumbPath(a.id).slice(0, -1).map(x => x.name).join(' › ') || 'Top level', ico: 'shelf' }));
     const moms = DB.moms.filter(m => canSee(m.area) && !hiddenItem('m', m) && (match(m.title) || match(stripTags(m.body).slice(0, 220)))).slice(0, 6).map(m => ({ kind: 'mom', id: m.id, label: m.title, sub: `${area(m.area).name} · ${fmtDate(m.date)}`, ico: 'doc' }));
     const files = DB.files.filter(f => canSee(f.area) && !hiddenItem('f', f) && (match(f.name) || match(f.note))).slice(0, 6).map(f => ({ kind: 'file', id: f.id, label: f.name, sub: `${area(f.area).name}${f.group ? ' · ' + group(f.group).name : ''}`, ico: KINDS[f.kind].icon }));
     if (areas.length) sections.push(['Areas', areas]);
@@ -187,8 +218,8 @@ function paletteListHTML(q) {
     const i = idx++;
     const adm = it.admin && !can(it.admin) ? ` data-admin="create areas" aria-disabled="true"` : '';
     if (it.kind === 'act') return `<button class="pal-row" role="option" id="pal-${i}" aria-selected="${i === 0}" data-act="palette-act" data-cmd="${it.act}"${attrs(it.data)}${adm}><span class="ktile k-other">${ic(it.ico, 'sm')}</span><span class="mid"><b>${esc(it.label)}</b><small>${esc(it.sub)}</small></span><span class="go">${ic('corner-down-left', 'sm')}</span></button>`;
-    const cls = it.kind === 'area' ? 'tint-mint' : it.kind === 'mom' ? 'k-other' : KINDS[DB.files.find(f => f.id === it.id).kind].tile;
-    return `<button class="pal-row" role="option" id="pal-${i}" aria-selected="${i === 0}" data-act="palette-go" data-kind="${it.kind}" data-id="${it.id}"><span class="ktile ${cls}">${it.kind === 'area' ? '' : ic(it.ico, 'sm')}</span><span class="mid"><b>${esc(it.label)}</b><small>${esc(it.sub)}</small></span><span class="go">${ic('corner-down-left', 'sm')}</span></button>`;
+    const cls = it.kind === 'area' ? it.tint : it.kind === 'mom' ? 'k-other' : KINDS[DB.files.find(f => f.id === it.id).kind].tile;
+    return `<button class="pal-row" role="option" id="pal-${i}" aria-selected="${i === 0}" data-act="palette-go" data-kind="${it.kind}" data-id="${it.id}"><span class="ktile ${cls}" aria-hidden="true">${it.kind === 'area' ? it.emoji : ic(it.ico, 'sm')}</span><span class="mid"><b>${esc(it.label)}</b><small>${esc(it.sub)}</small></span><span class="go">${ic('corner-down-left', 'sm')}</span></button>`;
   }).join('')).join('');
   if (empty) return `<div class="noresult"><b>Nothing yet</b>Create an area to get started.</div>`;
   if (!sections.some(s => s[0] !== 'Actions') && term) return rows + `<div class="noresult"><b>No matches for “${esc(q)}”</b>Try another word, or create a MoM with this title above.</div>`;

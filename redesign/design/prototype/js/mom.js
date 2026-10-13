@@ -54,30 +54,30 @@ VIEWS.mom = {
     const groupName = m.group ? group(m.group).name : '';
     touchRecent('m', m.id);
     return `
-    <div class="ed-head">
-      <button class="ed-back" data-act="done" aria-label="Back to ${esc(a.name)}"><span class="area-l" style="display:inline-flex;align-items:center;gap:8px">${ic('arrow-left', 'sm')}${a.emoji} ${esc(a.name)}</span><span class="done-l">Done</span></button>
-      <span class="status-pill" id="edStatus" role="status" aria-live="polite">${ic('cloud-check', 'sm')}Saved</span>
+    <div class="ed-head" aria-label="MoM">
+      <button class="ed-back" data-act="done" aria-label="Done, back to ${esc(a.name)}">${ic('arrow-left', 'sm')}<span>Done</span></button>
+      ${ro ? `<span class="ed-readonly">${ic('lock', 'sm')}Read only</span>` : `<span class="status-pill js-status" role="status" aria-live="polite">${ic('cloud-check', 'sm')}Saved</span>`}
       <span class="spacer"></span>
-      ${ro ? `<span class="ed-readonly">${ic('lock', 'sm')}Final · read only</span>` : ''}
       <button class="icon-btn" data-act="flag" data-kind="m" data-id="${m.id}" aria-pressed="${!!m.flagged}" aria-label="${m.flagged ? 'Unflag' : 'Flag as important'}">${ic(m.flagged ? 'flag-fill' : 'flag', 'sm')}</button>
       <button class="icon-btn" data-act="editor-menu" data-id="${m.id}" aria-haspopup="menu" aria-label="More for this MoM">${ic('more', 'sm')}</button>
     </div>
     <div class="toolbar" id="edToolbar" role="toolbar" aria-label="Formatting" ${ro ? 'hidden' : ''}>${toolbarHTML()}</div>
-    <div class="canvas" id="edCanvas" style="position:relative">
+    <div class="canvas${m.journal ? ' wide' : ''}" id="edCanvas">
       <div id="ttools" class="ttools" hidden><div class="tt-inner" role="toolbar" aria-label="Table"></div></div>
       <div class="bubble" id="bubble" role="toolbar" aria-label="Selection formatting" hidden></div>
       <div class="slash" id="slash" role="listbox" aria-label="Insert" hidden></div>
       <nav class="ed-path" aria-label="Where this MoM lives">${path.map((x, i) => `${i ? ic('chev-r', 'sm') : ''}<a href="#/areas/${x.id}">${x.emoji} ${esc(x.name)}</a>`).join('')}${groupName ? `${ic('chev-r', 'sm')}<span>${esc(groupName)}</span>` : ''}</nav>
       <h1 class="ed-title" id="edTitle" contenteditable="${!ro}" spellcheck="false" aria-label="Title" data-id="${m.id}">${esc(m.title)}</h1>
       <div class="ed-meta">
-        <label class="mchip" for="edDate">${ic('calendar', 'sm')}<span class="sr">Meeting date</span><input type="date" id="edDate" value="${m.date}" ${ro ? 'disabled' : ''} data-change="ed-date"></label>
+        <button type="button" class="mchip" data-act="pick-date" ${ro ? 'disabled' : ''} aria-label="Meeting date, ${fmtDate(m.date)}. Change date">${ic('calendar', 'sm')}<span>${fmtDate(m.date)}</span></button><input type="date" id="edDate" class="sr" tabindex="-1" aria-hidden="true" value="${m.date}" data-change="ed-date">
         ${m.tags.map(t => `<span class="mchip tagc">#${esc(t)}<button type="button" data-act="tag-remove" data-t="${esc(t)}" aria-label="Remove tag ${esc(t)}" ${ro ? 'hidden' : ''}>${ic('x', 'sm')}</button></span>`).join('')}
         ${ro ? '' : `<input class="tag-add" id="edTag" placeholder="Add tag" aria-label="Add a tag" autocomplete="off">`}
         ${m.doc ? `<a class="mchip doc" href="https://${esc(m.doc.url)}" target="_blank" rel="noopener">${ic('doc', 'sm')}${esc(m.doc.label)}${ic('external', 'sm')}</a>` : (ro ? '' : `<button class="mchip" data-act="doc-attach" data-id="${m.id}">${ic('link', 'sm')}Attach a document</button>`)}
         ${m.flagged ? `<span class="mchip flagc">${ic('flag-fill', 'sm')}Flagged</span>` : ''}
       </div>
+      ${ro ? `<div class="notice" role="note" style="margin-bottom:18px">${ic('lock')}<div><b>Marked final.</b> An admin has agreed this record, so you can read, flag and export it, but not change it.</div></div>` : ''}
       <div id="remoteHost"></div>
-      ${m.journal && !ro ? `<div class="aactions" style="margin-bottom:12px"><button class="btn btn-soft btn-sm" data-act="new-entry">${ic('plus', 'sm')}New entry</button></div>` : ''}
+      ${m.journal ? `<div class="journal-bar"><span class="ktile k-other">${ic('table', 'sm')}</span><span class="mid"><b>Prospect journal</b><small>${plural(DB.journal.length, 'entry').replace('entrys', 'entries')} · tap Detailed Remarks to read or write in full</small></span>${ro ? '' : `<button class="btn btn-primary btn-sm" data-act="new-entry">${ic('plus', 'sm')}New entry</button>`}</div>` : ''}
       <div class="ed-body" id="edBody" contenteditable="${!ro}" spellcheck="${!ro}" role="textbox" aria-multiline="true" aria-label="Meeting notes" style="position:relative" data-id="${m.id}">${m.body || ''}</div>
     </div>`;
   },
@@ -107,44 +107,93 @@ VIEWS.mom = {
   },
 };
 function buildJournalFor(m) { if (m.id === 'pj' && !m.body) buildJournal(); }
+function placeCaret(el, atStart) { const r = document.createRange(); r.selectNodeContents(el); r.collapse(!!atStart); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
 function placeCaretStart(el) { const r = document.createRange(); r.selectNodeContents(el); r.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
 
 /* Toolbar markup: the same look on desktop (docked) and phone (above the keyboard). */
+/* Formatting toolbar (W1, W2). Frequent controls stay visible; typeface, size,
+   colour and highlight live in one "Aa" menu, alignment in one menu. */
 function toolbarHTML() {
-  const b = (cmd, icon, label) => `<button type="button" class="tb" data-act="ed" data-cmd="${cmd}" aria-label="${label}" aria-pressed="false" title="${label}">${ic(icon)}</button>`;
+  const b = (cmd, icon, label, key = '') => `<button type="button" class="tb" data-act="ed" data-cmd="${cmd}" aria-label="${label}" aria-pressed="false" title="${label}${key ? ' ' + key : ''}">${ic(icon)}</button>`;
   return `<div class="tb-inner">
-    ${b('undo', 'undo', 'Undo')}${b('redo', 'redo', 'Redo')}<span class="tb-div"></span>
+    ${b('undo', 'undo', 'Undo', '⌘Z')}${b('redo', 'redo', 'Redo', '⇧⌘Z')}<span class="tb-div"></span>
     <label class="tb-sel"><span class="sr">Text style</span><select data-change="ed-block"><option value="p">Normal text</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option></select></label>
-    <label class="tb-sel"><span class="sr">Typeface</span><select data-change="ed-font"><option value="sans">Sans-serif</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></label>
-    <label class="tb-sel"><span class="sr">Size</span><select data-change="ed-size"><option value="13">Small</option><option value="16" selected>Normal</option><option value="20">Large</option><option value="26">Extra large</option></select></label>
     <span class="tb-div"></span>
-    <button type="button" class="tb" data-act="ed" data-cmd="bold" aria-pressed="false" aria-label="Bold" title="Bold">${ic('bold')}</button>
-    <button type="button" class="tb" data-act="ed" data-cmd="italic" aria-pressed="false" aria-label="Italic" title="Italic">${ic('italic')}</button>
-    <button type="button" class="tb" data-act="ed" data-cmd="underline" aria-pressed="false" aria-label="Underline" title="Underline">${ic('underline')}</button>
-    <button type="button" class="tb" data-act="ed" data-cmd="strike" aria-pressed="false" aria-label="Strikethrough" title="Strikethrough">${ic('strike')}</button>
-    <button type="button" class="tb" data-act="swatch" data-kind="text" aria-label="Text colour" title="Text colour">${ic('color')}</button>
-    <button type="button" class="tb" data-act="swatch" data-kind="hl" aria-label="Highlight" title="Highlight">${ic('hl')}</button>
-    <span class="tb-div"></span>
-    ${b('alignStart', 'al', 'Align start')}${b('alignCenter', 'ac', 'Align centre')}${b('alignEnd', 'ar', 'Align end')}
+    ${b('bold', 'bold', 'Bold', '⌘B')}${b('italic', 'italic', 'Italic', '⌘I')}${b('underline', 'underline', 'Underline', '⌘U')}${b('strike', 'strike', 'Strikethrough')}
+    <button type="button" class="tb tb-wide" data-act="text-menu" aria-haspopup="dialog" aria-label="Typeface, size and colour" title="Typeface, size and colour"><span class="aa">Aa</span>${ic('chev-d', 'sm')}</button>
+    <button type="button" class="tb tb-wide" data-act="align-menu" aria-haspopup="menu" aria-label="Alignment" title="Alignment" id="tbAlign">${ic('al')}${ic('chev-d', 'sm')}</button>
     <span class="tb-div"></span>
     ${b('ul', 'ul', 'Bulleted list')}${b('ol', 'ol', 'Numbered list')}${b('quote', 'quote', 'Quote')}
     <span class="tb-div"></span>
-    <button type="button" class="tb" data-act="ed-link" aria-label="Link" title="Link">${ic('link')}</button>
+    <button type="button" class="tb" data-act="ed-link" aria-label="Link" title="Link ⌘K in text">${ic('link')}</button>
     <button type="button" class="tb" data-act="ed-table" aria-label="Table" title="Table">${ic('table')}</button>
     <button type="button" class="tb" data-act="ed-image" aria-label="Image" title="Image">${ic('image')}</button>
-    <button type="button" class="tb" data-act="ed-insert" aria-label="Link files and MoMs" title="Link files and MoMs">${ic('sparkle')}</button>
+    <button type="button" class="tb" data-act="ed-insert" aria-label="Insert: link files, link MoMs, journal table" title="Insert (or type /)">${ic('plus')}</button>
     <span class="tb-div"></span>
     ${b('removeFormat', 'clear', 'Clear formatting')}
   </div>`;
 }
+
+/* Keep the last selection inside the body, so menus can apply to it. */
+document.addEventListener('selectionchange', () => {
+  const s = getSelection();
+  if (s.rangeCount && inBody(s.anchorNode)) ED.range = s.getRangeAt(0).cloneRange();
+});
+function restoreRange() {
+  const s = getSelection();
+  if (s.rangeCount && inBody(s.anchorNode)) return;
+  if (ED.range) { s.removeAllRanges(); s.addRange(ED.range); }
+}
+const TEXT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32];
+on('text-menu', (d, el) => {
+  const L = layer({
+    cls: 'layer-menu', label: 'Typeface, size and colour',
+    html: `<div class="text-menu">
+      <div class="tm-cap">Typeface</div>
+      <div class="seg tm-seg" role="group" aria-label="Typeface"><button type="button" data-act="tm-font" data-v="sans">Sans-serif</button><button type="button" data-act="tm-font" data-v="serif" style="font-family:${FONTS.serif}">Serif</button><button type="button" data-act="tm-font" data-v="mono" style="font-family:${FONTS.mono}">Mono</button></div>
+      <div class="tm-cap">Size</div>
+      <div class="tm-sizes" role="group" aria-label="Text size">${TEXT_SIZES.map(s => `<button type="button" class="tm-size" data-act="tm-size" data-v="${s}" aria-label="${s} pixels">${s}</button>`).join('')}</div>
+      <div class="tm-cap">Text colour</div>
+      <div class="swatch-row" role="group" aria-label="Text colour">${SWATCH_TEXT.map(c => `<button type="button" class="swatch" data-act="swatch-pick" data-kind="text" data-c="${c}" aria-label="Colour ${c}"><span style="background:${c}"></span></button>`).join('')}</div>
+      <div class="tm-cap">Highlight</div>
+      <div class="swatch-row" role="group" aria-label="Highlight">${SWATCH_HL.map(c => `<button type="button" class="swatch" data-act="swatch-pick" data-kind="hl" data-c="${c}" aria-label="Highlight ${c}"><span style="background:${c}"></span></button>`).join('')}<button type="button" class="swatch" data-act="swatch-pick" data-kind="hl" data-c="" aria-label="No highlight">${ic('x', 'sm')}</button></div>
+    </div>`,
+    onMount(panel) {
+      if (isPhone()) return;
+      const r = el.getBoundingClientRect();
+      panel.style.top = (r.bottom + 8) + 'px';
+      panel.style.left = Math.max(12, Math.min(r.left - 40, window.innerWidth - 340)) + 'px';
+    },
+  });
+  return L;
+});
+on('tm-font', (d) => { closeAll(); restoreRange(); applySpanStyle({ fontFamily: FONTS[d.v] }); });
+on('tm-size', (d) => { closeAll(); restoreRange(); applySpanStyle({ fontSize: d.v + 'px' }); });
+on('align-menu', (d, el) => {
+  menu(el, [
+    { label: 'Align start', icon: 'al', act: 'ed', data: { cmd: 'alignStart' } },
+    { label: 'Align centre', icon: 'ac', act: 'ed', data: { cmd: 'alignCenter' } },
+    { label: 'Align end', icon: 'ar', act: 'ed', data: { cmd: 'alignEnd' } },
+  ], 'Alignment');
+});
+on('pick-date', () => {
+  const i = $('#edDate'); if (!i) return;
+  try { i.showPicker(); } catch (e) { i.focus(); i.click(); }
+});
 const ROOT = () => $('#edBody');
 const inBody = n => { const b = ROOT(); return !!(b && n && b.contains(n.nodeType === 1 ? n : n.parentNode)); };
 function selElement() { const s = getSelection(); if (!s.rangeCount) return null; const n = s.anchorNode; return n && (n.nodeType === 1 ? n : n.parentElement); }
 
 /* ---------- Commands ---------- */
 on('ed', (d) => runCmd(d.cmd));
-function runCmd(cmd) {
+function focusBodyKeepingSelection() {
+  const s = getSelection();
+  const had = s.rangeCount && inBody(s.anchorNode);
   ROOT().focus({ preventScroll: true });
+  if (!had && ED.range) { s.removeAllRanges(); s.addRange(ED.range); }
+}
+function runCmd(cmd) {
+  focusBodyKeepingSelection();
   const exec = (c, v) => document.execCommand(c, false, v);
   const map = {
     undo: () => exec('undo'), redo: () => exec('redo'),
@@ -191,10 +240,8 @@ function swatchMenu(anchor, kind) {
   L.saved = saved;
 }
 on('swatch-pick', (d) => {
-  const L = LAYERS[LAYERS.length - 1];
-  const saved = L && L.saved;
-  if (saved) { const s = getSelection(); s.removeAllRanges(); s.addRange(saved); }
-  ROOT().focus({ preventScroll: true });
+  closeAll();
+  focusBodyKeepingSelection();
   if (d.kind === 'text') document.execCommand('foreColor', false, d.c || 'inherit');
   else document.execCommand('hiliteColor', false, d.c || 'transparent') || document.execCommand('backColor', false, d.c || 'transparent');
   closeAll();
@@ -244,15 +291,18 @@ function updateToolbar() {
   const sel = bar.querySelector('[data-change="ed-block"]');
   if (sel) sel.value = ['h1', 'h2', 'h3'].includes(tag) ? tag : 'p';
   set('quote', !!(el && el.closest('blockquote')));
-  const fam = el && getComputedStyle(el).fontFamily || '';
-  const font = bar.querySelector('[data-change="ed-font"]');
-  if (font) font.value = /Georgia|Times|serif/i.test(fam) && !/Plus Jakarta/i.test(fam) ? 'serif' : /mono|Menlo|Consolas/i.test(fam) ? 'mono' : 'sans';
+  const alignBtn = $('#tbAlign');
+  if (alignBtn) {
+    const icon = q('justifyCenter') ? 'ac' : q('justifyRight') ? 'ar' : 'al';
+    alignBtn.innerHTML = `${ic(icon)}${ic('chev-d', 'sm')}`;
+    alignBtn.setAttribute('aria-pressed', String(icon !== 'al'));
+  }
   updateTableBar();
 }
 
 /* ---------- Autosave (C2, C3) ---------- */
+/* Save status (C2). The same pill appears in the desktop top bar and the phone head. */
 function setStatus(kind) {
-  const el = $('#edStatus'); if (!el) return;
   const map = {
     saving: ['saving', 'loader', 'Saving…'],
     saved: ['', 'cloud-check', 'Saved'],
@@ -260,8 +310,10 @@ function setStatus(kind) {
     failed: ['failed', 'alert', 'Couldn’t save'],
   };
   const [cls, icon, text] = map[kind];
-  el.className = 'status-pill ' + cls;
-  el.innerHTML = `${ic(icon, 'sm')}${text}${kind === 'failed' ? ' <button class="link-btn" style="min-height:32px;padding:0 8px" data-act="retry-save">Retry</button>' : ''}`;
+  $$('.js-status').forEach(el => {
+    el.className = 'status-pill js-status ' + cls;
+    el.innerHTML = `${ic(icon, 'sm')}${text}${kind === 'failed' ? ' <button class="link-btn" style="min-height:32px;padding:0 8px" data-act="retry-save">Retry</button>' : ''}`;
+  });
 }
 function onEdInput() {
   setStatus('saving');
@@ -468,6 +520,21 @@ function decorateTables() {
     });
   });
 }
+/* Tab in the last cell adds a row, like a spreadsheet. */
+function addRow(table) {
+  const last = table.rows[table.rows.length - 1];
+  const tr = document.createElement('tr');
+  Array.from(last.cells).forEach(c => {
+    const n = document.createElement('td');
+    if (c.classList.contains('longtext')) { n.className = 'longtext'; n.innerHTML = `<button type="button" class="remark" data-act="remarks-open"><span class="remark-text"><span class="remark-empty">Add remarks</span></span><span class="remark-open" aria-hidden="true">${ic('expand', 'sm')}</span></button>`; }
+    else n.innerHTML = '<br>';
+    if (c.dataset.label) n.dataset.label = c.dataset.label;
+    tr.appendChild(n);
+  });
+  last.after(tr);
+  placeCaret(tr.cells[0], true);
+  onEdInput();
+}
 function tableCtx() {
   const el = selElement();
   const cell = el && el.closest('td,th');
@@ -574,6 +641,8 @@ on('new-entry', () => {
   const tr = t.rows[t.rows.length - 1].cloneNode(true);
   tr.querySelectorAll('td').forEach((td, i) => { if (td.classList.contains('longtext')) return; td.innerHTML = '<br>'; });
   t.tBodies[0].appendChild(tr);
+  tr.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' });
+  placeCaret(tr.cells[0], true);
   DB.journal.push(['', '', '', '', '']);
   onEdInput();
   decorateTables();
@@ -604,8 +673,8 @@ on('remarks-open', (d, el) => {
     html: `<div class="rm-head"><div class="top"><button class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button><span class="spacer"></span><span class="status-pill" id="rmStatus">${ic('cloud-check', 'sm')}Saved</span></div>
       <h2>${isJournal ? esc(cells[0] ? cells[0].textContent.trim() || 'New company' : 'Prospect') : esc(label || 'Long text')}</h2>
       ${isJournal ? `<div class="sub">${cells[2] ? `<span class="pill-role">${esc(cells[2].textContent.trim())}</span>` : ''} ${cells[3] && cells[3].textContent.trim() ? `<span class="muted">Next: ${esc(cells[3].textContent.trim())}</span>` : ''}</div>` : ''}</div>
-      ${isJournal ? `<div class="rm-fields">${field(0, 'Company')}${field(1, 'Contact')}${field(2, 'Stage')}${field(3, 'Next step')}</div>` : ''}
-      <div class="rm-body"><label class="lab" for="rmText">Detailed remarks</label><textarea id="rmText" data-input="remark-text" placeholder="Write as much context as you need. It saves as you type.">${esc(text)}</textarea></div>
+      <div class="rm-body"><label class="lab" for="rmText">Detailed remarks</label><textarea id="rmText" data-input="remark-text" autofocus placeholder="Write as much context as you need. It saves as you type.">${esc(text)}</textarea></div>
+      ${isJournal ? `<div class="rm-fields" aria-label="Entry details"><p class="rm-cap">Entry details</p>${field(0, 'Company')}${field(1, 'Contact')}${field(2, 'Stage')}${field(3, 'Next step')}</div>` : ''}
       <div class="rm-foot"><span class="muted" style="font-size:13px">Saves as you type</span><span class="spacer"></span><button class="btn btn-primary" data-act="close">Done</button></div>`,
     onMount(panel) { ED.remarkTable = table; },
   });
@@ -848,7 +917,14 @@ on('export-pdf', (d) => {
       <div class="dlg-foot"><button class="btn btn-soft" data-act="close">Close</button><button class="btn btn-primary" data-act="print-now">${ic('export', 'sm')}Print or save as PDF</button></div></div>`,
   });
 });
-on('print-now', () => { window.print(); });
+/* The browser names the PDF after the page title, so it briefly becomes the MoM's title. */
+on('print-now', () => {
+  const m = mom(ED.id);
+  const before = document.title;
+  if (m) document.title = m.title;
+  window.print();
+  document.title = before;
+});
 
 /* Remote edits (S2): someone else saved while this MoM is open. */
 function showRemote(m) {
@@ -866,5 +942,15 @@ on('apply-remote', () => {
   onEdInput();
   toast('Updated with Priya’s changes. Your place is kept.', { icon: 'cloud-check' });
 });
-function scheduleRemote() { S.remoteDone = false; }
+function scheduleRemote() {
+  S.remoteDone = false;
+  setTimeout(() => {
+    if (S.state !== 'remote' || DB.files.some(f => f.id === 'f-live')) return;
+    DB.files.push({ id: 'f-live', name: 'Supplier quotes.pdf', kind: 'pdf', size: 1.1e6, date: TODAY_ISO, area: 'verdant', group: 'g-contracts', note: 'Three quotes compared' });
+    DB.activity.unshift({ t: 'file', id: 'f-live', who: 'Ana Ruiz', ini: 'AR', cls: 'b', when: 'Just now' });
+    toast('Ana added “Supplier quotes.pdf” to Verdant Foods', { icon: 'users' });
+    const r = route();
+    if (r.name === 'mom') renderShell(r); else render();
+  }, 2500);
+}
 function scheduleCatchup() { /* the catching-up banner stays until the state changes */ }

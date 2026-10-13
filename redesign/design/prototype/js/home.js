@@ -43,15 +43,20 @@ VIEWS.today = {
     return `<div class="page">
       <section class="hero" aria-labelledby="hello">
         <p class="eyebrow">Monday, 13 October 2026</p>
-        <h1 class="h1" id="hello">${greeting()}, Greg</h1>
+        <h1 class="h1" id="hello">${greeting()}, ${esc(firstName())}</h1>
         <p class="hero-sub">${nothing ? 'Nothing here yet. Start with an area, then add your first meeting.' : 'Pick up where you left off, or start the next meeting in one tap.'}</p>
-        <div class="place-line"><span>Creating in</span><button class="place-chip" data-act="pick-place" aria-label="Change where new items go">${ic('folder-plus', 'sm')}<span>${esc(placeName(p))}</span>${ic('chev-d', 'sm')}</button></div>
+        ${nothing ? `<div class="quick quick-first">
+          <button class="qtile primary" data-act="new-area" ${adminAttr('createArea', 'create areas')}><span class="qi">${ic('shelf')}</span><span><b>Create your first area</b><small>A client, a team or an initiative</small></span></button>
+          <div class="first-steps"><b>Then, inside it</b><span>${ic('doc', 'sm')}Start a MoM in one tap</span><span>${ic('upload', 'sm')}Upload files or save links</span><span>${ic('folder-plus', 'sm')}Group things as they grow</span></div>
+        </div>` : `<div class="place-line"><span>Creating in</span><button class="place-chip" data-act="pick-place" aria-label="Change where new items go">${ic('folder-plus', 'sm')}<span>${esc(placeName(p))}</span>${ic('chev-d', 'sm')}</button></div>
         <div class="quick">
           <button class="qtile primary" data-act="new-mom" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('doc')}</span><span><b>New MoM</b><small>Today’s date, cursor ready</small></span></button>
           <button class="qtile" data-act="upload" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('upload')}</span><span><b>Upload</b><small>Files and PDFs</small></span></button>
           <button class="qtile" data-act="save-link" data-area="${p ? p.area : ''}" data-group="${p && p.group ? p.group : ''}"${p ? '' : ' disabled'}><span class="qi">${ic('link')}</span><span><b>Save a link</b><small>Online material</small></span></button>
-          <a class="qtile" href="#/flagged"><span class="qi">${ic('flag')}</span><span><b>Flagged</b><small>${flagged.length} important</small></span></a>
-        </div>
+          ${isAdmin()
+            ? `<button class="qtile" data-act="new-area" data-parent=""><span class="qi">${ic('shelf')}</span><span><b>New area</b><small>Client, team or initiative</small></span></button>`
+            : `<a class="qtile" href="#/flagged"><span class="qi">${ic('flag')}</span><span><b>Flagged</b><small>${flagged.length} important</small></span></a>`}
+        </div>`}
       </section>
       ${nothing ? '' : `
       <section class="section" aria-labelledby="cont"><div class="section-head"><h2 class="h2" id="cont">Continue where you left off</h2><span class="spacer"></span><a class="link-btn" href="#/recent">See all</a></div>
@@ -81,16 +86,19 @@ VIEWS.areas = {
       const c = countsOf(a.id);
       const locked = lockedArea(a.id);
       const kids = locked ? [] : DB.areas.filter(k => k.parent === a.id && canSee(k.id));
-      return `<a class="acard" href="#/areas/${a.id}">
+      const selectable = S.selMode && isAdmin();
+      const selBox = selectable ? `<span class="sel-box" role="checkbox" aria-checked="${S.sel.has('a:' + a.id)}" data-act="sel" data-key="a:${a.id}" tabindex="0" aria-label="Select ${esc(a.name)}" style="position:absolute;left:14px;top:14px;z-index:2">${S.sel.has('a:' + a.id) ? ic('check') : ''}</span>` : '';
+      return `${selectable ? `<div class="cw${S.sel.has('a:' + a.id) ? ' is-selected' : ''}">${selBox}` : ''}<a class="acard" href="#/areas/${a.id}" ${selectable ? `data-act="sel-card" data-key="a:${a.id}"` : ''}>
         <div style="display:flex;align-items:center;gap:14px"><span class="blob ${a.tint}">${a.emoji}</span><span style="flex:1;min-width:0"><span class="n" style="display:block">${esc(a.name)}</span>${locked ? `<span class="restrictmark" style="margin-top:6px">${ic('lock', 'sm')}Restricted</span>` : `<span class="c">${plural(c.moms, 'MoM')} · ${plural(c.files, 'file')}</span>`}</span></div>
         <div class="kids">${kids.slice(0, 4).map(k => `<span class="kid">${k.emoji} ${esc(k.name)}</span>`).join('')}${kids.length > 4 ? `<span class="kid">+${kids.length - 4}</span>` : ''}</div>
-      </a>`;
+      </a>${selectable ? '</div>' : ''}`;
     }).join('');
     const emptyMsg = S.role === 'member' || S.role === 'newmember' ? noAccessHTML() : areaEmpty();
     return `<div class="page">
-      <div class="page-head"><div><p class="eyebrow">Workspace</p><h1 class="h-page" style="margin-top:4px">Areas</h1><p class="page-sub">${total ? `${plural(roots.length, 'top-level area')}, each with its own MoMs and files.` : 'Areas hold the MoMs and files for one client, team or initiative.'}</p></div></div>
-      <div class="phone-only">${treeHTML({ name: 'areas' }, { cls: 'tree-page', roots })}</div>
-      <div class="desk-only">${total ? `<div class="agrid">${cards}${isAdmin() ? `<button class="acard new-card" data-act="new-area" aria-label="New area" ${adminAttr('createArea', 'create areas')}>${ic('plus')}<span>New area</span></button>` : ''}</div>` : emptyMsg}</div>
+      <div class="page-head"><div style="flex:1"><p class="eyebrow">Workspace</p><h1 class="h-page" style="margin-top:4px">Areas</h1><p class="page-sub">${total ? `${plural(roots.length, 'top-level area')}, each with its own MoMs and files.` : 'Areas hold the MoMs and files for one client, team or initiative.'}</p></div>${isAdmin() && total ? `<button class="btn btn-soft btn-sm" data-act="toggle-select" aria-pressed="${S.selMode}">${ic('check-square', 'sm')}${S.selMode ? 'Done selecting' : 'Select'}</button>` : ''}</div>
+      ${S.selMode ? '' : `<div class="phone-only">${treeHTML({ name: 'areas' }, { cls: 'tree-page', roots })}</div>`}
+      <div class="${S.selMode ? '' : 'desk-only'}">${total ? `<div class="agrid">${cards}${isAdmin() ? `<button class="acard new-card" data-act="new-area" aria-label="New area" ${adminAttr('createArea', 'create areas')}>${ic('plus')}<span>New area</span></button>` : ''}</div>` : emptyMsg}</div>
+      <div id="bulkHost">${bulkBarHTML(null)}</div>
       <div class="phone-only">${total ? '' : emptyMsg}${isAdmin() ? `<div style="margin-top:16px"><button class="btn btn-soft" data-act="new-area" ${adminAttr('createArea', 'create areas')}>${ic('plus', 'sm')}New area</button></div>` : ''}</div>
     </div>`;
   },
@@ -135,10 +143,10 @@ VIEWS.account = {
     const role = S.role === 'admin' ? 'Admin' : S.role === 'member' ? 'Member' : 'New member';
     const granted = visibleRoots().map(a => `<span class="kid">${a.emoji} ${esc(a.name)}</span>`).join('');
     return `<div class="page">
-      <p class="eyebrow">Account</p><h1 class="h-page" style="margin-top:4px">${esc(SEED.me.name)}</h1>
+      <p class="eyebrow">Account</p><h1 class="h-page" style="margin-top:4px">${esc(currentUser().name)}</h1>
       <div class="acct-grid" style="margin-top:24px">
         <div class="acct-card">
-          <div class="acct-hero"><span class="avatar">${SEED.me.ini}</span><div><b style="font-size:17px;display:block">${esc(SEED.me.name)}</b><span class="muted">${SEED.me.email}</span><div style="margin-top:8px"><span class="pill-role">${role}</span></div></div></div>
+          <div class="acct-hero"><span class="avatar">${currentUser().ini}</span><div><b style="font-size:17px;display:block">${esc(currentUser().name)}</b><span class="muted">${esc(currentUser().email)}</span><div style="margin-top:8px"><span class="pill-role">${role}</span></div></div></div>
           <div class="acct-list">
             <button class="row" data-act="change-password">${ic('key')}<span class="mid"><span class="t">Change password</span><span class="p">At least 6 characters</span></span>${ic('chev-r', 'sm')}</button>
             <button class="row" data-act="install">${ic('install')}<span class="mid"><span class="t">Install Daybook</span><span class="p">Open it on its own, like an app</span></span>${ic('chev-r', 'sm')}</button>
@@ -146,6 +154,12 @@ VIEWS.account = {
           </div>
         </div>
         <div class="acct-card">
+          <h2 class="h2" style="font-size:17px">Appearance</h2>
+          <p class="muted" style="margin-top:6px;font-size:14.5px">Light is the default. Dark is easier in a dim room.</p>
+          <div class="seg" role="group" aria-label="Appearance" style="margin-top:12px">
+            ${[['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'Match system', 'tablet']].map(([v, l, i]) => `<button type="button" data-act="set-theme" data-v="${v}" aria-pressed="${S.theme === v}">${l}</button>`).join('')}
+          </div>
+          <div style="height:1px;background:var(--line);margin:20px 0"></div>
           <h2 class="h2" style="font-size:17px">Your access</h2>
           <p class="muted" style="margin-top:6px;font-size:14.5px">${isAdmin() ? 'As an admin you see every area.' : granted ? 'Areas granted to you, and everything inside them.' : 'You have no areas yet. An admin can grant access.'}</p>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">${isAdmin() ? '<span class="kid">All areas</span>' : granted}</div>
@@ -155,6 +169,13 @@ VIEWS.account = {
     </div>`;
   },
 };
+/* Appearance: light, dark, or follow the device. */
+on('set-theme', (d) => {
+  S.theme = d.v;
+  if (d.v === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = d.v;
+  renderProto();
+  render();
+});
 on('sign-out', () => { S.role = 'signedout'; toast('Signed out on this device'); go('#/signin'); });
 
 /* ---------- Sign-in, reset, new member (U1, U2, U4) ---------- */
@@ -225,7 +246,7 @@ VIEWS.newmember = {
       <span class="brand-mark">${ic('user')}</span>
       <h1>Welcome to Daybook</h1>
       <p class="sub">Your account is ready, but you don’t have access to any areas yet. An admin can grant you access to a client or team, and everything inside it will appear here.</p>
-      <div class="notice info">${ic('info')}<div>You’re signed in as <b>${SEED.members[2].name}</b>.</div></div>
+      <div class="notice info">${ic('info')}<div>You’re signed in as <b>${esc(currentUser().name)}</b>.</div></div>
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><button class="btn btn-primary" data-act="refresh-access" style="flex:1">${ic('refresh', 'sm')}Check again</button><a class="btn btn-soft" href="#/account">Account</a></div>
     </div></div>`;
   },

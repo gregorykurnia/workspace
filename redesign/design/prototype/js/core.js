@@ -49,6 +49,14 @@ function meId() {
   return 'greg';
 }
 const isAdmin = () => S.role === 'admin';
+/* The signed-in person for the current role: the owner (admin), Priya (member), Sam (new member). */
+function currentUser() {
+  const m = id => DB.members.find(x => x.id === id) || SEED.members.find(x => x.id === id);
+  if (S.role === 'member') return { ...m('priya'), email: 'priya@studio.example', roleLabel: 'Member' };
+  if (S.role === 'newmember') return { ...m('sam'), email: 'sam@studio.example', roleLabel: 'Member' };
+  return { ...SEED.me, cls: '', roleLabel: 'Admin' };
+}
+const firstName = () => currentUser().name.split(' ')[0];
 const ADMIN_ONLY = new Set(['createArea', 'moveArea', 'deleteItem', 'removeGroup', 'shareLinks', 'access', 'final', 'recentAdded', 'bulkAreas']);
 const can = k => S.role === 'admin' || !ADMIN_ONLY.has(k);
 /* Attribute for an admin-only control. Members who click it are told plainly. */
@@ -96,10 +104,15 @@ const readOnly = item => isFinal(item) && (S.role !== 'admin' || S.state === 're
 /* A visible area, unless it sits under a grant the viewer doesn't have. */
 const visibleAreas = () => DB.areas.filter(a => canSee(a.id));
 const visibleRoots = () => { const ids = new Set(visibleAreas().map(a => a.id)); return visibleAreas().filter(a => !a.parent || !ids.has(a.parent)); };
+/* Everything inside an area, including sub-areas, but never what sits inside a
+   restricted area that isn't open (P3). Restricted files still count: their name is visible (P4). */
 const countsOf = areaId => {
-  const c = contents(areaId);
-  const moms = momsOf(areaId).concat(DB.moms.filter(m => descIds(areaId).includes(m.area) && m.area !== areaId));
-  return { areas: c.areas, moms: moms.filter(m => !hiddenItem('m', m)).length, files: filesOf(areaId).length };
+  const ids = descIds(areaId).filter(id => id === areaId || !lockedArea(id));
+  return {
+    areas: ids.length - 1,
+    moms: DB.moms.filter(m => ids.includes(m.area) && !lockedArea(m.area)).length,
+    files: DB.files.filter(f => ids.includes(f.area) && !lockedArea(f.area)).length,
+  };
 };
 
 /* Crumb path as the viewer may see it. Members start at their granted area. */
@@ -142,6 +155,7 @@ function resetData() {
 function applyScenario() {
   resetData();
   S.recent = SEED.recent.map(x => [...x]);
+  DB.deleted = DB.deleted.filter(d => 7 - daysBetween(d.at) > 0);   // removed automatically after 7 days (O9)
   S.unlocked.clear();
   S.sel.clear();
   S.selMode = S.state === 'selecting';
@@ -215,7 +229,7 @@ function layer({ cls = '', label = 'Dialog', html, onMount, onClose, dismiss = t
   LAYERS.push(L);
   requestAnimationFrame(() => wrap.classList.add('open'));
   onMount && onMount(L.panel, L);
-  const first = L.panel.querySelector('[autofocus], input:not([type=hidden]):not([disabled]), textarea, select');
+  const first = L.panel.querySelector('[autofocus]') || L.panel.querySelector('input:not([type=hidden]):not([disabled]), textarea, select');
   (first || L.panel).focus({ preventScroll: true });
   return L;
 }
@@ -372,7 +386,7 @@ function protoHTML() {
     <h4>Jump to</h4>
     <div class="proto-row"><a href="#/today">Today</a><a href="#/areas/verdant">Verdant</a><a href="#/mom/m1">Editor</a></div>
     <div class="proto-row"><a href="#/areas/meridian">Restricted</a><a href="#/s/a/verdant">Shared area</a><a href="#/deleted">Deleted</a></div>
-    <p class="proto-note">Switches for review only. The page and width decide phone or desktop: resize the window or use the device toolbar. Demo password for restricted items: <b>${SHARE_PASSWORD}</b>.</p>
+    <p class="proto-note">Switches for review only. The page and width decide phone or desktop: resize the window or use the device toolbar. Demo passwords: restricted items <b>${SHARE_PASSWORD}</b>, sign-in and current password <b>daybook</b>.</p>
   </div>`;
 }
 function renderProto() { $('#proto').innerHTML = protoHTML(); }
@@ -409,10 +423,11 @@ document.addEventListener('change', e => {
 on('proto-reset', () => { applyScenario(); render(); toast('Demo data reset'); });
 
 /* Sync pill and banners */
+/* Sync status (S3). "short" is what the top bar shows; "text" is the tooltip and screen-reader text. */
 function syncInfo() {
-  if (S.state === 'offline') return { cls: 'offline', text: 'No connection' };
-  if (S.state === 'catchup') return { cls: 'catching', text: 'Catching up…' };
-  return { cls: '', text: 'All changes saved' };
+  if (S.state === 'offline') return { cls: 'offline', text: 'No connection. Changes are kept on this device.', short: 'Offline' };
+  if (S.state === 'catchup') return { cls: 'catching', text: 'Catching up on changes from your team', short: 'Catching up' };
+  return { cls: '', text: 'Connected and up to date', short: 'Up to date' };
 }
 function renderBanners() {
   const b = [];

@@ -52,21 +52,26 @@
   --surface-3: #E6EAF6;   /* pressed, segmented track */
   --line: #E6E9F3;        /* hairlines */
   --line-2: #CFD5E6;      /* input borders, dashed targets */
-  --text: #161B2E;        /* primary text: 16.9:1 on white */
+  /* Contrast figures below are measured (WCAG 2.x), not estimated. */
+  --text: #161B2E;        /* primary text: 17.1:1 on white */
   --text-2: #4A5170;      /* secondary text: 7.8:1 on white */
-  --text-3: #626A88;      /* tertiary text, meta: 5.7:1 on white, 5.2:1 on surface-2 */
+  --text-3: #626A88;      /* tertiary text, meta: 5.3:1 on white, 4.8:1 on surface-2 */
 
   /* ---------- Colour: accent (indigo, from Folio) ---------- */
-  --accent: #4F46E5;        /* decorative only: icons, dots, focus fills */
-  --accent-strong: #4338CA; /* text, filled buttons: 7.7:1 on white */
+  --accent: #4F46E5;        /* decorative only: icons, dots, list markers */
+  --accent-strong: #4338CA; /* accent TEXT: 7.9:1 on white, 7.0:1 on accent-tint */
   --accent-hover: #3730A3;
   --accent-tint: #EEF0FF;
   --accent-tint-2: #DDE1FF;
+  --accent-fill: #4338CA;       /* filled buttons and tiles; white on it 7.9:1 */
+  --accent-fill-hover: #3730A3;
+  --on-accent: #FFFFFF;         /* text and icons on accent-fill */
 
   /* ---------- Colour: sky (links, tags, focus ring) ---------- */
   --sky: #3B82F6;
-  --sky-strong: #1D5FB8;  /* link text: 6.4:1 on white */
+  --sky-strong: #1D5FB8;  /* link text: 6.2:1 on white, 5.4:1 on sky-tint */
   --sky-tint: #E7F0FD;
+  --hero-glow: rgba(255, 255, 255, .7);   /* soft light in the corner of the home hero */
 
   /* ---------- Colour: washes (cool, sky to lavender) ---------- */
   --wash: linear-gradient(118deg, #E4F0FF 0%, #EEEAFD 46%, #F6EFFF 100%);
@@ -77,18 +82,18 @@
   --t-rose: #FCEAF1;
 
   /* ---------- Colour: amber (one warm accent: flags and highlights) ---------- */
-  --flag: #DC6803;        /* flag icon and highlight marks */
+  --flag: #DC6803;        /* flag icon and highlight marks: 3.5:1 on white (non-text, 3:1 needed) */
   --flag-strong: #A45107; /* amber text: 5.6:1 on white */
   --flag-tint: #FFF4E0;
 
   /* ---------- Colour: state ---------- */
-  --success: #067647;      /* text: 5.4:1 on white */
+  --success: #067647;      /* text: 5.1:1 on success-tint */
   --success-icon: #079455;
   --success-tint: #E4F6EC;
-  --warn: #92400E;         /* offline and sync-warning text */
+  --warn: #92400E;         /* offline and sync-warning text: 6.5:1 on warn-tint */
   --warn-tint: #FFF3DC;
-  --danger: #B42318;       /* error text: 7.4:1 on white */
-  --danger-solid: #D92D20;
+  --danger: #B42318;       /* error text: 5.8:1 on danger-tint */
+  --danger-solid: #D92D20; /* danger icons and fills; white on it 4.8:1 */
   --danger-tint: #FDECEB;
 
   /* ---------- Colour: file kinds (icon colour, tile tint) ---------- */
@@ -135,6 +140,9 @@
     --accent: #818CF8;
     --accent-strong: #A5B4FC;
     --accent-hover: #C7D2FE;
+    --accent-fill: #5048E5;       /* white on it 6.2:1 */
+    --accent-fill-hover: #4338CA;
+    --hero-glow: rgba(129, 140, 248, .16);
     --accent-tint: #252B4D;
     --accent-tint-2: #323A66;
     --sky: #60A5FA;
@@ -155,7 +163,7 @@
     --warn: #FCD34D;
     --warn-tint: #3A2F12;
     --danger: #FDA29B;
-    --danger-solid: #F97066;
+    --danger-solid: #D92D20;
     --danger-tint: #3A1A1F;
     --k-pdf: #F9A29B;    --k-pdf-t: #3A1C1E;
     --k-image: #C4B5FD;  --k-image-t: #261F40;
@@ -185,6 +193,9 @@
   --accent: #818CF8;
   --accent-strong: #A5B4FC;
   --accent-hover: #C7D2FE;
+  --accent-fill: #5048E5;
+  --accent-fill-hover: #4338CA;
+  --hero-glow: rgba(129, 140, 248, .16);
   --accent-tint: #252B4D;
   --accent-tint-2: #323A66;
   --sky: #60A5FA;
@@ -205,7 +216,7 @@
   --warn: #FCD34D;
   --warn-tint: #3A2F12;
   --danger: #FDA29B;
-  --danger-solid: #F97066;
+  --danger-solid: #D92D20;
   --danger-tint: #3A1A1F;
   --k-pdf: #F9A29B;    --k-pdf-t: #3A1C1E;
   --k-image: #C4B5FD;  --k-image-t: #261F40;

@@ -64,6 +64,8 @@ body.visitor .tabbar { display: none; }
 /* Phone: the home tiles share the width evenly and never push the hero wider than the screen. */
 @media (max-width: 767px) {
   .hero { min-width: 0; }
-  .quick { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .qtile { min-width: 0; }
+  .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .qtile { min-width: 0; min-height: 0; padding: 14px 12px; gap: 10px; }
+  .qtile:not(.primary) small { display: none; }
+  .qtile:not(.primary) b { font-size: 14.5px; }
 }

@@ -13,7 +13,8 @@ function ageText(iso) {
   if (months < 1) return 'Created this month';
   return `${plural(months, 'month')} old`;
 }
-const sizeText = id => { const c = contents(id); return `${plural(c.areas, 'sub-area')} · ${plural(c.moms, 'MoM')} · ${plural(c.files, 'file')}`; };
+/* Size (F8). Counts skip anything inside a restricted area that isn't open (P3). */
+const sizeText = id => { const c = countsOf(id); return `${plural(c.areas, 'sub-area')} · ${plural(c.moms, 'MoM')} · ${plural(c.files, 'file')}`; };
 
 /* ---------- Matching and sorting for the filter bar (F2) ---------- */
 function matchTerm() { return S.filter.trim().toLowerCase(); }
@@ -28,8 +29,8 @@ function filteredItems(areaId) {
 }
 /* Keys of everything matching the current filter, for "Select all matching" (O7). */
 function matchingKeys(areaId) {
-  const { moms, files } = filteredItems(areaId);
-  return [...moms.map(m => 'm:' + m.id), ...files.map(f => 'f:' + f.id)];
+  const { subs, moms, files } = filteredItems(areaId);
+  return [...(isAdmin() ? subs.map(a => 'a:' + a.id) : []), ...moms.map(m => 'm:' + m.id), ...files.map(f => 'f:' + f.id)];
 }
 
 /* ---------- Area page ---------- */
@@ -79,7 +80,7 @@ VIEWS.area = {
         <div class="ttl">
           <p class="eyebrow">${crumbPath(a.id).length > 1 ? 'Sub-area' : 'Area'}${a.restricted ? ' · Restricted' : ''}</p>
           <h1 class="h-page" style="margin-top:4px">${esc(a.name)}</h1>
-          <div class="meta"><span>${sizeText(a.id)}</span><span class="sep"></span><span>${ageLine}</span>${restrictedSession ? `<span class="sep"></span><span class="lock-pill open">${ic('unlock', 'sm')}Open for this session <button class="link-btn" style="min-height:32px;padding:0 8px" data-act="relock" data-id="${a.id}">Lock again</button></span>` : ''}${a.restricted && !unlocked ? `<span class="sep"></span><span class="lock-pill">${ic('lock', 'sm')}Restricted</span>` : ''}</div>
+          <div class="meta"><span>${sizeText(a.id)}</span><span>${ageLine}</span>${restrictedSession ? `<span class="lock-pill open">${ic('unlock', 'sm')}Open for this session <button class="link-btn" style="min-height:32px;padding:0 8px" data-act="relock" data-id="${a.id}">Lock again</button></span>` : ''}${a.restricted && !unlocked ? `<span class="lock-pill">${ic('lock', 'sm')}Restricted</span>` : ''}</div>
         </div>
         <div class="aactions">
           <button class="btn btn-primary" data-act="new-mom" data-area="${a.id}">${ic('plus', 'sm')}New MoM</button>
@@ -90,11 +91,11 @@ VIEWS.area = {
       </div>
 
       ${subs.length || (isAdmin() && !filtering) ? `<section class="section" aria-labelledby="subs"><div class="section-head"><h2 class="h2" id="subs">Sub-areas ${subs.length ? `<span class="count">${subs.length}</span>` : ''}</h2></div>
-        <div class="subgrid">${subs.map(s => `<a class="subcard" href="#/areas/${s.id}"><span class="blob ${s.tint}">${s.emoji}</span><span><b>${esc(s.name)}</b><small>${s.restricted ? ic('lock', 'sm') + 'Restricted' : `${plural(countsOf(s.id).moms, 'MoM')} · ${plural(countsOf(s.id).files, 'file')}`}</small></span></a>`).join('')}
+        <div class="subgrid">${subs.map(s => `${S.selMode && isAdmin() ? `<div class="cw${S.sel.has('a:' + s.id) ? ' is-selected' : ''}"><span class="sel-box" role="checkbox" aria-checked="${S.sel.has('a:' + s.id)}" data-act="sel" data-key="a:${s.id}" tabindex="0" aria-label="Select ${esc(s.name)}" style="position:absolute;left:12px;top:12px;z-index:2">${S.sel.has('a:' + s.id) ? ic('check') : ''}</span>` : ''}<a class="subcard" href="#/areas/${s.id}" ${S.selMode && isAdmin() ? `data-act="sel-card" data-key="a:${s.id}"` : ''}><span class="blob ${s.tint}">${s.emoji}</span><span><b>${esc(s.name)}</b><small>${s.restricted ? ic('lock', 'sm') + 'Restricted' : `${plural(countsOf(s.id).moms, 'MoM')} · ${plural(countsOf(s.id).files, 'file')}`}</small></span></a>${S.selMode && isAdmin() ? '</div>' : ''}`).join('')}
           ${isAdmin() && !filtering ? `<button class="subcard new-card" data-act="new-area" data-parent="${a.id}" ${adminAct('createArea', 'create sub-areas')}>${ic('plus', 'sm')}New sub-area</button>` : ''}</div></section>` : ''}
 
       <div class="filterbar" role="search">
-        <label class="search-in"><span class="sr">Filter this area</span>${ic('search', 'sm')}<input type="search" data-input="area-filter" value="${esc(S.filter)}" placeholder="Filter by name or content" autocomplete="off"></label>
+        <label class="search-in"><span class="sr">Filter this area</span>${ic('search', 'sm')}<input type="search" data-input="area-filter" value="${esc(S.filter)}" placeholder="Filter this area" autocomplete="off"></label>
         <div class="seg" role="group" aria-label="Sort">
           <button type="button" data-act="sort" data-v="newest" aria-pressed="${S.sort !== 'az'}">Newest</button>
           <button type="button" data-act="sort" data-v="az" aria-pressed="${S.sort === 'az'}">A–Z</button>
@@ -112,11 +113,11 @@ VIEWS.area = {
 
       ${shelves}
 
-      ${(looseMoms.length || (!filtering && !empty)) ? `<section class="section" aria-labelledby="mtg"><div class="section-head"><h2 class="h2" id="mtg">Meeting notes ${looseMoms.length ? `<span class="count">${looseMoms.length}</span>` : ''}</h2><span class="spacer"></span><button class="shelf-add" data-act="new-mom" data-area="${a.id}">${ic('plus', 'sm')}New MoM here</button></div>
+      ${(looseMoms.length || (!filtering && !empty)) ? `<section class="section" aria-labelledby="mtg"><div class="section-head"><h2 class="h2" id="mtg">Meeting notes ${looseMoms.length ? `<span class="count">${looseMoms.length}</span>` : ''}</h2><span class="spacer"></span><button class="shelf-add" data-act="new-mom" data-area="${a.id}">${ic('plus', 'sm')}New MoM<span class="hide-sm"> here</span></button></div>
         ${looseMoms.length ? `<div class="cards">${looseMoms.map(m => momCardHTML2(m)).join('')}</div>` : (filtering ? '' : `<div class="empty small" style="padding-left:0"><div class="art">${ic('doc')}</div><h3>No meeting notes yet</h3><p>Start the first MoM for this area.</p></div>`)}
       </section>` : ''}
 
-      ${(looseFiles.length || (!filtering && !empty)) ? `<section class="section" aria-labelledby="fls"><div class="section-head"><h2 class="h2" id="fls">Files and links ${looseFiles.length ? `<span class="count">${looseFiles.length}</span>` : ''}</h2><span class="spacer"></span><button class="shelf-add" data-act="upload" data-area="${a.id}">${ic('upload', 'sm')}Upload here</button></div>
+      ${(looseFiles.length || (!filtering && !empty)) ? `<section class="section" aria-labelledby="fls"><div class="section-head"><h2 class="h2" id="fls">Files and links ${looseFiles.length ? `<span class="count">${looseFiles.length}</span>` : ''}</h2><span class="spacer"></span><button class="shelf-add" data-act="upload" data-area="${a.id}">${ic('upload', 'sm')}Upload<span class="hide-sm"> here</span></button></div>
         ${looseFiles.length ? (S.view === 'list' ? `<div class="flist">${looseFiles.map(f => fileRowHTML(f)).join('')}</div>` : `<div class="ftiles">${looseFiles.map(f => fileTileHTML(f)).join('')}</div>`) : (filtering ? '' : `<div class="empty small" style="padding-left:0"><div class="art">${ic('upload')}</div><h3>No files yet</h3><p>Upload a file or save a link to keep it with this area.</p></div>`)}
       </section>` : ''}
 
@@ -172,8 +173,8 @@ function shelfHTML(g, a, filtering) {
   const total = isMom ? momsIn(a.id, g.id).length : filesIn(a.id, g.id).length;
   if (filtering && !items.length) return '';
   const add = isMom
-    ? `<button class="shelf-add" data-act="new-mom" data-area="${a.id}" data-group="${g.id}">${ic('plus', 'sm')}New MoM here</button>`
-    : `<button class="shelf-add" data-act="upload" data-area="${a.id}" data-group="${g.id}">${ic('upload', 'sm')}Add file here</button>`;
+    ? `<button class="shelf-add" data-act="new-mom" data-area="${a.id}" data-group="${g.id}">${ic('plus', 'sm')}New MoM<span class="hide-sm"> here</span></button>`
+    : `<button class="shelf-add" data-act="upload" data-area="${a.id}" data-group="${g.id}">${ic('upload', 'sm')}Add file<span class="hide-sm"> here</span></button>`;
   const body = items.length
     ? (isMom ? `<div class="cards">${items.map(momCardHTML2).join('')}</div>` : (S.view === 'list' ? `<div class="flist">${items.map(fileRowHTML).join('')}</div>` : `<div class="ftiles">${items.map(fileTileHTML).join('')}</div>`))
     : `<div class="empty small"><div class="art">${ic(isMom ? 'doc' : 'upload')}</div><h3>Empty grouping</h3><p>${isMom ? 'Add a MoM here, or move one in.' : 'Add a file or link here, or move one in.'}</p></div>`;
@@ -195,7 +196,7 @@ const refreshBulk = () => { const host = $('#bulkHost'); const r = route(); if (
 on('sel', (d) => { const k = d.key; S.sel.has(k) ? S.sel.delete(k) : S.sel.add(k); render(); });
 on('sel-card', (d, el, e) => { if (S.selMode) { e.preventDefault(); S.sel.has(d.key) ? S.sel.delete(d.key) : S.sel.add(d.key); render(); } });
 on('toggle-select', () => { S.selMode = !S.selMode; if (!S.selMode) S.sel.clear(); render(); });
-on('select-matching', (d) => { matchingKeys(d.area).forEach(k => S.sel.add(k)); render(); toast(`${S.sel.size} selected`, { icon: 'check-square' }); });
+on('select-matching', (d) => { matchingKeys(d.area || null).forEach(k => S.sel.add(k)); render(); toast(`${S.sel.size} selected`, { icon: 'check-square' }); });
 on('clear-sel', () => { S.sel.clear(); S.selMode = false; render(); });
 on('clear-filter', () => { S.filter = ''; render(); });
 on('sort', d => { S.sort = d.v; render(); });
@@ -207,8 +208,16 @@ on('relock', (d) => { S.unlocked.delete('a:' + d.id); toast('Locked again'); ren
 on('bulk-move', () => {
   const keys = [...S.sel];
   const kind = keys.every(k => k.startsWith('m:')) ? 'mom' : keys.every(k => k.startsWith('f:')) ? 'file' : null;
-  destPicker({ title: `Move ${keys.length} ${keys.length === 1 ? 'item' : 'items'}`, current: null, type: 'place', itemKind: kind, cta: 'Move here', onPick: (p) => {
-    keys.forEach(k => { const [t, id] = k.split(':'); const it = t === 'm' ? mom(id) : file(id); if (it) { it.area = p.area; it.group = p.group || null; } });
+  // An area can't move into itself or anything inside it (O3).
+  const exclude = new Set(keys.filter(k => k.startsWith('a:')).flatMap(k => descIds(k.slice(2))));
+  const onlyAreas = keys.every(k => k.startsWith('a:'));
+  destPicker({ title: `Move ${keys.length} ${keys.length === 1 ? 'item' : 'items'}`, current: null, type: onlyAreas ? 'area' : 'place', itemKind: kind, exclude, cta: 'Move here', onPick: (p) => {
+    keys.forEach(k => {
+      const [t, id] = k.split(':');
+      if (t === 'a') { const a = area(id); if (a) a.parent = p.area || null; return; }
+      const it = t === 'm' ? mom(id) : file(id);
+      if (it && p.area) { it.area = p.area; it.group = p.group || null; }
+    });
     S.sel.clear(); S.selMode = false;
     toast(`Moved ${keys.length} ${keys.length === 1 ? 'item' : 'items'} to ${area(p.area).name}`, { icon: 'move' });
     render();
@@ -216,14 +225,14 @@ on('bulk-move', () => {
 });
 on('bulk-delete', () => {
   const keys = [...S.sel];
-  const names = keys.map(k => { const [t, id] = k.split(':'); return t === 'm' ? mom(id).title : file(id).name; });
+  const names = keys.map(k => { const [t, id] = k.split(':'); return t === 'a' ? `${area(id).name} (area, with everything inside)` : t === 'm' ? mom(id).title : file(id).name; });
   confirmDialog({
     title: `Delete ${keys.length} ${keys.length === 1 ? 'item' : 'items'}?`, text: 'They move to Deleted and can be restored for 7 days.',
     impact: `<b>Deleting:</b> ${names.map(n => esc(n)).join(', ')}`, danger: true, cta: 'Delete', act: 'bulk-delete-now',
   });
 });
 on('bulk-delete-now', () => {
-  [...S.sel].forEach(k => { const [t, id] = k.split(':'); if (t === 'm') trashMom(id); else trashFile(id); });
+  [...S.sel].forEach(k => { const [t, id] = k.split(':'); if (t === 'a') { if (area(id)) trashArea(id); } else if (t === 'm') trashMom(id); else trashFile(id); });
   S.sel.clear(); S.selMode = false; closeAll(); toast('Moved to Deleted', { icon: 'trash', action: { label: 'Open Deleted', act: 'go-deleted' } }); render();
 });
 on('go-deleted', () => go('#/deleted'));
@@ -491,7 +500,7 @@ function destRowsFor({ type, exclude = new Set(), itemKind = null, q = '' }) {
   const walk = (pid, d) => DB.areas.filter(a => a.parent === pid && canSee(a.id)).forEach(a => {
     const path = crumbPath(a.id).slice(0, -1).map(x => x.name).join(' › ');
     const locked = !!lockedArea(a.id);
-    rows.push({ kind: 'area', id: a.id, depth: d, label: `${a.emoji} ${a.name}`, sub: path || 'Top level', disabled: exclude.has(a.id) || locked, lock: locked });
+    rows.push({ kind: 'area', id: a.id, depth: d, label: a.name, sub: path || 'Top level', disabled: exclude.has(a.id) || locked, lock: locked });
     if (type === 'place') groupsIn(a.id).forEach(g => rows.push({ kind: 'group', id: g.id, area: a.id, depth: d + 1, label: g.name, sub: `${a.name} · grouping, ${g.kind === 'mom' ? 'MoMs' : 'files'}`, disabled: itemKind && g.kind !== itemKind }));
     walk(a.id, d + 1);
   });
