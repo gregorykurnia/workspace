@@ -1,72 +1,20 @@
-// Called once per auth session to load role + folder access
-auth.onAuthStateChanged(function(user) {
-  if (!user) { CURR_USER_ROLE = 'member'; FA = []; return; }
-
+// Role + folder access are loaded by session.js; this file shows them.
+Store.onChange(function(what) {
   // Anonymous share-link guests skip user record lookup
-  if (user.isAnonymous) {
-    CURR_USER_ROLE = 'member';
+  if (what === 'guest') {
     if (typeof render === 'function') render();
-    return;
-  }
-
-  // Get or create this user's record in Firestore
-  db.collection('users').doc(user.uid).get().then(function(doc) {
-    if (doc.exists) {
-      CURR_USER_ROLE = doc.data().role || 'member';
-    } else {
-      db.collection('users').doc(user.uid).set({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email.split('@')[0],
-        role: 'member'
-      });
-      CURR_USER_ROLE = 'member';
-    }
+  } else if (what === 'role') {
     var ur = document.getElementById('sb-urole');
     if (ur) ur.textContent = CURR_USER_ROLE === 'admin' ? 'Admin' : 'Member';
     if (CURR_USER_ROLE !== 'admin') {
       var nb = document.getElementById('btn-new-folder'); if (nb) nb.style.display = 'none';
     }
     if (typeof render === 'function') render();
-  });
-
-  // Watch folder_access collection
-  db.collection('folder_access').onSnapshot(function(snap) {
-    FA = snap.docs.map(function(d) { return d.data(); });
+  } else if (what === 'access') {
     if (typeof render === 'function') render();
-  });
-
-  // Load all users (for the Manage Access dropdown)
-  db.collection('users').onSnapshot(function(snap) {
-    WORKSPACE_USERS = snap.docs.map(function(d) { return d.data(); });
-  });
+  }
 });
-
-// Returns true if the current user can see a given folder
-function canSeeFolder(fid) {
-  if (CURR_USER_ROLE === 'admin') return true;
-  var user = auth.currentUser;
-  if (!user) return false;
-  // Anonymous share-link guests: allow access only within a folder tree that
-  // has link-sharing explicitly turned on
-  if (user.isAnonymous && typeof SHARE_MODE !== 'undefined' && SHARE_MODE && SHARE_FOLDER_ID) {
-    var shareRoot = gf(SHARE_FOLDER_ID);
-    if (!shareRoot || !shareRoot.shared) return false;
-    var check = gf(fid);
-    while (check) {
-      if (check.id === SHARE_FOLDER_ID) return true;
-      check = check.parent ? gf(check.parent) : null;
-    }
-    return false;
-  }
-  // Walk up the folder tree — access on any ancestor grants access
-  var current = gf(fid);
-  while (current) {
-    if (FA.some(function(fa) { return fa.folderId === current.id && fa.uid === user.uid; })) return true;
-    current = current.parent ? gf(current.parent) : null;
-  }
-  return false;
-}
+startSession();
 
 // Admin-only modal to grant/revoke access per folder
 function openAccessModal(fid) {
@@ -117,14 +65,14 @@ function openAccessModal(fid) {
     var userDoc = WORKSPACE_USERS.find(function(u) { return u.uid === sel.value; });
     if (!userDoc) return;
     var fa = { id: uid(), folderId: fid, uid: userDoc.uid, email: userDoc.email, displayName: userDoc.displayName || userDoc.email };
-    db.collection('folder_access').doc(fa.id).set(fa).catch(console.error);
+    grantAccess(fa);
     closeModal();
     toast('Access granted to ' + (userDoc.displayName || userDoc.email));
   });
 
   document.getElementById('MR').querySelectorAll('[data-revoke]').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      db.collection('folder_access').doc(btn.dataset.revoke).delete().catch(console.error);
+      revokeAccess(btn.dataset.revoke);
       closeModal();
       toast('Access revoked.');
     });

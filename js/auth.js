@@ -1,13 +1,3 @@
-const auth = firebase.auth();
-
-// Share link: sign in anonymously so no login screen is needed
-(function(){
-  var p=new URLSearchParams(window.location.search);
-  if(p.has('folder')||p.has('doc')||p.has('mom')){
-    auth.signInAnonymously().catch(console.error);
-  }
-})();
-
 function doSignIn() {
   var em = document.getElementById('auth-email').value.trim();
   var pw = document.getElementById('auth-pw').value;
@@ -21,9 +11,7 @@ function doSignIn() {
   }
   btn.textContent = 'Signing in...';
   btn.disabled = true;
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function() {
-    return auth.signInWithEmailAndPassword(em, pw);
-  }).catch(function(e) {
+  signIn(em, pw).catch(function(e) {
     var msg = (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
       ? 'Wrong email or password.' : e.message;
     err.textContent = msg;
@@ -64,7 +52,7 @@ document.getElementById('auth-forgot').addEventListener('click', function() {
   var ok = document.getElementById('auth-ok');
   err.className = 'auth-err'; ok.className = 'auth-ok';
   if (!em) { err.textContent = 'Enter your email above first.'; err.className = 'auth-err on'; return; }
-  auth.sendPasswordResetEmail(em).then(function() {
+  sendReset(em).then(function() {
     ok.textContent = 'Reset link sent! Check your inbox.';
     ok.className = 'auth-ok on';
   }).catch(function(e) { err.textContent = e.message; err.className = 'auth-err on'; });
@@ -88,11 +76,7 @@ function openChangePassword() {
     if (!cur || !nw || !con) { err.textContent = 'All fields required.'; err.className = 'e-msg on'; return; }
     if (nw !== con) { err.textContent = 'New passwords do not match.'; err.className = 'e-msg on'; return; }
     if (nw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.className = 'e-msg on'; return; }
-    var user = auth.currentUser;
-    var credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
-    user.reauthenticateWithCredential(credential).then(function() {
-      return user.updatePassword(nw);
-    }).then(function() {
+    changePassword(cur, nw).then(function() {
       closeModal(); toast('Password updated!');
     }).catch(function(e) {
       err.textContent = e.code === 'auth/wrong-password' ? 'Current password is wrong.' : e.message;
@@ -131,7 +115,7 @@ document.getElementById('sb-user-btn').addEventListener('click', function(e) {
     '</div>';
   document.body.appendChild(popup);
   document.getElementById('up-changepw').addEventListener('click', function() { closeUserPopup(); openChangePassword(); });
-  document.getElementById('up-signout').addEventListener('click', function() { auth.signOut().then(function() { window.location.reload(); }); });
+  document.getElementById('up-signout').addEventListener('click', function() { signOut().then(function() { window.location.reload(); }); });
 });
 
 document.addEventListener('click', closeUserPopup);

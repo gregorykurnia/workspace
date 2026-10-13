@@ -605,11 +605,19 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 
 ### Phase 1: Separate data from rendering (no visual change)
 **Tasks**
-1. Create `js/data/firebase.js`, `session.js`, `store.js`, `actions.js`, `uploads.js`, `content.js`, `search.js`. Move the functions listed in 2.5 **verbatim**, keeping their names and globals.
-2. Make each write return its promise (no caller changes needed).
-3. Replace the direct `render()` calls inside listeners with `Store.onChange` callbacks. The old `app.js` registers its own `render`.
-4. `index.html` loads `js/data/*.js` before the old `js/app.js`.
-5. Fix `sw.js` so navigations are cached under their own URL (it currently stores every navigation as `index.html`, which would let `next.html` overwrite the offline copy later). Bump the cache name.
+- [x] 1. Create `js/data/firebase.js`, `session.js`, `store.js`, `actions.js`, `uploads.js`, `content.js`, `search.js`. Move the functions listed in 2.5 **verbatim**, keeping their names and globals.
+- [x] 2. Make each write return its promise (no caller changes needed).
+- [x] 3. Replace the direct `render()` calls inside listeners with `Store.onChange` callbacks. The old `app.js` registers its own `render`.
+- [x] 4. `index.html` loads `js/data/*.js` before the old `js/app.js`.
+- [ ] 5. Fix `sw.js` so navigations are cached under their own URL (it currently stores every navigation as `index.html`, which would let `next.html` overwrite the offline copy later). Bump the cache name.
+
+**Notes from tasks 1–4 (2026-10-13):**
+- `Store.onChange(fn)` passes `fn(what, err)`. `what` is a collection name, `'loaded'` (once), `'error'`, or a session event (`'guest'`, `'role'`, `'access'`, `'users'`). `app.js` keeps the old per-collection render conditions in its handler, and the old chkLoad UI step is now `onStoreLoaded()`, which runs before any render so deep-link hashes survive.
+- New names: `watchMom` (the editor's per-MoM listener), `searchWorkspace` (search matching), `grantAccess`/`revokeAccess`, `signIn`/`sendReset`/`changePassword`/`signOut`, `startSession` (role/access loading, still started from `rbac.js` at the old timing).
+- Move, rename, flag, final, share and password changes are still inline field edits in the old UI followed by `sF`/`sM`/`sD`. No named action functions exist for them yet; they get added when the new UI needs them.
+- Left in `app.js` on purpose: `esc` and `uid` (the prototype's `core.js` declares `const esc` / `let uid`, so the data layer must not), and the two inline image uploads in the editor.
+- `index.html` loads `app.js`, `auth.js` and `rbac.js` with `?v=2`. The current `sw.js` serves app files cache-first under an unchanged cache name, so installed clients would otherwise run the old `app.js` and `auth.js` next to the new data files and fail on the redeclared `db` and `auth`. **Task 5 must add `js/data/*.js` to the precache list and stop app files from going stale like this.**
+- Checked: `node -c` on every file, no global declared twice, and the auth tests that need no account pass locally. **Not yet run:** the signed-in Playwright tests (no `TEST_EMAIL`/`TEST_PASSWORD` on this machine). Run them against the preview before Phase 1 counts as done.
 
 **Files:** `js/data/*` (new), `js/app.js`, `js/auth.js`, `js/rbac.js`, `index.html`, `sw.js`.
 **Done when:** the preview looks and behaves identically; all existing Playwright tests pass against the preview URL; `js/app.js` has no `db.collection` calls left.

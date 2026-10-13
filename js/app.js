@@ -1,10 +1,4 @@
-const FB={apiKey:"AIzaSyA0ZOM95oAxG0X8JC26yX9V2S9PcSCOI0Y",authDomain:"greg-project-5b838.firebaseapp.com",projectId:"greg-project-5b838",storageBucket:"greg-project-5b838.firebasestorage.app",messagingSenderId:"695512510143",appId:"1:695512510143:web:ceed96aacd618115ba600a"};
-const CL_CLOUD='dgznvawnm',CL_PRESET='workspace_uploads';
-firebase.initializeApp(FB);
-const db=firebase.firestore();
-var F=[],M=[],D=[],DF=[],MF=[],PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),UF=new Set(),UD=new Set(),LOADED={f:false,m:false,d:false,df:false,mf:false},_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false,_remarkOverlay=null,_remarkCleanup=null;
-var TF=[],TM=[],TD=[],TDF=[],TMF=[];
-var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[];
+var PATH=[],VIEW='home',TAB='sub',EMOM=null,DOC_FOLDER=null,MOM_FOLDER=null,EXP=new Set(),_editor=null,_autoSaveTimer=null,_momListener=null,_remoteUpdate=false,_remarkOverlay=null,_remarkCleanup=null;
 var SHARE_MODE=false,SHARE_FOLDER_ID=null,SHARE_DOC_ID=null,SHARE_MOM_ID=null;
 var SEL_MODE=false,SEL_TYPE=null,SEL_IDS=new Set();
 function toggleSelMode(type){if(SEL_MODE&&SEL_TYPE===type){SEL_MODE=false;SEL_TYPE=null;SEL_IDS.clear();}else{SEL_MODE=true;SEL_TYPE=type;SEL_IDS.clear();}renderMain();}
@@ -143,7 +137,16 @@ function renderSharedMom(id){
     '</div>';
 }
 function shareLinkDenied(){document.getElementById('CR').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;gap:10px"><div style="font-size:40px">&#128274;</div><div style="font-size:16px;font-weight:600;color:#111827">This link is no longer available</div><div style="font-size:13px;color:#6B7280">The owner has turned off link sharing for this folder.</div></div>';}
-var _chkLoadDone=false;function chkLoad(){if(_chkLoadDone)return;if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df&&LOADED.mf){_chkLoadDone=true;setSS('live');_autopurge();if(SHARE_MODE&&SHARE_DOC_ID){var sid2=document.getElementById('sidebar');if(sid2)sid2.style.display='none';var tog2=document.getElementById('sb-toggle');if(tog2)tog2.style.display='none';var m2=document.getElementById('main');if(m2)m2.style.display='none';var sd=D.find(v=>v.id===SHARE_DOC_ID);if(!sd||!sd.shared){shareLinkDenied();return;}renderSharedDoc(SHARE_DOC_ID);}else if(SHARE_MODE&&SHARE_MOM_ID){var sid3=document.getElementById('sidebar');if(sid3)sid3.style.display='none';var tog3=document.getElementById('sb-toggle');if(tog3)tog3.style.display='none';var m3=document.getElementById('main');if(m3)m3.style.display='none';var sm=M.find(v=>v.id===SHARE_MOM_ID);if(!sm||!sm.shared){shareLinkDenied();return;}renderSharedMom(SHARE_MOM_ID);}else if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}}
+function onStoreLoaded(){setSS('live');if(SHARE_MODE&&SHARE_DOC_ID){var sid2=document.getElementById('sidebar');if(sid2)sid2.style.display='none';var tog2=document.getElementById('sb-toggle');if(tog2)tog2.style.display='none';var m2=document.getElementById('main');if(m2)m2.style.display='none';var sd=D.find(v=>v.id===SHARE_DOC_ID);if(!sd||!sd.shared){shareLinkDenied();return;}renderSharedDoc(SHARE_DOC_ID);}else if(SHARE_MODE&&SHARE_MOM_ID){var sid3=document.getElementById('sidebar');if(sid3)sid3.style.display='none';var tog3=document.getElementById('sb-toggle');if(tog3)tog3.style.display='none';var m3=document.getElementById('main');if(m3)m3.style.display='none';var sm=M.find(v=>v.id===SHARE_MOM_ID);if(!sm||!sm.shared){shareLinkDenied();return;}renderSharedMom(SHARE_MOM_ID);}else if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}var sid=document.getElementById('sidebar');if(sid)sid.style.display='none';var tog=document.getElementById('sb-toggle');if(tog)tog.style.display='none';goTo(pathTo(SHARE_FOLDER_ID));}else{if(window.location.hash&&window.location.hash!=='#')applyHash();render();}}
+Store.onChange(function(what,err){
+  if(what==='error'){setSS('err');console.error(err);}
+  else if(what==='loaded')onStoreLoaded();
+  else if(what==='folders'){if(LOADED.m&&LOADED.d)render();}
+  else if(what==='moms'){if(EMOM)EMOM=M.find(m=>m.id===EMOM.id)||EMOM;if(LOADED.f&&LOADED.d&&VIEW!=='mom')render();}
+  else if(what==='docs'){if(LOADED.f&&LOADED.m&&LOADED.df)render();}
+  else if(what==='docfolders'){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();}
+  else if(what==='momfolders'){if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();}
+});
 function buildHash(){
   if(VIEW==='mom'&&EMOM)return'#m='+encodeURIComponent(EMOM.id);
   if(VIEW==='folder'&&PATH.length){var h='#f='+encodeURIComponent(PATH[PATH.length-1])+'&t='+TAB;if(DOC_FOLDER)h+='&df='+encodeURIComponent(DOC_FOLDER);if(MOM_FOLDER)h+='&mf='+encodeURIComponent(MOM_FOLDER);return h;}
@@ -158,83 +161,6 @@ function applyHash(){
   VIEW='home';PATH=[];EMOM=null;DOC_FOLDER=null;MOM_FOLDER=null;destroyEditor();
 }
 window.addEventListener('hashchange',()=>{applyHash();render();});
-function sF(f){db.collection('folders').doc(f.id).set(f).catch(console.error);}
-function sM(m){db.collection('moms').doc(m.id).set(m).catch(console.error);}
-function sD(d){db.collection('docs').doc(d.id).set(d).catch(console.error);}
-var _WEEK=7*24*60*60*1000;
-function _softDel(col,id){db.collection(col).doc(id).update({deleted:true,deletedAt:Date.now()}).catch(console.error);}
-function _permDel(col,id){db.collection(col).doc(id).delete().catch(console.error);}
-function dF(id){_softDel('folders',id);}
-function dM(id){_softDel('moms',id);}
-function dD(id){_softDel('docs',id);}
-function dDF(id){_softDel('docfolders',id);}
-function dMF(id){_softDel('momfolders',id);}
-function dFDeep(fid){
-  kids(fid).forEach(c=>dFDeep(c.id));
-  momsOf(fid).forEach(m=>dM(m.id));
-  docsOf(fid).forEach(d=>dD(d.id));
-  DF.filter(df=>df.folderId===fid).forEach(df=>{docsOfDF(df.id).forEach(d=>dD(d.id));dDF(df.id);});
-  MF.filter(mf=>mf.folderId===fid).forEach(mf=>{momsOfMF(mf.id).forEach(m=>dM(m.id));dMF(mf.id);});
-  dF(fid);
-}
-function restoreItem(col,id){db.collection(col).doc(id).update({deleted:false,deletedAt:firebase.firestore.FieldValue.delete()}).catch(console.error);}
-function permDeleteItem(col,id){_permDel(col,id);}
-function clearTrash(){
-  var now=Date.now();
-  TF.forEach(f=>_permDel('folders',f.id));
-  TM.forEach(m=>_permDel('moms',m.id));
-  TD.forEach(d=>_permDel('docs',d.id));
-  TDF.forEach(df=>_permDel('docfolders',df.id));
-  TMF.forEach(mf=>_permDel('momfolders',mf.id));
-}
-function _autopurge(){
-  var cut=Date.now()-_WEEK;
-  TF.filter(f=>f.deletedAt<cut).forEach(f=>_permDel('folders',f.id));
-  TM.filter(m=>m.deletedAt<cut).forEach(m=>_permDel('moms',m.id));
-  TD.filter(d=>d.deletedAt<cut).forEach(d=>_permDel('docs',d.id));
-  TDF.filter(df=>df.deletedAt<cut).forEach(df=>_permDel('docfolders',df.id));
-  TMF.filter(mf=>mf.deletedAt<cut).forEach(mf=>_permDel('momfolders',mf.id));
-}
-var _listenersStarted=false;
-function startListeners(){
-  if(_listenersStarted)return;_listenersStarted=true;
-  db.collection('folders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());F=all.filter(f=>!f.deleted);TF=all.filter(f=>f.deleted);LOADED.f=true;chkLoad();if(LOADED.m&&LOADED.d)render();},e=>{setSS('err');console.error(e);});
-  db.collection('moms').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());var eid=EMOM?EMOM.id:null;M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);if(eid)EMOM=M.find(m=>m.id===eid)||EMOM;LOADED.m=true;chkLoad();if(LOADED.f&&LOADED.d&&VIEW!=='mom')render();},e=>{setSS('err');console.error(e);});
-  db.collection('docs').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());D=all.filter(d=>!d.deleted);TD=all.filter(d=>d.deleted);LOADED.d=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
-  db.collection('docfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());DF=all.filter(df=>!df.deleted);TDF=all.filter(df=>df.deleted);LOADED.df=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.mf)render();},e=>{setSS('err');console.error(e);});
-  db.collection('momfolders').onSnapshot(snap=>{var all=snap.docs.map(d=>d.data());MF=all.filter(mf=>!mf.deleted);TMF=all.filter(mf=>mf.deleted);LOADED.mf=true;chkLoad();if(LOADED.f&&LOADED.m&&LOADED.d&&LOADED.df)render();},e=>{setSS('err');console.error(e);});
-}
-function sDF(df){db.collection('docfolders').doc(df.id).set(df).catch(console.error);}
-function sMF(mf){db.collection('momfolders').doc(mf.id).set(mf).catch(console.error);}
-function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
-function docsOfDF(dfid){return D.filter(d=>d.docFolderId===dfid);}
-function docsUngrp(fid){return D.filter(d=>d.folderId===fid&&!d.docFolderId);}
-function momFoldersOf(fid){return MF.filter(mf=>mf.folderId===fid);}
-function momsOfMF(mfid){return M.filter(m=>m.momFolderId===mfid);}
-function momsUngrp(fid){return M.filter(m=>m.folderId===fid&&!m.momFolderId);}
-async function uploadCL(file,onProg){
-  return new Promise((res,rej)=>{
-    var fd=new FormData();fd.append('file',file);fd.append('upload_preset',CL_PRESET);
-    var rt;
-    if(/^image\//i.test(file.type)||/\.(png|jpg|jpeg|gif|webp|bmp|svg|tiff|ico)$/i.test(file.name)){rt='image';}
-    else if(/^video\//i.test(file.type)||/\.(mp4|mov|avi|mkv|webm)$/i.test(file.name)){rt='video';}
-    else{rt='raw';}
-    var xhr=new XMLHttpRequest();
-    xhr.open('POST','https://api.cloudinary.com/v1_1/'+CL_CLOUD+'/'+rt+'/upload');
-    xhr.upload.onprogress=e=>{if(e.lengthComputable&&onProg)onProg(Math.round(e.loaded/e.total*100));};
-    xhr.onload=()=>{
-      if(xhr.status===200){var r=JSON.parse(xhr.responseText);res({url:r.secure_url,name:file.name,cloudType:r.resource_type,format:r.format||file.name.split('.').pop().toLowerCase()});}
-      else{
-        var msg='Upload failed ('+xhr.status+')';
-        try{var er=JSON.parse(xhr.responseText);msg=er.error&&er.error.message?er.error.message:msg;}catch(e){}
-        if(xhr.status===400&&msg.toLowerCase().includes('format')){msg='This file format is not allowed in your Cloudinary preset. Go to Cloudinary → Settings → Upload → upload preset → Allowed formats, and add the format.';}
-        else if(xhr.status===401){msg='Cloudinary auth error. Check your upload preset is set to Unsigned.';}
-        rej(new Error(msg));
-      }
-    };
-    xhr.onerror=()=>rej(new Error('Network error'));xhr.send(fd);
-  });
-}
 function uid(){return '_'+Math.random().toString(36).slice(2,10);}
 function closeRemarkOverlay(){if(_remarkOverlay){if(typeof _remarkOverlay._flush==='function')_remarkOverlay._flush();if(_remarkOverlay._cell)_remarkOverlay._cell.classList.remove('remark-open');if(_remarkOverlay.parentNode)_remarkOverlay.parentNode.removeChild(_remarkOverlay);_remarkOverlay=null;}}
 function destroyEditor(){if(_autoSaveTimer){clearTimeout(_autoSaveTimer);_autoSaveTimer=null;}closeRemarkOverlay();if(_remarkCleanup){_remarkCleanup();_remarkCleanup=null;}if(_momListener){_momListener();_momListener=null;}if(_editor){try{_editor.destroy();}catch(e){}_editor=null;}}
@@ -279,57 +205,10 @@ function _moveTableCol(dir){
 }
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
-function docAddedValue(d){var v=d&&d.added;if(!v)return 0;if(typeof v==='number')return v;if(v&&typeof v.toMillis==='function')return v.toMillis();var n=new Date(v).getTime();return Number.isNaN(n)?0:n;}
-function gf(id){return F.find(f=>f.id===id);}
-function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
-function momsOf(fid){return M.filter(m=>m.folderId===fid);}
-function docsOf(fid){return D.filter(d=>d.folderId===fid);}
 function cf(){return PATH.length?gf(PATH[PATH.length-1]):null;}
-function pathTo(id){var p=[],c=gf(id);while(c){p.unshift(c.id);c=c.parent?gf(c.parent):null;}return p;}
-function cnt(fid){return kids(fid).length+momsOf(fid).length+docsOf(fid).length;}
 function saveExp(){localStorage.setItem('G_exp',JSON.stringify([...EXP]));}
 function loadExp(){try{EXP=new Set(JSON.parse(localStorage.getItem('G_exp')||'[]'));}catch(e){}}
-function folderLabel(id){var p=[],c=gf(id);while(c){p.unshift(c.name);c=c.parent?gf(c.parent):null;}return p.join(' / ');}
 function docIco(d){if(d.format==='pdf'||d.type==='pdf')return'&#128196;';if(d.cloudType==='image')return'&#128444;';if(d.cloudType==='video')return'&#127916;';var m={pdf:'&#128196;',presentation:'&#128202;',spreadsheet:'&#128203;',image:'&#128444;',link:'&#128279;',other:'&#128206;'};return m[d.type]||'&#128206;';}
-function momDeltaToHTML(content){
-  if(!content)return'<p style="color:#9CA3AF">No content.</p>';
-  try{
-    var d=JSON.parse(content);
-    if(d&&Array.isArray(d.ops)){
-      var tmp=document.createElement('div');
-      tmp.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;width:400px';
-      document.body.appendChild(tmp);
-      var q=new Quill(tmp);
-      q.setContents(d);
-      var html=q.root.innerHTML;
-      tmp.remove();
-      return html;
-    }
-  }catch(e){}
-  return content;
-}
-function momPreview(c){if(!c)return'No content yet...';try{var d=JSON.parse(c);if(d&&Array.isArray(d.ops)){var t=d.ops.map(o=>typeof o.insert==='string'?o.insert:'').join('').replace(/\n/g,' ').trim();return esc(t.substring(0,140)+(t.length>140?'...':''));}}catch(e){}var tmp=document.createElement('div');tmp.innerHTML=c;var t2=(tmp.textContent||tmp.innerText||'').replace(/\s+/g,' ').trim();return esc(t2.substring(0,140)+(t2.length>140?'...':''));}
-function isProspectJournal(m){return!!m&&String(m.title||'').trim().toLowerCase()==='clients - prospect journal';}
-function remarkHeaderText(cell){return String(cell&&cell.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();}
-function remarkColumnIndex(table){
-  var row=table&&table.querySelector('tr');if(!row)return-1;
-  var cells=Array.from(row.children);
-  for(var i=0;i<cells.length;i++)if(remarkHeaderText(cells[i])==='detailed remarks')return i;
-  return-1;
-}
-function addDetailedRemarksColumn(html){
-  if(!html)return{html:html,added:false};
-  var wrap=document.createElement('div');wrap.innerHTML=html;
-  var tables=Array.from(wrap.querySelectorAll('table'));
-  for(var ti=0;ti<tables.length;ti++){
-    var table=tables[ti],rows=Array.from(table.querySelectorAll('tr'));
-    if(!rows.length||remarkColumnIndex(table)!==-1)continue;
-    var header=document.createElement('th');header.textContent='Detailed Remarks';rows[0].appendChild(header);
-    for(var ri=1;ri<rows.length;ri++){var cell=document.createElement('td');cell.innerHTML='<p></p>';rows[ri].appendChild(cell);}
-    return{html:wrap.innerHTML,added:true};
-  }
-  return{html:html,added:false};
-}
 function decorateReadOnlyRemarks(html){
   if(!html)return html;
   var wrap=document.createElement('div');wrap.innerHTML=html;
@@ -348,9 +227,7 @@ function decorateReadOnlyRemarks(html){
   });
   return wrap.innerHTML;
 }
-async function hw(pw){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('');}
 async function imp(pw){return false;}
-function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 function goHome(){if(SHARE_MODE&&SHARE_FOLDER_ID){if(typeof canSeeFolder==='function'&&!canSeeFolder(SHARE_FOLDER_ID)){shareLinkDenied();return;}goTo(pathTo(SHARE_FOLDER_ID));return;}clearSelection();VIEW='home';PATH=[];EMOM=null;destroyEditor();closeCtx();history.pushState(null,'',buildHash());render();}
 function goTo(path){if(typeof canSeeFolder==='function'&&!canSeeFolder(path[path.length-1])){toast('You don\'t have access to this folder.');goHome();return;}for(var i=0;i<path.length;i++){if(ifl(path[i])){unlockFolder(path[i],path);return;}}clearSelection();PATH=path;VIEW='folder';TAB='sub';EMOM=null;destroyEditor();DOC_FOLDER=null;MOM_FOLDER=null;path.forEach(id=>EXP.add(id));saveExp();closeCtx();history.pushState(null,'',buildHash());render();}
 function goId(id){goTo(pathTo(id));}
@@ -1047,23 +924,6 @@ function bindMomReadOnlyEvents(){
 function bindMomEditor(){
   if(!window._TT){setTimeout(bindMomEditor,100);return;}
   var TT=window._TT;
-  function deltaToHTML(content){
-    if(!content)return'';
-    try{
-      var d=JSON.parse(content);
-      if(d&&Array.isArray(d.ops)){
-        var tmp=document.createElement('div');
-        tmp.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;width:400px';
-        document.body.appendChild(tmp);
-        var q=new Quill(tmp);
-        q.setContents(d);
-        var html=q.root.innerHTML;
-        tmp.remove();
-        return html;
-      }
-    }catch(e){}
-    return content;
-  }
   var initialHTML=EMOM?deltaToHTML(EMOM.content):'';
   var prospectColumnUpgrade=isProspectJournal(EMOM)?addDetailedRemarksColumn(initialHTML):{html:initialHTML,added:false};
   initialHTML=prospectColumnUpgrade.html;
@@ -1290,7 +1150,7 @@ function bindMomEditor(){
   document.getElementById('tiptap-editor').addEventListener('click',e=>{var a=e.target.closest('a');if(a&&a.href&&a.href.includes('mom.local/')){e.preventDefault();var mid=a.href.split('mom.local/')[1];if(mid){saveMom();openMom(mid);}}});
   document.getElementById('tiptap-editor').addEventListener('paste',_handleEditorImagePaste);
   if(EMOM){
-    _momListener=db.collection('moms').doc(EMOM.id).onSnapshot(function(snap){
+    _momListener=watchMom(EMOM.id,function(snap){
       if(!snap.exists||!_editor||!EMOM)return;
       var data=snap.data();
       if(data.content!==undefined&&data.content!==EMOM.content){
@@ -1479,9 +1339,7 @@ function openGlobalSearch(){
     var container=document.getElementById('gs-list');if(!container)return;
     if(!q){container.innerHTML='<div style="padding:16px;text-align:center;color:#9CA3AF;font-size:13px">Type to search folders, documents and files...</div>';return;}
     var q2=q.toLowerCase();
-    var folders=F.filter(f=>f.name.toLowerCase().includes(q2));
-    var moms=M.filter(m=>(m.title||'').toLowerCase().includes(q2)||momPreview(m.content).toLowerCase().includes(q2));
-    var docs=D.filter(d=>(d.name||'').toLowerCase().includes(q2)||(d.note||'').toLowerCase().includes(q2));
+    var found=searchWorkspace(q2),folders=found.folders,moms=found.moms,docs=found.docs;
     if(!folders.length&&!moms.length&&!docs.length){container.innerHTML='<div style="padding:16px;text-align:center;color:#9CA3AF;font-size:13px">No results for "'+esc(q)+'"</div>';return;}
     var h='';
     folders.forEach(f=>{h+=rowHTML(iFldrIco,'#F3F4F6','#6B7280',f.name,folderLabel(f.parent)||'Workspace root','data-gotofolder="'+f.id+'"');});
