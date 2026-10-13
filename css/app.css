@@ -216,3 +216,29 @@ body.selecting .cw > .row { padding-left: 52px; }
 .dest[data-depth="6"] { padding-left: 120px; }
 /* An area's emoji slot never grows into its neighbours, whatever is stored there. */
 .tree-row .nm .em, .dest .em { overflow: hidden; white-space: nowrap; }
+
+/* ---------- Phase 4: Flagged, Recent, Deleted, Account, dialogs ---------- */
+.list-spaced { margin-top: 24px; }
+.row-trash { padding-right: 200px; }
+.cw > .trash-acts { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+@media (max-width: 767px) { .emoji-grid { grid-template-columns: repeat(6, 1fr); } }
+/* Account page: the name, role and the Appearance and access blocks (from the prototype's inline styles). */
+.acct-name { font-size: 17px; display: block; }
+.acct-role { margin-top: 8px; }
+.acct-h { font-size: 17px; }
+.acct-copy { margin-top: 6px; font-size: 14.5px; }
+.acct-seg { margin-top: 12px; }
+.acct-rule { height: 1px; background: var(--line); margin: 20px 0; }
+.acct-kids { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+/* Dialogs: the fieldset, the kind choice for groupings, the access list, the share link. */
+.fieldset { border: 0; padding: 0; margin: 0; }
+.fieldset .lab { padding: 0; }
+.kind-pick { cursor: pointer; }
+.access-list { padding: 4px; margin-bottom: 16px; }
+.access-row { padding: 8px 12px; }
+.share-toggle { min-height: 52px; font-weight: 700; }
+.share-link { display: flex; gap: 8px; }
+.share-link .input { flex: 1; }
+.locked-plain { margin-top: 56px; }
+.acct-grid { margin-top: 24px; }

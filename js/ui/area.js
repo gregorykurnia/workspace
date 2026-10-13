@@ -367,3 +367,147 @@ on('copy-address', d => {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(f.url).then(done, () => toast('Couldn’t copy. Select the address and copy it by hand.', { icon: 'alert', tone: 'warn' }));
   else toast('Couldn’t copy. Select the address and copy it by hand.', { icon: 'alert', tone: 'warn' });
 });
+
+/* ---------- Dialogs: New area, Rename, groupings (O1, O2, O4) ---------- */
+/* Areas as a list for a "Location" choice: the same tree the Move picker shows, locked ones off. */
+function areaLocationOptions(selected) {
+  return destRows({ type: 'area', exclude: new Set(), itemKind: null, q: '' })
+    .filter(r => r.kind === 'area')
+    .map(r => [r.id, `${'  '.repeat(r.depth)}${r.emoji ? r.emoji + ' ' : ''}${r.label}`, r.disabled])
+    .map(([v, l, off]) => `<option value="${esc(v)}"${v === selected ? ' selected' : ''}${off ? ' disabled' : ''}>${esc(l)}</option>`).join('');
+}
+function newAreaDialog(parent = null) {
+  const sel = emojiGridHTML({ name: 'emoji', label: 'Emoji', selected: '🌿' });
+  layer({
+    label: parent ? 'New sub-area' : 'New area',
+    html: `<form data-form="new-area" novalidate>${dialogHTML({
+      title: parent ? 'New sub-area' : 'New area', text: 'An area holds the MoMs and files for one client, team or initiative.',
+      body: fieldHTML({ id: 'anName', label: 'Name', required: true, control: inputHTML({ id: 'anName', name: 'name', placeholder: 'e.g. Harbor Logistics' }) })
+        + sel.replace('<div class="field">', '<div class="field" id="emoji-field">')
+        + `<label class="field" for="anParent"><span class="lab">Location</span><select class="select" id="anParent" name="parent"><option value="">Top level</option>${areaLocationOptions(parent || '')}</select></label>`
+        + `<input type="hidden" name="emoji" value="🌿">`,
+      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Create area', type: 'submit' }),
+    })}</form>`,
+  });
+}
+on('new-area', d => {
+  if (!isAdmin()) { toast('Only admins can create areas.', { icon: 'alert', tone: 'warn' }); return; }
+  newAreaDialog(d.parent || null);
+});
+/* The emoji grid: the choice goes into the form's hidden emoji field. */
+on('pick-emoji', (d, el) => {
+  const f = el.closest('form'); if (!f) return;
+  f.querySelectorAll('[role=radio]').forEach(b => b.setAttribute('aria-checked', String(b === el)));
+  f.elements.emoji.value = d.e;
+});
+onForm('new-area', f => {
+  if (!isAdmin()) return;
+  const name = f.elements.name.value.trim();
+  if (!name) { fieldError(f, 'anName', 'Give the area a name, so you can find it later.'); return; }
+  const parent = f.elements.parent.value || null;
+  const { id } = { id: newId() };
+  const doc = { id, name, icon: f.elements.emoji.value || '', created: Date.now(), createdBy: { uid: (signedInUser() || {}).uid || '', name: currentUser().name } };
+  if (parent) doc.parent = parent;
+  sF(doc).then(() => {}, () => toast('Couldn’t create the area. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  closeAll();
+  if (parent) { UI.open.add(parent); lsSet('G_exp', JSON.stringify([...UI.open])); }
+  toast(`Created “${name}”${parent && area(parent) ? ' inside ' + area(parent).name : ''}`, { icon: 'shelf' });
+  go(areaHref(id));
+});
+
+/* Rename: an area's name and emoji, a MoM's title, or a file's name (O2, O6). */
+function renameDialog(kind, id) {
+  const item = kind === 'area' ? gf(id) : kind === 'mom' ? mom(id) : D.find(d => d.id === id);
+  if (!item) return;
+  const label = kind === 'area' ? 'area' : kind === 'mom' ? 'MoM' : 'file';
+  const val = kind === 'mom' ? (item.title || '') : (item.name || '');
+  const blocked = kind !== 'area' && readOnly(item);
+  const emoji = kind === 'area' ? emojiGridHTML({ name: 'emoji', label: 'Emoji', selected: areaEmoji(item) }).replace('<div class="field">', '<div class="field" id="emoji-field">') : '';
+  layer({
+    label: `Rename ${label}`,
+    html: `<form data-form="rename" data-kind="${kind}" data-id="${esc(id)}" novalidate>${dialogHTML({
+      title: `Rename ${label}`, text: kind === 'area' ? 'Change the name, and the emoji that marks it.' : 'Titles help you find things in search.',
+      body: fieldHTML({ id: 'renIn', label: 'Name', required: true, control: inputHTML({ id: 'renIn', name: 'name', value: val }) })
+        + emoji + (kind === 'area' ? `<input type="hidden" name="emoji" value="${esc(areaEmoji(item))}">` : '')
+        + (blocked ? noticeHTML({ tone: 'warn', icon: 'lock', title: 'Marked final.', text: 'Only an admin can change it.' }) : ''),
+      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Save', type: 'submit', disabled: blocked }),
+    })}</form>`,
+  });
+}
+on('rename', d => {
+  if (d.kind !== 'area' && !(d.kind === 'mom' ? mom(d.id) : D.find(x => x.id === d.id))) return;
+  renameDialog(d.kind, d.id);
+});
+onForm('rename', f => {
+  const { kind, id } = f.dataset;
+  const name = f.elements.name.value.trim();
+  if (!name) { fieldError(f, 'renIn', 'Give it a name.'); return; }
+  const done = kind === 'area' ? renameArea(id, name, f.elements.emoji.value || '')
+    : kind === 'mom' ? updateMom(id, { title: name })
+    : renameFile(id, name);
+  closeAll();
+  done.then(() => toast('Renamed', { icon: 'pencil' }), () => toast('Couldn’t rename it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+
+/* ---------- Groupings (O4) ---------- */
+function newGroupDialog(areaId) {
+  if (!areaId || !area(areaId)) { toast('Choose an area first', { icon: 'alert', tone: 'warn' }); return; }
+  layer({
+    label: 'New grouping',
+    html: `<form data-form="new-group" data-area="${esc(areaId)}" novalidate>${dialogHTML({
+      title: 'New grouping', text: `A grouping bunches things inside ${area(areaId).name}. Removing one keeps its contents here.`,
+      body: fieldHTML({ id: 'grpIn', label: 'Name', required: true, control: inputHTML({ id: 'grpIn', name: 'name', placeholder: 'e.g. Steering committee' }) })
+        + `<fieldset class="field fieldset"><legend class="lab">Holds</legend><div class="kinds">`
+        + `<label class="kind kind-pick"><input type="radio" name="kind" value="mom" checked class="sr">${ic('doc')}MoMs</label>`
+        + `<label class="kind kind-pick"><input type="radio" name="kind" value="file" class="sr">${ic('file')}Files and links</label>`
+        + `</div></fieldset>`,
+      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Create grouping', type: 'submit' }),
+    })}</form>`,
+  });
+}
+on('new-group', d => newGroupDialog(d.area || (createPlace(route()) || {}).area));
+onForm('new-group', f => {
+  const name = f.elements.name.value.trim();
+  if (!name) { fieldError(f, 'grpIn', 'Give the grouping a name.'); return; }
+  const kind = f.elements.kind.value === 'file' ? 'file' : 'mom';
+  const doc = { id: newId(), folderId: f.dataset.area, name };
+  const write = kind === 'mom' ? sMF(doc) : sDF(doc);
+  closeAll();
+  write.then(() => toast(`Added grouping “${name}”`, { icon: 'folder-plus' }), () => toast('Couldn’t create the grouping. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+const groupOf = id => { const m = MF.find(g => g.id === id); return m ? { kind: 'mom', g: m } : (() => { const f = DF.find(g => g.id === id); return f ? { kind: 'file', g: f } : null; })(); };
+on('rename-group', d => {
+  const hit = groupOf(d.id); if (!hit) return;
+  layer({
+    label: 'Rename grouping',
+    html: `<form data-form="rename-group" data-id="${esc(d.id)}" data-kind="${hit.kind}" novalidate>${dialogHTML({
+      title: 'Rename grouping', body: fieldHTML({ id: 'rgIn', label: 'Name', required: true, control: inputHTML({ id: 'rgIn', name: 'name', value: hit.g.name || '' }) }),
+      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Save', type: 'submit' }),
+    })}</form>`,
+  });
+});
+onForm('rename-group', f => {
+  const name = f.elements.name.value.trim();
+  if (!name) { fieldError(f, 'rgIn', 'Give the grouping a name.'); return; }
+  const { id, kind } = f.dataset;
+  closeAll();
+  renameGroup(kind, id, name).then(() => toast('Renamed', { icon: 'pencil' }), () => toast('Couldn’t rename it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+on('remove-group', d => {
+  const hit = groupOf(d.id); if (!hit) return;
+  const items = hit.kind === 'mom' ? M.filter(m => m.momFolderId === d.id).length : D.filter(x => x.docFolderId === d.id).length;
+  const a = area(hit.g.folderId);
+  confirmDialog({
+    title: `Remove “${hit.g.name}”?`, text: 'Removing a grouping keeps everything in it, in the area.',
+    impact: `${plural(items, hit.kind === 'mom' ? 'MoM' : 'file')} stay in ${esc(a ? a.name : 'the area')}.`,
+    cta: 'Remove grouping', act: 'remove-group-now', data: { id: d.id, kind: hit.kind },
+  });
+});
+on('remove-group-now', d => {
+  closeAll();
+  const job = removeGroup(d.kind, d.id);
+  job.done.then(() => {}, () => toast('Couldn’t remove the grouping. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+  const key = 'g' + d.id;
+  offerUndo(key, job.undo);
+  toast('Grouping removed. Its contents stayed in the area.', { icon: 'folder-plus', action: { label: 'Undo', act: 'undo', data: { key } } });
+});

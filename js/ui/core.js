@@ -809,7 +809,7 @@ function docKind(d) {
   if (f === 'pdf' || d.type === 'pdf') return 'pdf';
   if (d.type === 'presentation') return 'slides';
   if (d.type === 'spreadsheet') return 'sheet';
-  if (d.type === 'link') return guessKind(d.url) === 'link' ? 'link' : guessKind(d.url);
+  if (d.type === 'link') return 'link';
   return 'other';
 }
 const itemOf = (kind, id) => (kind === 'm' ? mom(id) : D.find(d => d.id === id) || null);

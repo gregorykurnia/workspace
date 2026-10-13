@@ -291,6 +291,7 @@ function fieldError(form, id, msg) {
   input.setAttribute('aria-invalid', 'true');
   let err = field.querySelector('.ferr');
   if (!err) { field.insertAdjacentHTML('beforeend', `<span class="ferr" role="alert" id="${id}-err">${ic('alert', 'sm')}${esc(msg)}</span>`); }
+  else { err.textContent = msg; }   // a different problem with the same field: say that one
   input.setAttribute('aria-describedby', id + '-err');
   input.focus();
 }

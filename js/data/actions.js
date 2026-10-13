@@ -129,3 +129,43 @@ function touchRecent(kind,id){
   CURR_USER_RECENT=[{k:kind,id:id,at:Date.now()}].concat(CURR_USER_RECENT.filter(function(x){return!(x.k===kind&&x.id===id);})).slice(0,8);
   _w(db.collection('users').doc(u.uid).set({recent:CURR_USER_RECENT},{merge:true}));
 }
+
+// Shared links (P5): the `shared` field is three-state. true = on, false = turned off, missing = follows its area.
+function setShared(kind,id,on){
+  var col=kind==='a'?'folders':kind==='m'?'moms':'docs';
+  return _w(db.collection(col).doc(id).update({shared:!!on}));
+}
+// Restore or remove forever a list of [collection, id] pairs in one batch.
+function restoreBatch(list){
+  var b=db.batch();
+  list.forEach(function(x){b.update(db.collection(x[0]).doc(x[1]),{deleted:false,deletedAt:firebase.firestore.FieldValue.delete()});});
+  return _w(b.commit());
+}
+function purgeBatch(list){
+  var b=db.batch();
+  list.forEach(function(x){b.delete(db.collection(x[0]).doc(x[1]));});
+  return _w(b.commit());
+}
+// Groupings: which collection a grouping lives in, by its kind.
+function groupCol(kind){return kind==='mom'?'momfolders':'docfolders';}
+function renameGroup(kind,id,name){return _w(db.collection(groupCol(kind)).doc(id).update({name:name}));}
+// Remove a grouping: its MoMs or files stay in the area (their grouping field is cleared), and the
+// grouping goes to Deleted. Returns { done, undo }. undo() puts the grouping and its items back.
+function removeGroup(kind,id){
+  var FV=firebase.firestore.FieldValue,b=db.batch(),moved=[],items=kind==='mom'?M:D,field=kind==='mom'?'momFolderId':'docFolderId',col=kind==='mom'?'moms':'docs';
+  items.forEach(function(x){if(x[field]===id){moved.push(x.id);b.update(db.collection(col).doc(x.id),{[field]:FV.delete()});}});
+  b.update(db.collection(groupCol(kind)).doc(id),{deleted:true,deletedAt:Date.now()});
+  return{
+    done:_w(b.commit()),
+    undo:function(){
+      var u=db.batch();
+      u.update(db.collection(groupCol(kind)).doc(id),{deleted:false,deletedAt:FV.delete()});
+      moved.forEach(function(mid){var o={};o[field]=id;u.update(db.collection(col).doc(mid),o);});
+      return _w(u.commit());
+    },
+  };
+}
+
+// Rename an area (name and emoji) or a file. Writes only the fields given.
+function renameArea(id,name,icon){return _w(db.collection('folders').doc(id).update({name:name,icon:icon||''}));}
+function renameFile(id,name){return _w(db.collection('docs').doc(id).update({name:name}));}

@@ -91,3 +91,97 @@ VIEWS.areas = {
     </div>`;
   },
 };
+
+/* ---------- Flagged, Recent, Deleted ---------- */
+const pageHead = (eyebrow, title, sub, right = '') => `<div class="page-head"><div class="page-head-main"><p class="eyebrow">${esc(eyebrow)}</p><h1 class="h-page">${esc(title)}</h1><p class="page-sub">${esc(sub)}</p></div>${right}</div>`;
+
+VIEWS.flagged = {
+  html() {
+    const items = flaggedItems();
+    return `<div class="page">${pageHead('Important', 'Flagged', 'Everything you’ve marked as important, in one place.')}
+      ${items.length ? `<div class="list list-spaced">${items.map(([k, id]) => itemRow(k, id, { right: iconBtnHTML({ icon: 'flag-fill', label: 'Unflag', pressed: true, act: 'flag', data: { kind: k, id } }) })).join('')}</div>`
+        : emptyHTML({ icon: 'flag', title: 'Nothing flagged yet', text: 'Flag a MoM or file when it matters. It shows up here and on Today.', cls: 'empty-spaced' })}
+    </div>`;
+  },
+};
+
+VIEWS.recent = {
+  html() {
+    const items = recentEntries().map(x => [x.k, x.id]);
+    return `<div class="page">${pageHead('Your work', 'Recent', 'What you opened most recently, wherever it lives.')}
+      ${items.length ? `<div class="list list-spaced">${items.map(([k, id]) => itemRow(k, id)).join('')}</div>`
+        : emptyHTML({ icon: 'clock', title: 'Nothing yet', text: 'Open a MoM or file and it appears here.', cls: 'empty-spaced' })}
+    </div>`;
+  },
+};
+
+/* ---- Deleted: what is listed, what restores with what, and the 7 days ---- */
+const TRASH_DAYS = 7, DAY_MS = 864e5;
+const deletedAtOf = x => Number(x.deletedAt) || 0;
+const daysLeftOf = x => Math.max(0, TRASH_DAYS - Math.floor((Date.now() - deletedAtOf(x)) / DAY_MS));
+/* Deleted things, one line each. Something inside a deleted area comes back with the area, so it
+   is not listed by itself. A deleted sub-area is listed when its parent is not deleted. */
+function deletedEntries() {
+  const areaIds = new Set(TF.map(f => f.id));
+  const out = [];
+  const add = (kind, x, name, where) => out.push({ kind, id: x.id, name, at: deletedAtOf(x), left: daysLeftOf(x), where });
+  TF.forEach(f => { if (!f.parent || !areaIds.has(f.parent)) add('a', f, f.name || 'Untitled area', 'Area'); });
+  TM.forEach(m => { if (!areaIds.has(m.folderId)) add('m', m, m.title || 'Untitled meeting', 'MoM'); });
+  TD.forEach(d => { if (!areaIds.has(d.folderId)) add('f', d, d.name || 'Untitled file', 'File'); });
+  TMF.forEach(g => { if (!areaIds.has(g.folderId)) add('gm', g, g.name || 'Grouping', 'Grouping'); });
+  TDF.forEach(g => { if (!areaIds.has(g.folderId)) add('gf', g, g.name || 'Grouping', 'Grouping'); });
+  return out.filter(e => e.left > 0).sort((a, b) => b.at - a.at);   // past 7 days, the old app's cleanup removes them
+}
+/* An area and all of its deleted contents, as [collection, id] pairs. Contents are matched by
+   their deletion time: deleting an area writes each part at (almost) the same moment. */
+function deletedTree(areaId) {
+  const root = TF.find(f => f.id === areaId); if (!root) return [];
+  const at = deletedAtOf(root), near = x => Math.abs(deletedAtOf(x) - at) < 5000;
+  const ids = new Set([areaId]);
+  let grew = true;
+  while (grew) { grew = false; TF.forEach(f => { if (!ids.has(f.id) && ids.has(f.parent) && near(f)) { ids.add(f.id); grew = true; } }); }
+  const list = [...TF.filter(f => ids.has(f.id)).map(f => ['folders', f.id])];
+  TM.forEach(m => { if (ids.has(m.folderId) && near(m)) list.push(['moms', m.id]); });
+  TD.forEach(d => { if (ids.has(d.folderId) && near(d)) list.push(['docs', d.id]); });
+  TMF.forEach(g => { if (ids.has(g.folderId) && near(g)) list.push(['momfolders', g.id]); });
+  TDF.forEach(g => { if (ids.has(g.folderId) && near(g)) list.push(['docfolders', g.id]); });
+  return list;
+}
+const colOf = kind => ({ a: 'folders', m: 'moms', f: 'docs', gm: 'momfolders', gf: 'docfolders' })[kind];
+const entryList = kind => (kind === 'a' ? deletedTree : (id => [[colOf(kind), id]]));
+const KIND_ICON = { a: 'shelf', m: 'doc', f: 'file', gm: 'folder-plus', gf: 'folder-plus' };
+
+on('restore', d => {
+  const list = entryList(d.kind)(d.id);
+  restoreBatch(list).then(() => toast('Restored', { icon: 'restore' }), () => toast('Couldn’t restore. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+on('purge', d => {
+  const e = deletedEntries().find(x => x.kind === d.kind && x.id === d.id); if (!e) return;
+  confirmDialog({ title: `Remove “${e.name}” forever?`, text: 'It is removed for good and cannot be brought back.', impact: `<b>This can’t be undone.</b>`, danger: true, cta: 'Remove forever', act: 'purge-now', data: { kind: d.kind, id: d.id } });
+});
+on('purge-now', d => {
+  const list = entryList(d.kind)(d.id);
+  closeAll();
+  purgeBatch(list).then(() => toast('Removed for good', { icon: 'trash' }), () => toast('Couldn’t remove it. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+on('empty-deleted', () => {
+  const n = deletedEntries().length;
+  confirmDialog({ title: 'Empty Deleted?', text: `Everything in Deleted (${plural(n, 'item')}) is removed for good.`, impact: '<b>This can’t be undone.</b>', danger: true, cta: 'Empty all', act: 'empty-deleted-now' });
+});
+on('empty-deleted-now', () => {
+  closeAll();
+  clearTrash().then(() => toast('Deleted is empty', { icon: 'trash' }), () => toast('Couldn’t empty Deleted. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
+});
+
+VIEWS.deleted = {
+  html() {
+    const list = deletedEntries();
+    const kindLabel = { a: 'Area', m: 'MoM', f: 'File', gm: 'Grouping', gf: 'Grouping' };
+    return `<div class="page">${pageHead('Recovery', 'Deleted', 'Kept for 7 days, then removed for good. Restore anything here.',
+      list.length ? btnHTML({ kind: 'quiet-danger', label: 'Empty all', act: 'empty-deleted' }) : '')}
+      ${list.length ? `<div class="list list-spaced">${list.map(e => `<div class="cw"><div class="row row-trash"><span class="ktile k-other">${ic(KIND_ICON[e.kind])}</span><span class="mid"><span class="t">${esc(e.name)}</span><span class="p">${kindLabel[e.kind]} · deleted ${esc(relDate(isoOf(e.at)))} · ${plural(e.left, 'day')} left</span></span></div>
+        <div class="trash-acts">${btnHTML({ kind: 'soft', sm: true, label: 'Restore', icon: 'restore', act: 'restore', data: { kind: e.kind, id: e.id } })}${iconBtnHTML({ icon: 'trash', label: `Remove ${e.name} forever`, sm: true, act: 'purge', data: { kind: e.kind, id: e.id } })}</div></div>`).join('')}</div>`
+        : emptyHTML({ icon: 'bin', title: 'Nothing deleted', text: 'Deleted MoMs, files, groupings and areas appear here for 7 days.', cls: 'empty-spaced' })}
+    </div>`;
+  },
+};
