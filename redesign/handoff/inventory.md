@@ -11,7 +11,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 - **Area**: a named place a person creates to organise work around one subject, such as a client, a team, or an initiative. Areas can sit inside other areas, to any depth. An area has a name, a small emoji to recognise it by, and a creation date.
 - **MoM** (minutes of meeting): a written record of a meeting. It has a title, a meeting date, free-text tags, an optional link to an outside document (e.g. a Google Doc), and a rich-text body.
 - **File**: either something uploaded (an image, PDF, video, or any other document) or a saved web link. It has a name, a kind, an optional short note, and the date it was added.
-- **Grouping**: a light, single-level way to bunch MoMs together, or files together, inside one area without creating a new area. A MoM grouping holds only MoMs and a file grouping holds only files. Things not in a grouping are "ungrouped".
+- **Grouping**: a light, single-level way to bunch MoMs together, or files together, inside one area without creating a new area. A MoM grouping holds only MoMs and a file grouping holds only files. Things not in a grouping simply sit in the area.
 - **Admin**: a person who runs the workspace.
 - **Member**: a person with an account who sees only the areas they've been given.
 - **Visitor**: someone without an account who opened a shared link.
@@ -24,9 +24,9 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **C2.** When I'm writing a MoM, I want it to save itself shortly after I pause typing, and to always know whether it is saving or saved, so that I never lose notes and never have to think about saving.
 
-**C3.** When I'm done with a MoM, I want to save and leave in one action (including a keyboard shortcut), so that I get back to where I came from.
+**C3.** When I'm done with a MoM, I want to be certain it's saved (including with a keyboard shortcut) and carry on with what I was doing, so that finishing a MoM never costs me my place.
 
-**C4.** When I record a meeting, I want to set its title, meeting date, and free-text tags, so that I can recognise and find it later.
+**C4.** When I record a meeting, I want to set its title, meeting date (defaulting to today), and free-text tags, so that I can recognise and find it later.
 
 **C5.** When a meeting has a companion document elsewhere (e.g. a Google Doc), I want to attach that link to the MoM and open it from there, so that the two stay connected.
 
@@ -40,7 +40,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 ## 2. Write and format a MoM
 
-**W1.** When I write, I want to format text with bold, italic, underline, and strikethrough; three heading levels plus normal text; a choice of typeface (a default sans-serif, Arial, Georgia, Times New Roman, Courier New, Trebuchet); text size from 10 to 48; text colour; highlight colour; alignment (start, centre, end); bulleted and numbered points; and quotes. I want to be able to clear formatting, undo, and redo, so that my notes are as structured as the meeting needs.
+**W1.** When I write, I want to format text with bold, italic, underline, and strikethrough; three heading levels plus normal text; a small choice of typefaces (sans-serif, serif, monospace); a wide range of text sizes; text colour; highlight colour; alignment (start, centre, end); bulleted and numbered points; and quotes. I want to be able to clear formatting, undo, and redo, so that my notes are as structured as the meeting needs.
 
 **W2.** While I write, I want to see which formatting is active where I'm typing, so that I know what I'll get.
 
@@ -69,27 +69,27 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **F1.** When I don't know where something is, I want one search across the whole workspace: areas by name, MoMs by title and opening text, and files by name and note. I want results separated by kind, each showing where it lives, and choosing one should take me there, so that I can find anything in seconds.
 
-**F2.** When I'm inside an area, I want to narrow its MoMs by title or content, its files by name, and its sub-areas by name, and sort each by newest or A–Z. If nothing matches, I want to be told so, so that I can find things in a busy area.
+**F2.** When an area gets busy, I want to narrow down what's in it by name or content, order things by newest or A–Z, and be told when nothing matches, so that I can find things without scrolling through everything.
 
-**F3.** When something matters a lot, I want to flag a MoM or file as important, see all flagged things in an area together, and unflag them, so that I can get back to them fast.
+**F3.** When something matters a lot, I want to flag a MoM or file as important, get back to everything I've flagged quickly, and unflag it later, so that important things are never buried.
 
-**F4.** When I open the app, I want to see my highest-level areas with how much each contains (or that it is password-restricted), and, for admins, what was most recently added across the workspace (with kind, location, and date), so that I can jump straight into today's work.
+**F4.** When I open the app, I want to get straight back into today's work, so that I don't have to hunt for where I stopped.
+
+**F4b.** As an admin, I want to notice what was recently added across the workspace (what it is, where it lives, and when it was added), so that I stay aware of what my team is producing.
 
 **F5.** When I'm deep inside nested areas, I want to always know where I am within the nesting (with restricted areas marked) and get to any enclosing area quickly, so that I never lose context.
 
 **F6.** When I have many nested areas, I want to reach any of them quickly from anywhere, without opening every level on the way, so that moving around stays fast.
 
-**F7.** When I want to come back to or send someone a specific place, I want every place in the app, including exactly what I'm looking at inside an area and every MoM, to have its own web address. The browser's back and forward should work, and reloading should return me to the same place, so that the app behaves like the web.
+**F7.** When I want to come back to or send someone a specific place, I want every area and every MoM to have its own web address. The browser's back and forward should work, and reloading should return me to the same place, so that the app behaves like the web.
 
-**F8.** When I look at an area, I want to see when it was created and how many sub-areas, MoMs, and files it holds, and how many items each grouping holds, so that I can judge its size at a glance.
+**F8.** When I'm in an area, I want a sense of how big and how old it is, so that I can judge it at a glance.
 
 **F9.** When I open a file, I want images to show at full size without leaving the app (and to dismiss them easily, including with Escape), and other kinds of files to open in the browser, so that I can check things without losing my place.
 
 **F10.** When I need a copy, I want to download a file to my device, falling back to opening it if a direct download isn't allowed, so that I can use it offline or attach it elsewhere.
 
 **F11.** When I scan files, I want to tell their kind apart at a glance (PDF, image, video, link, spreadsheet, presentation, other) and see small samples of images, so that I pick the correct one.
-
-**F12.** When I'm planning my day, I want to see today's date, so that I can date things correctly.
 
 ---
 
@@ -101,7 +101,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **O3.** When the structure needs rearranging, I want to move an area, with everything inside it, to any other area or to the highest level. Moving it into itself or into anything inside it must be impossible, so that reorganising is safe. *(Admin only)*
 
-**O4.** When an area has many MoMs or files, I want to create, rename, and remove groupings for them inside that area. Removing a grouping keeps its contents in the area as ungrouped, so that I can bunch things without deeper nesting. *(Removing is admin only)*
+**O4.** When an area has many MoMs or files, I want to create, rename, and remove groupings for them inside that area. Removing a grouping keeps its contents in the area, so that I can bunch things without deeper nesting. *(Removing is admin only)*
 
 **O5.** When something is filed in the wrong place, I want to move a MoM or file to any area or grouping in the workspace. I want to see where it currently is, search destinations by name, and be told when no destination matches, so that I can fix filing quickly.
 
@@ -121,7 +121,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **P2.** When I open a restricted area, or anything inside it, I want to be asked for the password, told clearly if it's wrong, and allowed to try again. Once I've opened it, it should stay open for this session until I restrict it again, and restricting it again shuts it immediately, even if I'm inside it, so that protection is real but not a constant nuisance.
 
-**P3.** While an area is restricted, I want its contents hidden everywhere (wherever areas are listed, in counts and summaries, in search, and inside it), with only the fact that it is restricted showing, so that nothing leaks.
+**P3.** While an area is restricted, I want its contents hidden everywhere (wherever areas appear, in counts and summaries, in search, and inside it), with only the fact that it is restricted showing, so that nothing leaks.
 
 **P4.** When a file is restricted, I want its name to stay visible but its note hidden, and to be unable to open, look inside, or download it until the password is entered, so that I know it exists without exposing it.
 
@@ -139,7 +139,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **S2.** When someone else edits the MoM I have open, I want their saved changes to appear in my copy without losing my place, so that two people can take notes on the same meeting.
 
-**S3.** When I'm working, I want to know whether the app is connecting, live, or offline, so that I trust what I see.
+**S3.** When I'm working, I want to know whether I'm connected and seeing the latest, so that I trust what I see.
 
 **S4.** When I do something (save, move, rename, restore, copy a link, set a password, etc.), I want a short confirmation, so that I know it worked.
 
@@ -147,7 +147,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 ## 7. Work anywhere
 
-**A1.** When I'm on my phone, I want every capability to work, with as much room as possible for what I'm reading or writing, and all actions available by touch (no hovering), so that I can take minutes in a meeting room.
+**A1.** When I'm on my phone, I want every capability to work, with as much room as possible for what I'm reading or writing, and every action reachable by touch, so that I can take minutes in a meeting room.
 
 **A2.** When I use the app daily, I want to install it on my phone or computer and have it open on its own like a native app, so that it's one tap away.
 
@@ -199,7 +199,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | **Read-only** | MoM or file marked final, as seen by a member |
 | **Visiting via shared link** | Shared area, shared MoM, shared file, shared file that is password-restricted, link turned off or missing |
 | **Selecting several** | Nothing selected, some selected, all matching selected |
-| **Live** | Connecting, live, offline; someone else's change arriving in an open MoM |
+| **Sync** | Current; catching up; no connection; someone else's change arriving in an open MoM |
 | **Shared / not shared** | An item's link sharing is on or off |
 | **Flagged / not flagged** | MoMs and files |
 | **New version available** | After an update is released |
@@ -226,7 +226,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | Mark MoM / file read-only | ✓ | | |
 | Create / turn off shared links | ✓ | | |
 | Grant / revoke member access | ✓ | | |
-| See what was recently added across the workspace | ✓ | | |
+| Notice what was recently added across the workspace (F4b) | ✓ | | |
 | Export MoM to PDF | ✓ | ✓ | |
 | Account details, change password, sign out | ✓ | ✓ | |
 
@@ -247,4 +247,4 @@ When a member attempts something admin-only, they are told plainly that only adm
 - Shared links work with no account and no sign-in.
 - Deleted items are recoverable for exactly 7 days.
 - Respects the reduced-motion preference.
-- Every action must be reachable by touch alone, with nothing that depends on hovering.
+- Every action must be reachable by touch alone.

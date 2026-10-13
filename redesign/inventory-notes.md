@@ -115,3 +115,17 @@ A second leak review removed wording that described the current layout. The curr
 | A1 | Navigation is a drawer on phones that closes after choosing a destination |
 | A2 | "Dock" wording |
 | Hard constraints | Manifest locks orientation to portrait |
+
+## 7. Leak test (Step 1b), run 1 — 2026-10-13
+Isolated `claude -p --tools "" --setting-sources local` in an empty folder, given only `handoff/inventory.md`. Full answer: `~/inventory-test/guess.md`.
+
+**Recovered correctly (leaks, now rewritten):** the area summary line plus four switchable sections (F2, F3, F7, F8); Home contents (F4); the date chip (F12); hover-revealed actions (A1, constraints); the "Ungrouped" label (glossary, O4); the Connecting / Live / Offline labels (S3, states); the full-screen editor with save-and-back (C3); font and size dropdowns (W1).
+**Missed (firewall held):** the permanent folder sidebar, the search entry point, files as rows, drill-in groupings, the inline bulk bar, the MoM action row, mobile.
+
+**Exact details removed from the inventory, which Agent C must still honour:**
+- W1 typefaces: default (Inter), Arial, Georgia, Times New Roman, Courier New, Trebuchet. Sizes: 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48.
+- F8: an area shows its created date and counts of sub-areas, MoMs and files. Each grouping shows its item count.
+- F4: the current Home shows outermost areas with item counts (or "Password protected"), and for admins only, the 5 most recently added MoMs and files.
+- F12 (today's date shown) was dropped. The MoM date defaults to today (C4).
+- F3: flags were grouped per area only. The inventory now says "everything I've flagged", widening the scope to the whole workspace (owner approved).
+- F7: deep links also encode the open section (`t=`) and grouping (`df=` / `mf=`).
