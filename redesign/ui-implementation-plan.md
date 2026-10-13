@@ -349,11 +349,11 @@ Tick each box when the build matches the prototype at that size and theme. **P**
 | 46 | Deleted · nothing deleted | [ ] | [ ] | [ ] | [ ] | |
 | 47 | Account · default | [ ] | [ ] | [ ] | [ ] | |
 | 48 | Account · install steps | [ ] | [ ] | [ ] | [ ] | |
-| 49 | Sign in · default | [ ] | [ ] | [ ] | [ ] | |
-| 50 | Sign in · wrong details | [ ] | [ ] | [ ] | [ ] | |
+| 49 | Sign in · default | [x] | [ ] | [x] | [x] | |
+| 50 | Sign in · wrong details | [ ] | [ ] | [x] | [ ] | |
 | 51 | Sign in · missing password | [ ] | [ ] | [ ] | [ ] | |
 | 52 | Reset · default / email missing / sent | [ ] | [ ] | [ ] | [ ] | |
-| 53 | New member | [ ] | [ ] | [ ] | [ ] | |
+| 53 | New member | [ ] | [ ] | [x] | [ ] | |
 | 54 | Shared area · normal | [ ] | [ ] | [ ] | [ ] | |
 | 55 | Shared area · nothing inside | [ ] | [ ] | [ ] | [ ] | |
 | 56 | Shared MoM | [ ] | [ ] | [ ] | [ ] | |
@@ -803,12 +803,22 @@ Each screen is done when its §4 map is implemented against real data, its defau
 
 ### Phase 6: Edge surfaces
 **Tasks**
-1. Sign in, Reset, New member, Missing page; remove the Phase 2 redirect.
-2. Guest views `#/s/a|m|f/:id` + Link unavailable; `visitor` role; old `?folder|mom|doc=` redirects.
-3. `.ed-body` content styles everywhere (editor, read-only, shared MoM, A4); legacy-content check on real old MoMs (W11).
-4. A4 export + print rules (Q1 decides the final action).
-5. PWA: `manifest.webmanifest`, `icon.svg`, `icons/apple-touch-icon.png`, theme-color metas, new `sw.js` precaching `next.html`'s shell, fonts and icons; `pwa.js` banner; Account → Install.
-6. Product name in every place it appears (`<title>`, manifest, sign-in, install copy, update banner, A4 stamp, visitor head). Taken from one constant `APP_NAME` in `ui/core.js` until Q2 is answered.
+- [x] 1. Sign in (`#/signin`), Reset (`#/reset`) and New member (`#/new-member`), in `js/ui/home.js`; "Stay signed in" in `session.signIn`
+- [ ] 1b. Missing page (not in this session's scope)
+- [x] 1c. Remove the Phase 2 redirect: there was none to remove. Signed-out visitors were already sent to `#/signin`, which is now the real screen
+- [ ] 2. Guest views `#/s/a|m|f/:id` + Link unavailable; `visitor` role; old `?folder|mom|doc=` redirects.
+- [ ] 3. `.ed-body` content styles everywhere (editor, read-only, shared MoM, A4); legacy-content check on real old MoMs (W11).
+- [ ] 4. A4 export + print rules (Q1 decides the final action).
+- [ ] 5. PWA: `manifest.webmanifest`, `icon.svg`, `icons/apple-touch-icon.png`, theme-color metas, new `sw.js` precaching `next.html`'s shell, fonts and icons; `pwa.js` banner; Account → Install.
+- [ ] 6. Product name in every place it appears (`<title>`, manifest, sign-in, install copy, update banner, A4 stamp, visitor head). Taken from one constant `APP_NAME` in `ui/core.js` until Q2 is answered.
+
+**Notes from Phase 6 task 1 (sign in, reset, new member, 2026-10-13):**
+- **Files.** Changed: `js/ui/home.js` (the three views and their forms, after the Deleted page, as the prototype's `home.js` does), `js/data/session.js` (`signIn(em, pw, stay)`: "Stay signed in" off means `SESSION` persistence; an old caller with no `stay` keeps `LOCAL`, so the old app is unchanged), `css/app.css` (three named auth rules, each with a one-line comment; the design's inline margins moved there).
+- **Behaviour.** Sign in: missing email or password gets its field message (both can show); a wrong email and password pair (real Firebase returns `auth/invalid-login-credentials`) shows the password message and the "Couldn’t sign you in" notice; any other failure shows the same notice (§6.3 mapping). The button is busy and can't be pressed twice. Success goes to `#/today`, and the guard sends someone with no areas to New member once access has loaded. Reset: no email gets the design's field message; a sent link and an address with no account show the same "Check your inbox" notice, so the form can't be used to find accounts. New member: "Check again" re-reads the page and says so if access is still missing; access itself arrives live.
+- **Interim copy (§9.1 G18).** Two messages are not in the design: a reset that fails for a reason other than a bad address (offline, too many tries), and a reset address that is malformed. Both are marked in the code.
+- **Checked (Chromium, real Firebase, nothing that writes data):** 28 checks: landing on `#/signin` with the shell hidden; title from `APP_NAME`; "Stay signed in" checked; empty and partly filled submits; the eye toggle; wrong details against the real Auth service (busy state, both messages, button usable again, stays on the page); Forgot password and Back; the reset empty and sent states; the new-member card; no page errors; no horizontal scroll at 390 px. Visual comparison with the prototype (`app.html`), sheet kept in the scratchpad: sign in default in light and dark, phone light, wrong details, reset empty and sent, new member. The new-member card in the build shows no name because no test account is signed in (Q4), so the name line is data-dependent and left to the owner's side-by-side review.
+- **Not checked:** a successful sign-in (no test account, Q4), so the post-sign-in path to Today or New member is not exercised here; "Stay signed in" off (persistence is set, but the session isn't exercised); the sign-in and reset **missing-password / phone dark / tablet** rows (§5 49–53 stay open where not ticked); the old app's three sign-in tests against the preview (not run here: they target the deployed site).
+- **Not done here:** the Missing page (task 1b), the `visitor` role and anonymous sign-in for share links (task 2).
 
 **Done when:** every §6 row has its counterpart built; §5 rows 49–63 are ticked; the installed preview opens offline.
 
@@ -884,6 +894,7 @@ Each is worded as a need, safe to paste into the studio. The owner carries them 
 - **G15 · Offline without the offline copy.** "In a private window (or a browser that refuses the offline copy), what I type offline lives only in this tab until the connection is back. What should the save pill and the offline banner say, so I don't close the tab thinking it's saved?" Interim: the pill stays "Saving…" (it never claims "Saved on this device"), and the banner keeps the design's wording.
 - **G16 · The remote change bar in a long note.** "When I'm far down a long MoM and a colleague saves, the bar appears above the note, out of sight. Should it follow me (sticky), or is a quieter sign enough?" Interim: in the page flow as in the prototype; nothing is lost while it's unseen, because saves merge.
 - **G17 · Where two people changed the same part.** "When I apply a colleague's changes and we both edited the same paragraph, what do I see?" Interim: both versions are kept, theirs first then mine, and the toast says so ("Where you both changed the same part, both versions are kept, theirs first."); there's no highlight.
+- **G18 · Sign-in and reset messages not in the design.** "When a password reset can't be sent (no connection, or too many tries), what does the person see, and what do they do next? When the reset address isn't a valid email, what does the field say?" (Interim: "Couldn’t send the reset email" with "Check your connection, then try again.", and "Check the email address, then try again.", both marked in `js/ui/home.js`.)
 
 ### 9.2 Questions for the owner
 - **Q1 · PDF export** (design open question 4): generate the PDF in the app (exact layout, file named after the title, no print dialog; the current library already does this), or print to PDF from the A4 preview? The designer recommends generating. Needed before Phase 6.

@@ -10,8 +10,11 @@ var FA=[],CURR_USER_ROLE='member',WORKSPACE_USERS=[],CURR_USER_RECENT=[];   // r
   }
 })();
 
-function signIn(em,pw){
-  return auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(function(){
+// stay: "Stay signed in on this device" (U1). Off → the session ends when the browser closes.
+// Old callers pass no stay value and keep the on-device session they always had.
+function signIn(em,pw,stay){
+  var kind=stay===false?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL;
+  return auth.setPersistence(kind).then(function(){
     return auth.signInWithEmailAndPassword(em,pw);
   });
 }

@@ -185,3 +185,97 @@ VIEWS.deleted = {
     </div>`;
   },
 };
+
+/* ---------- Sign in, Reset, New member (U1, U2, U4) ---------- */
+/* Wrong details: the two sign-in codes that mean "no such email and password pair". */
+const WRONG_DETAILS = ['auth/invalid-login-credentials', 'auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'];
+/* Clears the errors a previous submit left on an auth form. */
+function clearAuthErrors(f) {
+  f.querySelectorAll('.field.err').forEach(x => x.classList.remove('err'));
+  f.querySelectorAll('.ferr').forEach(x => x.remove());
+  f.querySelectorAll('[aria-invalid]').forEach(x => { x.removeAttribute('aria-invalid'); x.removeAttribute('aria-describedby'); });
+  f.querySelector('[data-slot="notice"]').innerHTML = '';
+}
+/* A submit button is busy and can't be pressed twice while the request is out. */
+function setSubmitting(btn, on) { busy(btn, on); btn.disabled = !!on; }
+
+VIEWS.signin = {
+  html() {
+    return `<div class="auth-wrap"><form class="auth" data-form="signin" novalidate>
+      <span class="brand-mark">${ic('book')}</span>
+      <h1>Sign in to ${esc(APP_NAME)}</h1>
+      <p class="sub">Your meetings, files and areas, in one place.</p>
+      <div data-slot="notice"></div>
+      ${fieldHTML({ id: 'sEmail', label: 'Email', control: inputHTML({ id: 'sEmail', name: 'email', type: 'email', autocomplete: 'username' }) })}
+      ${pwFieldHTML({ id: 'sPw', label: 'Password', autocomplete: 'current-password' })}
+      <label class="check-row"><input type="checkbox" name="stay" checked> Stay signed in on this device</label>
+      ${btnHTML({ kind: 'primary', label: 'Sign in', type: 'submit' })}
+      <div class="foot">${btnHTML({ kind: 'link', label: 'Forgot password?', href: '#/reset' })}</div>
+    </form></div>`;
+  },
+};
+onForm('signin', (f) => {
+  const email = f.elements.email.value.trim(), pw = f.elements.sPw.value;   // pwFieldHTML names its input after its id
+  const btn = f.querySelector('[type="submit"]');
+  clearAuthErrors(f);
+  if (!email) fieldError(f, 'sEmail', 'Enter your email address.');
+  if (!pw) fieldError(f, 'sPw', 'Enter your password.');
+  if (!email || !pw) return;
+  setSubmitting(btn, true);
+  signIn(email, pw, f.elements.stay.checked).then(() => {
+    go('#/today');   // the guard sends a person with no areas to New member once their access has loaded
+  }, (e) => {
+    setSubmitting(btn, false);
+    if (e && WRONG_DETAILS.includes(e.code)) fieldError(f, 'sPw', 'That email and password don’t match. Check them and try again.');
+    f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'danger', icon: 'alert', title: 'Couldn’t sign you in', text: 'Check your email and password, or reset your password.', role: 'alert' });
+  });
+});
+
+VIEWS.reset = {
+  html() {
+    return `<div class="auth-wrap"><form class="auth" data-form="reset" novalidate>
+      <span class="brand-mark">${ic('key')}</span>
+      <h1>Reset your password</h1>
+      <p class="sub">Enter the email you use for ${esc(APP_NAME)}. We’ll send a reset link to it.</p>
+      <div data-slot="notice"></div>
+      ${fieldHTML({ id: 'rEmail', label: 'Email', control: inputHTML({ id: 'rEmail', name: 'email', type: 'email', autocomplete: 'username', placeholder: 'you@company.com' }) })}
+      ${btnHTML({ kind: 'primary', label: 'Send reset email', type: 'submit' })}
+      <div class="foot">${btnHTML({ kind: 'link', label: 'Back to sign in', icon: 'arrow-left', href: '#/signin' })}</div>
+    </form></div>`;
+  },
+};
+onForm('reset', (f) => {
+  const email = f.elements.email.value.trim(), btn = f.querySelector('[type="submit"]');
+  clearAuthErrors(f);
+  if (!email) { fieldError(f, 'rEmail', 'Enter your email first, so we know where to send the link.'); return; }
+  const sent = () => {
+    setSubmitting(btn, false);
+    f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'info', icon: 'mail', title: 'Check your inbox', text: `If an account exists for ${email}, a reset link is on its way.`, role: 'status' });
+  };
+  setSubmitting(btn, true);
+  // An unknown email gets the same answer as a known one, so the form can't be used to find accounts.
+  sendReset(email).then(sent, (e) => {
+    if (e && e.code === 'auth/user-not-found') return sent();
+    setSubmitting(btn, false);
+    if (e && e.code === 'auth/invalid-email') fieldError(f, 'rEmail', 'Check the email address, then try again.');   // interim copy, see §9.1 G18
+    else f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'danger', icon: 'alert', title: 'Couldn’t send the reset email', text: 'Check your connection, then try again.', role: 'alert' });   // interim copy, see §9.1 G18
+  });
+});
+
+VIEWS.newmember = {
+  html() {
+    const me = currentUser();
+    return `<div class="auth-wrap"><div class="auth">
+      <span class="brand-mark">${ic('user')}</span>
+      <h1>Welcome to ${esc(APP_NAME)}</h1>
+      <p class="sub">Your account is ready, but you don’t have access to any areas yet. An admin can grant you access to a client or team, and everything inside it will appear here.</p>
+      <div class="notice info">${ic('info')}<div>You’re signed in as <b>${esc(me.name)}</b>.</div></div>
+      <div class="auth-acts">${btnHTML({ kind: 'primary', label: 'Check again', icon: 'refresh', act: 'refresh-access' })}${btnHTML({ kind: 'soft', label: 'Account', href: '#/account' })}</div>
+    </div></div>`;
+  },
+};
+/* Access arrives on its own (the access list is live), so this only re-reads the page and says if nothing has changed. */
+on('refresh-access', () => {
+  render();
+  if (sessionRole() === 'newmember') toast('Still no areas. We’ll show them here once an admin grants access.', { icon: 'info' });
+});

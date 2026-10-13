@@ -250,3 +250,10 @@ body.selecting .cw > .row { padding-left: 52px; }
 .side-skel .skel { display: block; height: 16px; min-height: 16px; border-radius: 8px; }
 .side-skel .skel:nth-child(2) { width: 78%; }
 .side-skel .skel:nth-child(3) { width: 56%; }
+
+/* Sign in, Reset, New member (design: auth card). The card's own rules live in base.css. */
+.auth .notice { margin-bottom: 16px; }   /* auth card: the notice sits above the fields */
+.auth .btn-primary { margin-top: 8px; }   /* auth card: the submit sits under the fields */
+.auth-acts { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }   /* new member card: the two actions */
+.auth-acts > .btn-primary { flex: 1; }
+.auth .foot .link-btn { padding: 0 4px; }   /* auth card: the links line up with the fields' text */
