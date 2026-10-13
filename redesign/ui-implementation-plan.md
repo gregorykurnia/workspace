@@ -573,8 +573,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 |---|---|---|---|
 | 1 | ✅ Move data code into `js/data/`, `Store.onChange`, write promises | **Opus · high** | Every Firebase call must move with no visible change; a slip breaks production |
 | 1 | ✅ `sw.js` navigation-cache fix | Sonnet · high | Small, but service-worker bugs are hard to see |
-| 2 | Copy `tokens.css`, port the 3 stylesheets, `app.css`, fonts, icons sprite | **Haiku · high** | Copying with exact references |
-| 2 | `next.html` shell, theme boot script | Haiku · high | Copying from `prototype/app.html` |
+| 2 | ✅ Copy `tokens.css`, port the 3 stylesheets, `app.css`, fonts, icons sprite | **Haiku · high** | Copying with exact references |
+| 2 | ✅ `next.html` shell, theme boot script | Haiku · high | Copying from `prototype/app.html` |
 | 2 | `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
 | 2 | `ui/shell.js`: sidebar, rail, top bar, tabs, tree, crumbs | Sonnet · high | Real data, permissions, restricted areas, crumb folding |
 | 2 | Data additions: sync state, persistence, visibility rules (`canSee`, `lockedArea`, `hiddenItem`, …) | **Opus · high** | Decides what members and visitors can see (P3, P6); offline persistence |
@@ -628,14 +628,22 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 
 ### Phase 2: Tokens, base styles and the app shell
 **Tasks**
-1. `css/tokens.css` (copy), `css/base.css`, `css/views.css`, `css/editor.css`, `css/app.css` (2.3 rules); `fonts/` with `@font-face`.
-2. `next.html` with the shell skeleton (2.6), the theme boot script, and script tags.
+- [x] 1. `css/tokens.css` (copy), `css/base.css`, `css/views.css`, `css/editor.css`, `css/app.css` (2.3 rules); `fonts/` with `@font-face`.
+- [x] 2. `next.html` with the shell skeleton (2.6), the theme boot script, and script tags.
 3. `js/ui/icons.js`, `js/ui/core.js` (delegation, `layer`, `menu`, `confirmDialog`, `toast`, router + guard + legacy-address redirect, `render`, skeleton, banners, keyboard model).
 4. `js/ui/shell.js`: sidebar, tablet rail, top bar (breadcrumb, ⌘K trigger, sync pill, split New, avatar), phone top bar, tab bar, tree. Use placeholders only for screens that don't exist yet.
 5. Data-layer additions: sync state, `enablePersistence`, the visibility rules from 2.5.
 6. Signed-out visitors to `next.html` are sent to `index.html` (temporary, removed in Phase 6).
 
 **Done when:** `next.html` shows the real tree, crumbs and sync state at 390 / 900 / 1280 px in light and dark, with the shell matching the prototype; reduced motion is respected; old tests still pass on `index.html`.
+
+**Notes from Phase 2 tasks 1–2 (2026-10-13):**
+- **Stylesheets.** `css/tokens.css` is a byte-for-byte copy (`cmp` identical). `css/views.css` and `css/editor.css` are copied unchanged from the prototype. `css/base.css` is the prototype file minus the `.demo-link` rules and the "Prototype panel" section, including its `.proto` lines inside the two responsive blocks (16 lines removed). `css/app.css` holds the `@font-face` rules and the Tiptap internals, scoped under `.ed-body` (the editor root is `.ed-body.ProseMirror`). Colours in `app.css` are tokens only.
+- **Font.** There were no font files in the repo, so `fonts/PlusJakartaSans-latin.woff2` and `fonts/PlusJakartaSans-latin-ext.woff2` were downloaded from Google Fonts (variable 400–800, OFL licence). The `unicode-range` values are Google's. Phase 6 checks the Google Fonts link is gone everywhere.
+- **Icons (part of task 3).** `js/ui/icons.js` is the prototype sprite (87 icons), with a guard so it is injected once and an id `icon-sprite`. `js/ui/core.js` is still to do.
+- **`next.html`.** Skeleton from §2.6 with the prototype's `.proto` panel removed. The `#topbar` id is not used (`topbar` is an old element id under §10); the `.topbar` class is kept. The prototype's description and the manifest and icon links are left out until Phase 6. The `<title>` is a placeholder ("Workbench") until Q2. The theme boot script is the 3-line inline script in `<head>`, before the stylesheets, and reads `G_theme`. The Firebase compat scripts carry SRI hashes (9.23.0). Script tags cover `js/ui/icons.js` and `js/data/*.js`; `ui/core.js`, `ui/shell.js` and the others get their tags with their own tasks. Quill, html2pdf and Tiptap are not loaded here.
+- **Not done yet:** task 3 (core.js), 4 (shell.js), 5 (data-layer additions) and 6 (signed-out redirect to `index.html`).
+- **Checked:** Chromium smoke test (30 checks) at 390, 900 and 1280 px: no page errors, shell elements present, no prototype panel, sprite injected once with 87 symbols, the font loads from `fonts/`, body font is Plus Jakarta Sans, none of the 31 old ids are present, `G_theme` dark / light / system / unset behaves as specified, dark and light backgrounds differ, the boot script sits before the stylesheets, and no horizontal scroll at any width. `index.html` is unchanged. Not checked yet: a visual comparison with the prototype (Phase 3 gallery and §8.2), and the font's latin-ext subset (it loads only for non-Latin text).
 
 ### Phase 3: Components (all variants and states)
 **Tasks**
@@ -729,6 +737,7 @@ Each is worded as a need, safe to paste into the studio. The owner carries them 
 - **G8 · A restricted sub-area inside a shared area.** "When a visitor browses a shared area that contains a restricted sub-area, what do they see, and can they open it with the password?"
 - **G9 · Other failed actions.** "When a move, rename, flag, share or restriction change can't be saved (for example, permission refused by the server), what does the confirmation say, and what's the way forward?"
 - **G10 · Room to write on a computer.** "When I write on a computer, I sometimes want as much width as possible for the note, with the rest of the app out of the way."
+- **G11 · Colours outside the tokens.** "The prototype uses some colours that aren't tokens: white text on the accent colour, the lightbox overlay and its buttons, the success and warning ticks in toasts, the brand mark gradient, the install step numbers, and the paper colours of the A4 export. Every colour in the app must come from a named token, so each of these needs one, or the owner confirms it as an exception." (Plan §10 allows only the A4 paper.)
 
 ### 9.2 Questions for the owner
 - **Q1 · PDF export** (design open question 4): generate the PDF in the app (exact layout, file named after the title, no print dialog; the current library already does this), or print to PDF from the A4 preview? The designer recommends generating. Needed before Phase 6.

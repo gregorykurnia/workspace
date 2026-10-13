@@ -1,0 +1,71 @@
+/* ============================================================
+   VIEWS — defaults that switch between desktop and phone, and
+   the few rules the feature views need. Values come from tokens.
+   ============================================================ */
+
+/* Desktop defaults. Phone rules in base.css turn these on. */
+.back-btn, .search-btn, .phone-title { display: none; }
+.tabbar { display: none; }
+.phone-only { display: none; }
+.desk-only { display: block; }
+
+/* Bare routes (sign-in, reset, new member) and visitors show no chrome. */
+.bare .side, .bare .topbar, .bare .tabbar { display: none; }
+.bare .shell { grid-template-columns: minmax(0, 1fr); }
+body.visitor .topbar { display: none; }
+body.visitor .tabbar { display: none; }
+
+/* Menus: the list inside a menu layer. */
+.layer-menu .menu-list { display: flex; flex-direction: column; }
+.layer-menu .mi { white-space: nowrap; }
+
+/* Items inside a selectable list keep room for the check box. */
+.cw .sel-box { pointer-events: none; }
+.selecting .cw .mcard, .selecting .cw .ftile { cursor: pointer; }
+
+/* Skeleton block used while loading. */
+.skel { min-height: 20px; }
+
+/* Visitor pages (shared links). */
+.vpage .ed-body { font-size: var(--fs-md); }
+
+/* Editor canvas holds absolutely positioned table and bubble layers. */
+#edCanvas { position: relative; }
+#ttools { position: absolute; left: 0; right: 0; }
+
+/* Phone: the desk-only parts go, the phone-only parts appear. */
+@media (max-width: 767px) {
+  .desk-only { display: none; }
+  .phone-only { display: block; }
+  .phone-hide { display: none !important; }
+  .back-btn { display: inline-grid; }
+  .phone-title { display: block; }
+  .search-btn { display: inline-grid; }
+  .tabbar { display: grid; }
+  .side-bottom { display: none; }
+  .tree-page .side-tree { overflow: visible; }
+  .tree-page .tree-row .nm { padding-right: 8px; }
+  .tree-page .tree-row .nm .lk { display: inline-flex; }
+}
+
+/* Desktop: the sidebar's bottom group sits at the foot of the column. */
+.side-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+.side-tree .tree-row .ct { flex: none; }
+
+/* Keep the tree and the sidebar footer from pushing the page. */
+.side .side-tree { min-height: 0; }
+.side .side-foot { flex: none; }
+
+/* Top-bar breadcrumb stays on one line and clips, never wraps. */
+.top-crumbs { min-width: 0; overflow: hidden; }
+.top-crumbs .crumbs { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+.top-crumbs .crumb { max-width: 180px; }
+
+/* Phone: the home tiles share the width evenly and never push the hero wider than the screen. */
+@media (max-width: 767px) {
+  .hero { min-width: 0; }
+  .quick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .qtile { min-width: 0; min-height: 0; padding: 14px 12px; gap: 10px; }
+  .qtile:not(.primary) small { display: none; }
+  .qtile:not(.primary) b { font-size: 14.5px; }
+}

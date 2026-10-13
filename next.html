@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F8FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1120" media="(prefers-color-scheme: dark)">
+<title>Workbench</title>
+<script>
+(function(){try{var t=localStorage.getItem('G_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/views.css">
+<link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+
+<div class="shell">
+  <aside class="side" id="side" aria-label="Workspace"></aside>
+  <div class="col">
+    <header class="topbar"></header>
+    <div class="banners" id="banners" aria-live="polite"></div>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+<div id="layers"></div>
+
+<div class="dropzone-overlay" id="dropOverlay" aria-hidden="true">
+  <div>
+    <span class="art"><svg class="i xl" aria-hidden="true"><use href="#i-upload"/></svg></span>
+    <h2 id="dropTitle">Drop to add</h2>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<input type="file" id="fileInput" multiple hidden>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" integrity="sha384-ajMUFBUFMCyjh8uxJg6bkGcKe9RTolyjwbxB3yES0QQMenP3Oztj/W9vA2SJPcIh" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" integrity="sha384-XMIl1b2Ez9tKAM0R5q67/iLdfnlLBl9kfo40X5WMtCPb+3OLplrjnOxZTYCg1SKY" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" integrity="sha384-xD1t9dGSVKobUztxDkv6xUI0H4AnFz0NxwlgDJJ7FDlblG9xxr1Z9iauCZuJYj6p" crossorigin="anonymous"></script>
+<script src="js/ui/icons.js"></script>
+<script src="js/data/firebase.js"></script>
+<script src="js/data/store.js"></script>
+<script src="js/data/actions.js"></script>
+<script src="js/data/uploads.js"></script>
+<script src="js/data/content.js"></script>
+<script src="js/data/search.js"></script>
+<script src="js/data/session.js"></script>
+</body>
+</html>

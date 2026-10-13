@@ -1,0 +1,58 @@
+/* App-only rules the prototype never needed. Tokens only: no raw colours here.
+   Load order: tokens.css, base.css, views.css, editor.css, app.css. */
+
+/* Self-hosted Plus Jakarta Sans (design guide §8). Variable weight 400–800. */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('../fonts/PlusJakartaSans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('../fonts/PlusJakartaSans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Tiptap internals (library structure, not design). Scoped under .ed-body so they never reach
+   other pages. Colours come from tokens. */
+.ed-body.ProseMirror {
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+}
+.ed-body .ProseMirror [contenteditable="false"] { white-space: normal; }
+.ed-body .ProseMirror-gapcursor { display: none; pointer-events: none; position: absolute; margin: 0; }
+.ed-body .ProseMirror-gapcursor:after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 20px;
+  border-top: 1px solid var(--text);
+  animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite;
+}
+@keyframes ProseMirror-cursor-blink { to { visibility: hidden; } }
+.ed-body.ProseMirror-focused .ProseMirror-gapcursor,
+.ed-body .ProseMirror-focused .ProseMirror-gapcursor { display: block; }
+.ed-body .tableWrapper { overflow-x: auto; }
+.ed-body .resize-cursor { cursor: ew-resize; cursor: col-resize; }
+.ed-body .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  z-index: 20;
+  background-color: var(--accent);
+  pointer-events: none;
+}
+.ed-body .selectedCell { background: var(--accent-tint); }
