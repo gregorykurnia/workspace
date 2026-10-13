@@ -567,6 +567,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 - **Haiku 5.5 · high:** mechanical porting with an exact reference. The prototype already shows the result; the work is copying and wiring.
 - **Sonnet 5.5 · high** (or Haiku 5.5 · xhigh, if the trial below shows it's good enough): many rules to keep track of, with real data, but nothing that can damage stored data or the live app.
 - **Opus 5.5 · high:** the work where a subtle mistake breaks the live app, loses notes, or is hard to undo, plus deep Tiptap and Firestore behaviour.
+- **Opus 5.5 · medium:** needs Opus's knowledge of Tiptap or Firestore, but the task is clearly specified, so less reasoning per step is enough.
 - **Opus review:** at the end of every phase, a fresh Opus session reviews the phase's diff against this plan and the prototype before the phase counts as done. Reviewing costs far less than writing, and it catches drift from the prototype.
 
 | Phase | Task | Model · effort | Why |
@@ -589,13 +590,13 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 4 | Upload dialog with progress and the 4 failure reasons | Sonnet · high | Error mapping and Cloudinary edge cases |
 | 4 | Password dialogs, restricted gates, Lock again | Sonnet · high | Security-sensitive logic |
 | 5 | Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
-| 5 | Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · high** | Firestore offline behaviour |
-| 5 | Remote change bar (S2), colleague toast (S1) | **Opus · high** | Live sync edge cases |
+| 5 | Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
+| 5 | Remote change bar (S2), colleague toast (S1) | **Opus · high** | Applying someone else's changes while you type, without losing your place or unsaved edits; the most subtle logic in the app |
 | 6 | Sign in, Reset, New member, Missing page | Haiku · high | Fixed screens |
 | 6 | Guest views, `visitor` role, old share-link redirects | Sonnet · high | Access rules for people without accounts |
 | 6 | `.ed-body` content styles, A4 export, print | Sonnet · high | Check against real old notes |
 | 6 | Manifest, icons, theme-color, new `sw.js`, `pwa.js` banner | Sonnet · high | Service-worker caching |
-| 7 | Switch-over commit and deletions | **Opus · high** | One commit replaces the app |
+| 7 | Switch-over commit and deletions | Sonnet · high | Mostly deleting files and running the old-names check and tests; the phase's Opus review is the safety net |
 | 7 | Old-names check script | Haiku · high | Simple script |
 | 8 | Playwright tests from §8.1 | Haiku · high | Written from the behaviour table |
 | 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
