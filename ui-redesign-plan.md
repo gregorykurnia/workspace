@@ -285,8 +285,8 @@ The only influence that should remain is the feature set itself, which the new d
 **Rebuild**
 - [x] Step 7: `redesign` branch created
 - [ ] Phase 1: data logic separated from rendering, no visual change, tests green
-- [ ] Phases 2–6: tokens, shell, components, screens, states, edge surfaces
-- [ ] Phase 7: old CSS, rendering code, and class names deleted
+- [ ] Phases 2–6: tokens, shell, components, screens, states, edge surfaces (all built; the owner's side-by-side review and the member test account are still open)
+- [x] Phase 7: old CSS, rendering code, and class names deleted (commit `18c57b9`, old-names check passes; the phase's Opus review is still to do)
 - [ ] Phase 8: Playwright tests rewritten and passing; screenshots match prototype; accessibility check passes
 - [ ] Every coverage matrix row and reverse coverage item ticked
 - [ ] Merged to `main`; `CLAUDE.md` updated to describe the new UI

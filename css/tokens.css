@@ -1,0 +1,234 @@
+/* ============================================================
+   DESIGN TOKENS — Daybook (B's shapes and type, A's indigo)
+   Light is the default. Dark is the same set of names, redefined.
+   Every colour, type size, space, radius, shadow and motion value
+   used by the prototype comes from this file.
+   ============================================================ */
+
+:root {
+  /* ---------- Typeface ---------- */
+  --font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---------- Type scale (px) ---------- */
+  --fs-xs: 12.5px;   /* captions, file meta, counts */
+  --fs-sm: 14px;     /* secondary text, chips, buttons (small) */
+  --fs-base: 15.5px; /* body UI */
+  --fs-md: 17px;     /* editor body, row titles */
+  --fs-lg: 20px;     /* section headings */
+  --fs-xl: 30px;     /* page titles */
+  --fs-2xl: 40px;    /* home hero */
+  --lh-tight: 1.15;
+  --lh-base: 1.5;
+  --lh-editor: 1.72;
+  --fw-regular: 500;
+  --fw-semi: 650;
+  --fw-bold: 750;
+  --fw-heavy: 800;
+
+  /* ---------- Spacing (4 px base) ---------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-7: 32px; --sp-8: 40px; --sp-9: 48px; --sp-10: 64px;
+
+  /* ---------- Touch and hit areas ---------- */
+  --hit: 44px;        /* minimum touch target, every control */
+  --top-h: 64px;      /* top bar, desktop */
+  --top-h-phone: 60px;
+  --tab-h: 72px;      /* bottom tabs, phone */
+  --side-w: 272px;    /* sidebar, desktop */
+
+  /* ---------- Radius ---------- */
+  --r-sm: 12px;   /* small controls, menu rows */
+  --r-md: 16px;   /* inputs, small cards, tiles */
+  --r-lg: 20px;   /* cards, panels */
+  --r-xl: 24px;   /* large cards, sheets */
+  --r-2xl: 30px; /* hero, dialogs */
+  --r-pill: 999px;
+
+  /* ---------- Colour: surfaces and text ---------- */
+  --bg: #F7F8FC;          /* app canvas: cool white */
+  --surface: #FFFFFF;     /* cards, dialogs, editor paper */
+  --surface-2: #F1F3FA;   /* soft wells, shelves, hover */
+  --surface-3: #E6EAF6;   /* pressed, segmented track */
+  --line: #E6E9F3;        /* hairlines */
+  --line-2: #CFD5E6;      /* input borders, dashed targets */
+  /* Contrast figures below are measured (WCAG 2.x), not estimated. */
+  --text: #161B2E;        /* primary text: 17.1:1 on white */
+  --text-2: #4A5170;      /* secondary text: 7.8:1 on white */
+  --text-3: #626A88;      /* tertiary text, meta: 5.3:1 on white, 4.8:1 on surface-2 */
+
+  /* ---------- Colour: accent (indigo, from Folio) ---------- */
+  --accent: #4F46E5;        /* decorative only: icons, dots, list markers */
+  --accent-strong: #4338CA; /* accent TEXT: 7.9:1 on white, 7.0:1 on accent-tint */
+  --accent-hover: #3730A3;
+  --accent-tint: #EEF0FF;
+  --accent-tint-2: #DDE1FF;
+  --accent-fill: #4338CA;       /* filled buttons and tiles; white on it 7.9:1 */
+  --accent-fill-hover: #3730A3;
+  --on-accent: #FFFFFF;         /* text and icons on accent-fill */
+
+  /* ---------- Colour: sky (links, tags, focus ring) ---------- */
+  --sky: #3B82F6;
+  --sky-strong: #1D5FB8;  /* link text: 6.2:1 on white, 5.4:1 on sky-tint */
+  --sky-tint: #E7F0FD;
+  --hero-glow: rgba(255, 255, 255, .7);   /* soft light in the corner of the home hero */
+
+  /* ---------- Colour: washes (cool, sky to lavender) ---------- */
+  --wash: linear-gradient(118deg, #E4F0FF 0%, #EEEAFD 46%, #F6EFFF 100%);
+  --t-sky: #E4F0FD;
+  --t-lilac: #EEEAFD;
+  --t-mint: #E2F5EC;
+  --t-sun: #FFF3D6;   /* the only warm wash, used for area tint only */
+  --t-rose: #FCEAF1;
+
+  /* ---------- Colour: amber (one warm accent: flags and highlights) ---------- */
+  --flag: #DC6803;        /* flag icon and highlight marks: 3.5:1 on white (non-text, 3:1 needed) */
+  --flag-strong: #A45107; /* amber text: 5.6:1 on white */
+  --flag-tint: #FFF4E0;
+
+  /* ---------- Colour: state ---------- */
+  --success: #067647;      /* text: 5.1:1 on success-tint */
+  --success-icon: #079455;
+  --success-tint: #E4F6EC;
+  --warn: #92400E;         /* offline and sync-warning text: 6.5:1 on warn-tint */
+  --warn-tint: #FFF3DC;
+  --danger: #B42318;       /* error text: 5.8:1 on danger-tint */
+  --danger-solid: #D92D20; /* danger icons and fills; white on it 4.8:1 */
+  --danger-tint: #FDECEB;
+
+  /* ---------- Colour: file kinds (icon colour, tile tint) ---------- */
+  --k-pdf: #C4372E;    --k-pdf-t: #FCEBEA;
+  --k-image: #6D4BD0;  --k-image-t: #F0EBFD;
+  --k-video: #B9296F;  --k-video-t: #FBE8F2;
+  --k-sheet: #1E7A49;  --k-sheet-t: #E3F4EA;
+  --k-slides: #B45309; --k-slides-t: #FDF0DC;
+  --k-link: #1D5FB8;   --k-link-t: #E4EFFC;
+  --k-other: #4A5170;  --k-other-t: #EEF0F6;
+
+  /* ---------- Elevation ---------- */
+  --shadow-1: 0 1px 2px rgba(22, 27, 46, .05), 0 0 0 1px rgba(22, 27, 46, .035);
+  --shadow-2: 0 2px 6px rgba(22, 27, 46, .05), 0 12px 32px -10px rgba(22, 27, 46, .14), 0 0 0 1px rgba(22, 27, 46, .03);
+  --shadow-3: 0 20px 60px -14px rgba(22, 27, 46, .30), 0 4px 12px rgba(22, 27, 46, .08), 0 0 0 1px rgba(22, 27, 46, .04);
+  --scrim: rgba(22, 27, 46, .28);
+  --focus: 0 0 0 3px #FFFFFF, 0 0 0 5.5px var(--sky-strong);
+
+  /* ---------- Motion ---------- */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --dur-1: 140ms;
+  --dur-2: 220ms;
+  --dur-3: 340ms;
+
+  /* ---------- Breakpoints (used in media queries; CSS cannot read vars) ----------
+     phone:   max-width 767px   (bottom tabs, sheets, full-screen editor)
+     tablet:  768px to 1023px   (sidebar collapses to a rail)
+     desktop: min-width 1024px  (sidebar, top bar with search)                        */
+  color-scheme: light;
+}
+
+/* ---------- Dark: follows the system unless the user chooses light ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1120;
+    --surface: #161B2D;
+    --surface-2: #1C2238;
+    --surface-3: #262E49;
+    --line: #262D46;
+    --line-2: #3A4364;
+    --text: #EDF0FA;
+    --text-2: #BCC3DE;
+    --text-3: #A3AACB;
+    --accent: #818CF8;
+    --accent-strong: #A5B4FC;
+    --accent-hover: #C7D2FE;
+    --accent-fill: #5048E5;       /* white on it 6.2:1 */
+    --accent-fill-hover: #4338CA;
+    --hero-glow: rgba(129, 140, 248, .16);
+    --accent-tint: #252B4D;
+    --accent-tint-2: #323A66;
+    --sky: #60A5FA;
+    --sky-strong: #93C5FD;
+    --sky-tint: #1B2A46;
+    --wash: linear-gradient(118deg, #1A2540 0%, #1F1D3D 46%, #26193A 100%);
+    --t-sky: #1B2A46;
+    --t-lilac: #252243;
+    --t-mint: #17322A;
+    --t-sun: #3A3015;
+    --t-rose: #3A1F2C;
+    --flag: #FBB040;
+    --flag-strong: #FCD34D;
+    --flag-tint: #3A2C12;
+    --success: #6EE7B0;
+    --success-icon: #34D399;
+    --success-tint: #13302A;
+    --warn: #FCD34D;
+    --warn-tint: #3A2F12;
+    --danger: #FDA29B;
+    --danger-solid: #D92D20;
+    --danger-tint: #3A1A1F;
+    --k-pdf: #F9A29B;    --k-pdf-t: #3A1C1E;
+    --k-image: #C4B5FD;  --k-image-t: #261F40;
+    --k-video: #F9A8D4;  --k-video-t: #3A1D2E;
+    --k-sheet: #86EFAC;  --k-sheet-t: #14301F;
+    --k-slides: #FCD34D; --k-slides-t: #3A2E12;
+    --k-link: #93C5FD;   --k-link-t: #1B2A46;
+    --k-other: #BCC3DE;  --k-other-t: #222842;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .05);
+    --shadow-2: 0 2px 6px rgba(0, 0, 0, .3), 0 14px 32px -10px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .05);
+    --shadow-3: 0 24px 64px -14px rgba(0, 0, 0, .7), 0 4px 12px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .06);
+    --scrim: rgba(3, 5, 14, .6);
+    --focus: 0 0 0 3px #0E1120, 0 0 0 5.5px var(--sky-strong);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1120;
+  --surface: #161B2D;
+  --surface-2: #1C2238;
+  --surface-3: #262E49;
+  --line: #262D46;
+  --line-2: #3A4364;
+  --text: #EDF0FA;
+  --text-2: #BCC3DE;
+  --text-3: #A3AACB;
+  --accent: #818CF8;
+  --accent-strong: #A5B4FC;
+  --accent-hover: #C7D2FE;
+  --accent-fill: #5048E5;
+  --accent-fill-hover: #4338CA;
+  --hero-glow: rgba(129, 140, 248, .16);
+  --accent-tint: #252B4D;
+  --accent-tint-2: #323A66;
+  --sky: #60A5FA;
+  --sky-strong: #93C5FD;
+  --sky-tint: #1B2A46;
+  --wash: linear-gradient(118deg, #1A2540 0%, #1F1D3D 46%, #26193A 100%);
+  --t-sky: #1B2A46;
+  --t-lilac: #252243;
+  --t-mint: #17322A;
+  --t-sun: #3A3015;
+  --t-rose: #3A1F2C;
+  --flag: #FBB040;
+  --flag-strong: #FCD34D;
+  --flag-tint: #3A2C12;
+  --success: #6EE7B0;
+  --success-icon: #34D399;
+  --success-tint: #13302A;
+  --warn: #FCD34D;
+  --warn-tint: #3A2F12;
+  --danger: #FDA29B;
+  --danger-solid: #D92D20;
+  --danger-tint: #3A1A1F;
+  --k-pdf: #F9A29B;    --k-pdf-t: #3A1C1E;
+  --k-image: #C4B5FD;  --k-image-t: #261F40;
+  --k-video: #F9A8D4;  --k-video-t: #3A1D2E;
+  --k-sheet: #86EFAC;  --k-sheet-t: #14301F;
+  --k-slides: #FCD34D; --k-slides-t: #3A2E12;
+  --k-link: #93C5FD;   --k-link-t: #1B2A46;
+  --k-other: #BCC3DE;  --k-other-t: #222842;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .05);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, .3), 0 14px 32px -10px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .05);
+  --shadow-3: 0 24px 64px -14px rgba(0, 0, 0, .7), 0 4px 12px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .06);
+  --scrim: rgba(3, 5, 14, .6);
+  --focus: 0 0 0 3px #0E1120, 0 0 0 5.5px var(--sky-strong);
+  color-scheme: dark;
+}

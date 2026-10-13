@@ -18,13 +18,12 @@ timeout: 30000,
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
     },
-    // Mobile disabled on CI — Firebase auth consistently times out on Pixel 5 emulation
-    // Re-enable locally with: npx playwright test --project=mobile
-    // {
-    //   name: 'mobile',
-    //   use: { ...devices['Pixel 5'] },
-    // },
+    // Phone: a plain 390 × 844 touch viewport. Not Pixel 5 device emulation, which timed out on CI (plan §8.1).
+    {
+      name: 'phone',
+      use: { viewport: { width: 390, height: 844 }, hasTouch: true },
+    },
   ],
 });
