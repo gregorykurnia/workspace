@@ -72,11 +72,11 @@ const adminAttr = (k, label) => can(k) ? '' : ` data-admin="${esc(label)}" aria-
    from the data layer. Everything below is derived from those and from plain lookups. */
 const area = id => gf(id) || null;
 const mom = id => M.find(m => m.id === id) || null;
-const chainOf = id => pathTo(id).map(gf);
+const chainOf = id => areaChain(id);
 const groupName = id => (MF.find(g => g.id === id) || DF.find(g => g.id === id) || {}).name || '';
 function descIds(id) {
-  const out = [id];
-  (function walk(p) { kids(p).forEach(k => { out.push(k.id); walk(k.id); }); })(id);
+  const out = [id], seen = new Set(out);
+  (function walk(p) { kids(p).forEach(k => { if (seen.has(k.id)) return; seen.add(k.id); out.push(k.id); walk(k.id); }); })(id);
   return out;
 }
 function visibleRoots() {
@@ -341,8 +341,8 @@ function skeletonHTML() {
 }
 
 /* Sync status (S3). "short" is what the top bar shows; "text" is the tooltip and screen-reader text.
-   Store.sync ('ok' | 'catchup' | 'offline') comes from the data layer; until it exists the
-   browser's own online flag decides. */
+   Store.sync ('ok' | 'catchup' | 'offline') comes from the data layer (store.js); the online
+   flag is only a fallback if it is ever missing. */
 function syncState() {
   const s = Store.sync;
   if (s === 'ok' || s === 'catchup' || s === 'offline') return s;
