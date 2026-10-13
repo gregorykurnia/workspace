@@ -369,6 +369,36 @@ on('editor-menu', (d, el) => {
   ], 'MoM');
 });
 on('blocked-final', () => toast('This is marked final, so it can’t be changed.', { icon: 'lock', tone: 'warn' }));
+
+/* ---------- A4 export (W9) ---------- */
+/* The design's "Print or save as PDF" (plan Q1 is still open: the alternative is generating the file
+   in the app). The page is the note as it is on screen now, with unsaved edits, filtered like a guest
+   note, so what prints is what is shown. */
+on('export-pdf', d => {
+  const m = mom(d.id || ED.id); if (!m) return;
+  const live = ED.id === m.id && ED.editor;
+  const c = live ? current(m) : { title: m.title || '', date: isoOf(m.date), tags: Array.isArray(m.tags) ? m.tags : [] };
+  const title = c.title || 'Untitled meeting';
+  const a = area(m.folderId);
+  const body = safeNoteHTML(live ? ED.editor.getHTML() : (isDeltaContent(m.content) ? '' : m.content)) || '<p>No notes yet.</p>';
+  closeAll();
+  layer({
+    label: 'Export as PDF', cls: 'layer-lightbox',
+    html: `<div class="a4-dlg print-area">
+      <div class="dlg-head"><div class="tt2"><h2>Export as A4 PDF</h2><p>Named “${esc(title)}.pdf”. Preview below, then print or save as PDF.</p></div><button type="button" class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button></div>
+      ${a4HTML({ title, area: a ? a.name : '', date: c.date, tags: c.tags, body, stamp: `Exported ${fmtDate(todayISO())}` })}
+      <div class="dlg-foot">${btnHTML({ kind: 'soft', label: 'Close', act: 'close' })}${btnHTML({ kind: 'primary', label: 'Print or save as PDF', icon: 'export', act: 'print-now', data: { title } })}</div></div>`,
+  });
+});
+/* The browser names the saved file after the page title, so it is the note's title while printing. */
+on('print-now', d => {
+  const before = document.title;
+  document.title = d.title || before;
+  const restore = () => { document.title = before; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  window.print();
+  setTimeout(restore, 1500);   // a browser that never reports afterprint
+});
 on('ed-rename', () => { const t = $('#edTitle'); if (!t) return; t.focus(); const r = document.createRange(); r.selectNodeContents(t); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
 
 /* ---------- Toolbar, bubble and menus (W1, W2, W5) ---------- */

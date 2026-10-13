@@ -278,3 +278,32 @@ body.selecting .cw > .row { padding-left: 52px; }
 
 /* Missing page: the actions row. The card and its top margin are .locked and .locked-top. */
 .missing-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* A4 export (design: Export as A4 PDF). The dialog, and the note's content on the page. */
+.a4-dlg { background: var(--surface); border-radius: var(--r-2xl); padding: 22px; width: min(640px, 100%); }
+.a4-dlg .dlg-head { margin-bottom: 12px; }
+.a4 .body > *:first-child { margin-top: 0; }
+.a4 .body p { margin: 0 0 .6em; }
+.a4 .body h1 { font-size: 16px; margin: 12px 0 4px; }
+.a4 .body h3, .a4 .body h4 { font-size: 11.5px; margin: 8px 0 3px; }
+.a4 .body blockquote { margin: 6px 0; padding-left: 10px; border-left: 3px solid currentColor; }
+.a4 .body pre { white-space: pre-wrap; font-family: var(--font-mono); font-size: 9px; }
+.a4 .body img { max-width: 100%; height: auto; }
+.a4 .body hr { border: 0; border-top: 1px solid currentColor; opacity: .3; }
+.a4 .body a { color: inherit; text-decoration: underline; }
+@media print {
+  .a4 .body tr, .a4 .body img, .a4 .body pre { break-inside: avoid; }
+  .a4 .body h1, .a4 .body h2, .a4 .body h3, .a4 .body h4 { break-after: avoid; }
+}
+/* Print: only the A4 page, flowing from the top of the sheet. The dialog's frame, the app behind it
+   and the page background take no space and print no colour. (Anywhere else, printing shows the page.) */
+@media print {
+  body:not(:has(.print-root)) * { visibility: visible; }
+  html, body { background: #fff; }
+  body:has(.print-root) .shell, body:has(.print-root) .tabbar, body:has(.print-root) .toasts, body:has(.print-root) .dropzone-overlay, body:has(.print-root) .skip { display: none; }
+  body:has(.print-root) #layers, body:has(.print-root) .layer, body:has(.print-root) .layer .panel { position: static; display: block; width: auto; max-width: none; max-height: none; padding: 0; overflow: visible; transform: none; background: none; box-shadow: none; }
+  body:has(.print-root) .layer .scrim, .a4-dlg .dlg-head, .a4-dlg .dlg-foot { display: none; }
+  .a4-dlg { background: none; padding: 0; width: auto; border-radius: 0; }
+  .a4-wrap { background: none; padding: 0; max-height: none; overflow: visible; border-radius: 0; }
+  .print-root { position: static; }
+}
