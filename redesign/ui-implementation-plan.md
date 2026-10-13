@@ -559,6 +559,50 @@ Every place in the current code that produces something visible, and its new cou
 
 Every phase is built on the **`redesign` branch**, deployed to a **Vercel preview**, and keeps tests green. Every commit pushes to `redesign` (the auto-push rule applies to the branch, not to `main`). Merge `main` into `redesign` whenever `main` changes.
 
+### 7.0 Who builds it: model and effort per task
+
+The cheapest model that can do each task safely. Switch with `/model` (and the effort setting) at the start of each session. **One task per session**, and give the session only what it needs: this plan's section for the task, the design-guide section, and the matching prototype file and function. That keeps a smaller model from reading the whole old `js/app.js` and copying old patterns.
+
+**Tiers**
+- **Haiku 5.5 · high:** mechanical porting with an exact reference. The prototype already shows the result; the work is copying and wiring.
+- **Sonnet 5.5 · high** (or Haiku 5.5 · xhigh, if the trial below shows it's good enough): many rules to keep track of, with real data, but nothing that can damage stored data or the live app.
+- **Opus 5.5 · high:** the work where a subtle mistake breaks the live app, loses notes, or is hard to undo, plus deep Tiptap and Firestore behaviour.
+- **Opus review:** at the end of every phase, a fresh Opus session reviews the phase's diff against this plan and the prototype before the phase counts as done. Reviewing costs far less than writing, and it catches drift from the prototype.
+
+| Phase | Task | Model · effort | Why |
+|---|---|---|---|
+| 1 | Move data code into `js/data/`, `Store.onChange`, write promises | **Opus · high** | Every Firebase call must move with no visible change; a slip breaks production |
+| 1 | `sw.js` navigation-cache fix | Sonnet · high | Small, but service-worker bugs are hard to see |
+| 2 | Copy `tokens.css`, port the 3 stylesheets, `app.css`, fonts, icons sprite | **Haiku · high** | Copying with exact references |
+| 2 | `next.html` shell, theme boot script | Haiku · high | Copying from `prototype/app.html` |
+| 2 | `ui/core.js`: delegation, layers, menus, toasts, router, legacy redirects, keyboard model | Sonnet · high | Shared foundation every screen depends on; routing and Esc order need care |
+| 2 | `ui/shell.js`: sidebar, rail, top bar, tabs, tree, crumbs | Sonnet · high | Real data, permissions, restricted areas, crumb folding |
+| 2 | Data additions: sync state, persistence, visibility rules (`canSee`, `lockedArea`, `hiddenItem`, …) | **Opus · high** | Decides what members and visitors can see (P3, P6); offline persistence |
+| 3 | Components and every state in `dev/gallery.html` | **Haiku · high** | Each one has an exact prototype counterpart |
+| 4 | **MoM editor**: Tiptap rebuild (toolbar, Aa, bubble, "/" menu, tables, Long text, remarks drawer, images), autosave and status | **Opus · high** | Daily tool and the riskiest part (C1–C3, W1–W8) |
+| 4 | Prospect-journal and legacy-content conversion (`content.js`) | **Opus · high** | Changes stored notes |
+| 4 | Area page: header, filter, sort, grid/list, cards, shelves | Sonnet · high | Many states and rules |
+| 4 | Today, All areas / Areas tab | Sonnet · high | Permissions, restricted hiding, recent |
+| 4 | ⌘K command bar, Move dialog (`destPicker`), selection and bulk bar, Undo | Sonnet · high | Keyboard behaviour, access rules, several-item flows |
+| 4 | Flagged, Recent, Deleted, Account | **Haiku · high** | Simple lists with exact prototype counterparts |
+| 4 | Dialogs: New area, Rename, New grouping, Save a link, Share, Access, confirmations, Install | Haiku · high | Fixed forms and copy |
+| 4 | Upload dialog with progress and the 4 failure reasons | Sonnet · high | Error mapping and Cloudinary edge cases |
+| 4 | Password dialogs, restricted gates, Lock again | Sonnet · high | Security-sensitive logic |
+| 5 | Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
+| 5 | Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · high** | Firestore offline behaviour |
+| 5 | Remote change bar (S2), colleague toast (S1) | **Opus · high** | Live sync edge cases |
+| 6 | Sign in, Reset, New member, Missing page | Haiku · high | Fixed screens |
+| 6 | Guest views, `visitor` role, old share-link redirects | Sonnet · high | Access rules for people without accounts |
+| 6 | `.ed-body` content styles, A4 export, print | Sonnet · high | Check against real old notes |
+| 6 | Manifest, icons, theme-color, new `sw.js`, `pwa.js` banner | Sonnet · high | Service-worker caching |
+| 7 | Switch-over commit and deletions | **Opus · high** | One commit replaces the app |
+| 7 | Old-names check script | Haiku · high | Simple script |
+| 8 | Playwright tests from §8.1 | Haiku · high | Written from the behaviour table |
+| 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
+| 8 | Fixing failures found in QA | The tier of the task the bug is in | — |
+
+**Calibrate before committing to it.** Build one Sonnet-tier task (the Move dialog is a good one) twice: once with Sonnet · high and once with Haiku · xhigh. Run `/cost` after each session, check both against the prototype, and keep the cheaper one if it's just as good. Move a task up a tier the first time a cheaper model gets it wrong twice.
+
 ### Phase 1: Separate data from rendering (no visual change)
 **Tasks**
 1. Create `js/data/firebase.js`, `session.js`, `store.js`, `actions.js`, `uploads.js`, `content.js`, `search.js`. Move the functions listed in 2.5 **verbatim**, keeping their names and globals.
