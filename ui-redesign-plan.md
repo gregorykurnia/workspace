@@ -277,8 +277,8 @@ The only influence that should remain is the feature set itself, which the new d
 - [x] Step 5b: design guide approved and versioned; `redesign/studio.sh import` run on `main`
 
 **Implementation plan (sees repo + approved design)**
-- [ ] Step 6: `redesign/ui-implementation-plan.md` written (Agent C)
-- [ ] Component map, screen map, and coverage matrix complete
+- [x] Step 6: `redesign/ui-implementation-plan.md` written (Agent C)
+- [x] Component map, screen map, and coverage matrix complete
 - [ ] Reverse coverage: every UI-producing code path mapped; gaps sent to Agent B as needs
 - [ ] Implementation plan approved
 
