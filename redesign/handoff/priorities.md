@@ -45,6 +45,8 @@ Answer from what you actually do, not from how anything currently works. When fi
 | F9 | Open files (images in the app, others in the browser) | |
 | F10 | Download a file | |
 | F11 | Tell file kinds apart; image samples | |
+| F13 | Reopen what I worked on most recently | |
+| F14 | Copy a file's direct address | |
 | O1 | Create an area (admin) | |
 | O2 | Rename an area, change its emoji | |
 | O3 | Move an area with everything inside it (admin) | |

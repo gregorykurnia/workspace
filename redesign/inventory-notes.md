@@ -136,3 +136,11 @@ Full answer: `~/inventory-test/guess-run2.md`.
 - **Wrong:** files as a grid, collapsible groupings, the bottom bulk bar, ⋯ menus on each item, and Home showing "continue where you left off". Tabs vs. stacked sections is now a toss-up.
 - **Still correct, but only through convention (accepted):** a sidebar tree for nested areas (run 1 guessed the opposite, so the inventory doesn't determine this), a breadcrumb, the size/age line for an area (it follows directly from the F8 need), a full-screen editor with save status, the sign-in form, and a drawer on mobile.
 - **Follow-up fix:** removed "(with restricted areas marked)" from F5, because it was what put a padlock in the guessed breadcrumb. P3 already covers restricted status.
+
+## 9. Owner decisions on §4–§5 — 2026-10-13
+- **§4 placeholders:** Recent → **new story F13**. Notifications and Settings → **dropped** (not needs).
+- **§5 #2 Copy link:** a real need → **new story F14**. Wire it up in the rebuild.
+- **§5 #5 Trash:** **keep as is.** Any signed-in person can recover, permanently remove, or empty all deleted items, even items from areas they can't access. Recorded in the inventory roles table.
+- **§5 #6 Area passwords:** **keep as is.** Members can restrict areas, and admins also need the password. Recorded in the roles table.
+- **§5 #8 Cancel saves anyway:** "discard changes" is **not a need**. Save-and-carry-on (C3) stands.
+- **Still open (not asked; fix in the rebuild per the inventory's intent):** #1 visitors read-only (V1), #3 and #4 search and file-link picker should respect access, #7 read-only MoMs shouldn't be renamable or movable by members (P7).

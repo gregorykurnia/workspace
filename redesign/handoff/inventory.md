@@ -91,6 +91,10 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 
 **F11.** When I scan files, I want to tell their kind apart at a glance (PDF, image, video, link, spreadsheet, presentation, other) and see small samples of images, so that I pick the correct one.
 
+**F13.** When I come back to the app, I want to reopen the things I worked on most recently, wherever they live, so that I can pick up where I stopped without searching.
+
+**F14.** When I want to point someone to a file, I want to copy its direct address, so that I can paste it into an email or chat.
+
 ---
 
 ## 4. Organise
@@ -214,7 +218,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | Create highest-level area; create sub-area | ✓ | | |
 | Rename area, change emoji | ✓ | ✓ | |
 | Move area | ✓ | | |
-| Password-restrict / unrestrict area or file | ✓ | ✓ (files: not if read-only) | |
+| Password-restrict / unrestrict area or file (admins also need the password to open it) | ✓ | ✓ (files: not if read-only) | |
 | Create MoM; create grouping; add file or link | ✓ | ✓ | |
 | Edit MoM | ✓ | ✓ unless read-only | |
 | Read MoM | ✓ | ✓ | ✓ |
@@ -222,7 +226,7 @@ Each story has an ID (e.g. `C3`) so that `priorities.md` can tag it daily / week
 | Flag as important | ✓ | ✓ | |
 | Select several and move | ✓ (incl. areas) | ✓ (MoMs, files) | |
 | Delete anything (single or several) | ✓ | | |
-| Recover deleted items | ✓ | ✓ | |
+| Recover deleted items, permanently remove them, or empty everything (all deleted items, whichever area they came from) | ✓ | ✓ | |
 | Mark MoM / file read-only | ✓ | | |
 | Create / turn off shared links | ✓ | | |
 | Grant / revoke member access | ✓ | | |
