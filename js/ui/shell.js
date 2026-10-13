@@ -50,7 +50,11 @@ function treeHTML(r, opts = {}) {
 }
 
 /* ---------- Sidebar ---------- */
-function sidebarHTML(r) {
+function sidebarHTML(r, opts = {}) {
+  const loading = !!opts.loading;   // data is still arriving: skeleton rows, never "No areas yet"
+  const areasTree = loading
+    ? `<div class="side-skel" aria-hidden="true"><i class="skel"></i><i class="skel"></i><i class="skel"></i></div>`
+    : visibleAreas().length ? treeHTML(r) : `<div class="side-empty">${isAdmin() ? `No areas yet. <button class="link-btn" data-act="new-area">Create one</button>` : 'No areas shared with you yet.'}</div>`;
   const flaggedCount = M.filter(m => m.starred && canSee(m.folderId) && !hiddenItem('m', m)).length + D.filter(d => d.starred && canSee(d.folderId) && !hiddenItem('f', d)).length;
   const nav = (href, icon, label, active, count) => `<a class="nav-item" href="${href}" ${active ? 'aria-current="page"' : ''}>${ic(icon)}<span>${label}</span>${count ? `<span class="count">${count}</span>` : ''}</a>`;
   const me = currentUser();
@@ -61,8 +65,8 @@ function sidebarHTML(r) {
       ${nav('#/recent', 'clock', 'Recent', r.name === 'recent')}
       ${nav('#/areas', 'grid', 'All areas', r.name === 'areas')}
     </nav>
-    <div class="side-cap"><span>Areas</span>${isAdmin() ? `<button class="icon-btn side-add" data-act="new-area" aria-label="New area">${ic('plus', 'sm')}</button>` : ''}</div>
-    ${visibleAreas().length ? treeHTML(r) : `<div class="side-empty">${isAdmin() ? `No areas yet. <button class="link-btn" data-act="new-area">Create one</button>` : 'No areas shared with you yet.'}</div>`}
+    <div class="side-cap"><span>Areas</span>${isAdmin() && !loading ? `<button class="icon-btn side-add" data-act="new-area" aria-label="New area">${ic('plus', 'sm')}</button>` : ''}</div>
+    ${areasTree}
     <div class="side-bottom">
       <nav class="side-nav" aria-label="Recovery">${nav('#/deleted', 'bin', 'Deleted', r.name === 'deleted', deletedCount() || '')}</nav>
       <div class="side-foot">
@@ -156,8 +160,8 @@ function tabbarHTML(r) {
     <a class="tab" href="#/flagged" ${cur('flagged')}>${ic('flag')}<span>Flagged</span></a>
     <button class="tab" type="button" data-act="palette">${ic('search')}<span>Search</span></button>`;
 }
-function renderShell(r) {
-  $('#side').innerHTML = sidebarHTML(r);
+function renderShell(r, opts = {}) {
+  $('#side').innerHTML = sidebarHTML(r, opts);
   $('.topbar').innerHTML = topbarHTML(r);
   $('#tabbar').innerHTML = tabbarHTML(r);
   const [label] = titleFor(r);

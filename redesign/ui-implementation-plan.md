@@ -589,7 +589,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 4 | ✅ Dialogs: New area, Rename, New grouping, Save a link, Share, Access, confirmations, Install | Haiku · high | Fixed forms and copy |
 | 4 | ✅ Upload dialog with progress and the 4 failure reasons | Sonnet · high | Error mapping and Cloudinary edge cases |
 | 4 | ✅ Password dialogs, restricted gates, Lock again | Sonnet · high | Security-sensitive logic |
-| 5 | Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
+| 5 | ✅ Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
 | 5 | Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
 | 5 | Remote change bar (S2), colleague toast (S1) | **Opus · high** | Applying someone else's changes while you type, without losing your place or unsaved edits; the most subtle logic in the app |
 | 6 | Sign in, Reset, New member, Missing page | Haiku · high | Fixed screens |
@@ -766,9 +766,19 @@ Each screen is done when its §4 map is implemented against real data, its defau
 - **Heads-up (not from this task).** In `datatest/real.js` (real Firestore, offline copy), the check "no purge from the device copy" fails about half the time, including on the commit before this one. It looks like a timing race in that test (the purge runs after the server answers); the app's purge rule itself is unchanged. Worth a look before Phase 8.
 - **Not checked:** a real upload to Cloudinary (no test run sends files), a real signed-in password change on the live database (rules for `pw` writes are unverified, as for `shared`), Safari and iOS drag-and-drop, and the side-by-side comparison with the prototype (§5 rows 18, 24, 40, 72 stay unticked).
 
+**Notes from the empty, loading, no-match and member states (2026-10-13):**
+- **Already built, now checked.** An audit in the harness (25 checks, copy and structure against the design's §4 and §5 rows): Today nothing yet (first-area prompt and the one-line hint, no sections), Today admin normal, Today member (Flagged tile in place of New area, no Recently added), Today member with no access, Today loading; All areas nothing yet (admin), member granted-only (only the granted area shows), member with no access, loading; Area no match (the area named, Clear filter, and Clear filter removes it), Area empty (the three starts and New sub-area for admins), Area empty grouping (dashed shelf, "Empty grouping"), Area member with no access, Area loading; the MoM for a member on a final item (notice, no toolbar); Move "No destination matches"; the MoM link pickers, files and MoMs ("Nothing yet" and "No matches for …"); ⌘K "No matches" and "Nothing yet". All of these already matched the design; the audit found no copy errors.
+- **One change.** While data loads, the sidebar was blank: no nav, no top bar, no tree. It now stays on screen and shows three skeleton rows where the tree will be, with no "No areas yet" and no + button, so nothing reads as an empty workspace. Changed: `js/ui/core.js` (`render` draws the shell while waiting), `js/ui/shell.js` (`renderShell(r, {loading})`, `sidebarHTML` skeleton), `css/app.css` (`.side-skel`). The Phase 2 test that asserted a blank shell during loading now asserts the new behaviour.
+- **Not in this task.** The new-member screen (`#/new-member`, §5.1 row 53) and the Missing page are Phase 6. Until then, a signed-in person with no access is sent to `#/new-member`, which shows "This screen isn't built yet (newmember)". That is a placeholder, not the design's screen, so a new member will see it before Phase 6. The "Check again" action on that screen is unbuilt for the same reason.
+- **Checked:** Chromium, fake workspace data, desktop width, light theme only. §5 boxes stay open until the phone and dark-theme comparison is done, as with the earlier tasks. Earlier suites rerun and passing: states audit 25, pages and dialogs 71, upload and password 75, area 87, Today and ⌘K 52, editor 101, core and shell 149, data 42, gallery, shell smoke, drag, conversion, and the read-only run on the real workspace.
+
 ### Phase 5: Every state on every screen
 **Tasks:** the remaining rows of §4's state table and §5.1/§5.2: nothing yet, loading, failure, offline, restricted, read-only, selection, no results, remote change, colleague toast, Undo flows, member and new-member roles.
 **Done when:** every row in §5.1 and §5.2 is ticked except the edge surfaces in Phase 6. This needs a **member test account** (see Q4).
+
+- [x] Empty, loading, no-match and member states
+- [ ] Offline, "Saved on this device", couldn't save + Retry, catching up
+- [ ] Remote change bar (S2), colleague toast (S1)
 
 ### Phase 6: Edge surfaces
 **Tasks**

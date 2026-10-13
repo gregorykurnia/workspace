@@ -244,3 +244,9 @@ body.selecting .cw > .row { padding-left: 52px; }
 .acct-grid { margin-top: 24px; }
 /* Upload dialog: the gap above the name field. */
 .up-gap { margin-top: 18px; }
+
+/* Sidebar skeleton: three rows where the area tree will be, while data loads. */
+.side-skel { display: grid; gap: 12px; padding: 12px 14px; }
+.side-skel .skel { display: block; height: 16px; min-height: 16px; border-radius: 8px; }
+.side-skel .skel:nth-child(2) { width: 78%; }
+.side-skel .skel:nth-child(3) { width: 56%; }

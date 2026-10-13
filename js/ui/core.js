@@ -349,7 +349,7 @@ function render({ keepView = false } = {}) {
   document.body.classList.toggle('route-mom', r.name === 'mom');
   document.body.classList.toggle('offline', syncState() === 'offline');
   document.body.classList.toggle('selecting', UI.selMode);
-  if (!bare && !shared && !waiting) keepFocus(() => renderShell(r));
+  if (!bare && !shared) keepFocus(() => renderShell(r, { loading: waiting }));   // the shell draws while data loads, with a skeleton tree
   else { $('#side').innerHTML = ''; $('.topbar').innerHTML = ''; $('#tabbar').innerHTML = ''; }
   const el = $('#view');
   if (!changed && keepView && !waiting && UI.shownKey === key) { renderBanners(); return; }
