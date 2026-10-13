@@ -600,7 +600,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 6 | ✅ Manifest, icons, theme-color, new `sw.js`, `pwa.js` banner | Sonnet · high | Service-worker caching |
 | 7 | ✅ Switch-over commit and deletions | Sonnet · high | Mostly deleting files and running the old-names check and tests; the phase's Opus review is the safety net |
 | 7 | ✅ Old-names check script | Haiku · high | Simple script |
-| 8 | Playwright tests from §8.1 | Haiku · high | Written from the behaviour table |
+| 8 | ✅ Playwright tests from §8.1 | Haiku · high | Written from the behaviour table |
 | 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
 | 8 | Fixing failures found in QA | The tier of the task the bug is in | — |
 
@@ -854,6 +854,16 @@ Each screen is done when its §4 map is implemented against real data, its defau
 
 ### Phase 8: QA and polish
 All of §8 on the preview, plus fixes. Then merge `redesign` → `main` (production deploy) and update `CLAUDE.md` (new structure, routes, localStorage keys, data fields, no Quill except for legacy conversion).
+
+**Notes from Phase 8 Playwright tests (2026-10-13):**
+- **Files.** `playwright.config.js`: chromium at 1280 × 800, and a `phone` project at 390 × 844 with `hasTouch` (no device emulation). `tests/support.js` (helpers, not a spec): `signIn`, `createArea`, `newMoM`, `setTitle`, `cleanUp`, and the `[TEST-runId]` tag. `tests/signed-out.spec.js`, `tests/session-and-areas.spec.js`, `tests/moms.spec.js`, `tests/move-restrict-upload.spec.js`, `tests/keyboard.spec.js`, `tests/sharing-deleted-final.spec.js`. `tests/smoke.spec.js` is unchanged. The specs live in `tests/`, not `tests/next/` as §8.1 first said. Selectors are roles and accessible names only.
+- **Run here.** `node -c` on every changed file; `node redesign/check-old-names.js` passes; `BASE_URL=http://127.0.0.1:5270 npx playwright test` (Chromium and phone): **28 passed, 60 skipped, 0 failed**. The 28 are every signed-out test (the 5 smoke tests and 9 new ones, on both projects). The 60 are signed-in tests, skipped because `TEST_EMAIL` / `TEST_PASSWORD` are not set (Q4). Each skip says which variable is missing.
+- **Not run against a live account (the important gap).** The signed-in tests have never executed. Their selectors were checked by reading `js/ui/*.js`, not by running them. The first run with a real account may find selector or timing faults, so it's the first thing to do when Q4 is answered. The member test also needs `TEST_MEMBER_EMAIL` / `TEST_MEMBER_PASSWORD`, and the member must have signed in once before (the Access dialog lists only people who have). Those names are an addition to Q4.
+- **Covered.** Every row of §8.1's table: sign in → Today, the sidebar at 1280 px, Today `aria-current`, "Up to date", Deleted from the sidebar, New area (emoji, Top level), the area header and sections, sub-area from the ⋯ menu, New MoM (dated title), typing → Saved, card in its area, filter, flag → Flagged, Move search (no match and a match), several-item move. Also the new-behaviour list: restricted gate (wrong password, unlock, Lock again), restricted items hidden from ⌘K, share link on → visitor sees the area → off → "no longer available" (in a second, signed-out context), Deleted restore and remove forever, final blocks a member, Undo after a move, the blocked-type and over-10 MB PDF refusals (both before anything is sent), Esc order (dialog, then Select, then up one area), ⌘K ↑↓↵, legacy addresses (`?folder`, `?doc`, `?mom`, `#m`, `#f`), and the offline "Saved on this device" → "Saved".
+- **Covered only in part.** The MoM save check waits for "Saved" but does not look for "Saving…" (the state is too brief to catch reliably). Empty all is tested only as Cancel: the real Deleted list may hold real items, so the test never confirms the empty. The Esc order's editor step is not tested.
+- **Not written, on purpose.** Sidebar collapse (depends on G10, still open). Screenshot capture, axe, keyboard scripts and touch-target checks (the Sonnet row). The upload failures for storage, offline and "other" (the §8.1 row names only the blocked type and the PDF size).
+- **Cleanup.** Every signed-in test records the areas it creates. `cleanUp` deletes each one through the area's ⋯ menu, then removes every `[TEST-…]` row in Deleted through "Remove … forever". It never uses Empty all. Nothing has been written to Firestore by these tests yet, since none ran signed in.
+- **Bugs found.** None. No signed-out test failed, and no signed-in test ran.
 
 ---
 
