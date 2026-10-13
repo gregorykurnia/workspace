@@ -1,9 +1,9 @@
 {
   "permissions": {
     "deny": [
-      "Read(./index.html)",
+      "Read(/index.html)",
       "Read(./css/**)",
-      "Read(./js/**)",
+      "Read(/js/**)",
       "Read(./tests/**)",
       "Read(./sw.js)",
       "Read(./manifest.webmanifest)",
