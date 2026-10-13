@@ -19,6 +19,7 @@ Choices made, open questions, and proposals for the owner. Nothing in "Proposals
 | Library | Where | Could the real app use it? |
 |---|---|---|
 | Google Fonts: Inter (A, compare page), Plus Jakarta Sans (B), Geist and Geist Mono (C) | `directions/*` | Yes. They can also be self-hosted for offline use (A3). The final choice should be self-hosted so the installed app keeps its typeface offline. |
+| Google Fonts: Source Serif 4, used only as the editor's "Serif" content option | `directions/c-atlas` | Yes. It's a modern serif used only for note text, never for the interface. |
 
 Icons are inline SVG, and the prototypes use no other libraries. The editor in the directions is a `contenteditable` mock. The real app will use Tiptap, so the look shown here is what Tiptap will be styled to match.
 
