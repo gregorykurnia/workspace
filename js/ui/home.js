@@ -279,3 +279,15 @@ on('refresh-access', () => {
   render();
   if (sessionRole() === 'newmember') toast('Still no areas. We’ll show them here once an admin grants access.', { icon: 'info' });
 });
+
+/* ---------- Missing page (unknown address, design §4 "Missing page") ---------- */
+VIEWS.missing = {
+  html() {
+    return `<div class="page"><div class="locked locked-top">
+      <div class="art">${ic('alert')}</div>
+      <h1>This page isn’t here</h1>
+      <p>It may have moved to Deleted, or the link may be out of date.</p>
+      <div class="missing-acts">${btnHTML({ kind: 'primary', label: 'Go to Today', href: '#/today' })}${btnHTML({ kind: 'soft', label: 'Open Deleted', href: '#/deleted' })}</div>
+    </div></div>`;
+  },
+};

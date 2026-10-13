@@ -257,3 +257,6 @@ body.selecting .cw > .row { padding-left: 52px; }
 .auth-acts { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }   /* new member card: the two actions */
 .auth-acts > .btn-primary { flex: 1; }
 .auth .foot .link-btn { padding: 0 4px; }   /* auth card: the links line up with the fields' text */
+
+/* Missing page: the actions row. The card and its top margin are .locked and .locked-top. */
+.missing-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }

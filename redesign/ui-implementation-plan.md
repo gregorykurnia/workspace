@@ -360,7 +360,7 @@ Tick each box when the build matches the prototype at that size and theme. **P**
 | 57 | Shared file · open | [ ] | [ ] | [ ] | [ ] | |
 | 58 | Shared file · password / wrong password | [ ] | [ ] | [ ] | [ ] | |
 | 59 | Link unavailable | [ ] | [ ] | [ ] | [ ] | |
-| 60 | Missing page | [ ] | [ ] | [ ] | [ ] | |
+| 60 | Missing page | [ ] | [ ] | [x] | [x] | |
 | 61 | Global · offline banner + sync pill | [ ] | [ ] | [ ] | [ ] | |
 | 62 | Global · catching up banner | [ ] | [ ] | [ ] | [ ] | |
 | 63 | Global · new version banner | [ ] | [ ] | [ ] | [ ] | |
@@ -594,7 +594,7 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 5 | ✅ Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
 | 5 | ✅ Remote change bar (S2), colleague toast (S1) | **Opus · high** | Applying someone else's changes while you type, without losing your place or unsaved edits; the most subtle logic in the app |
 | 6 | ✅ Sign in, Reset, New member | Haiku · high | Fixed screens |
-| 6 | Missing page | Haiku · high | Fixed screen |
+| 6 | ✅ Missing page | Haiku · high | Fixed screen |
 | 6 | Guest views, `visitor` role, old share-link redirects | Sonnet · high | Access rules for people without accounts |
 | 6 | `.ed-body` content styles, A4 export, print | Sonnet · high | Check against real old notes |
 | 6 | Manifest, icons, theme-color, new `sw.js`, `pwa.js` banner | Sonnet · high | Service-worker caching |
@@ -805,7 +805,7 @@ Each screen is done when its §4 map is implemented against real data, its defau
 ### Phase 6: Edge surfaces
 **Tasks**
 - [x] 1. Sign in (`#/signin`), Reset (`#/reset`) and New member (`#/new-member`), in `js/ui/home.js`; "Stay signed in" in `session.signIn`
-- [ ] 1b. Missing page (not in this session's scope)
+- [x] 1b. Missing page (`#/missing` and every unknown address) in `js/ui/home.js`
 - [x] 1c. Remove the Phase 2 redirect: there was none to remove. Signed-out visitors were already sent to `#/signin`, which is now the real screen
 - [ ] 2. Guest views `#/s/a|m|f/:id` + Link unavailable; `visitor` role; old `?folder|mom|doc=` redirects.
 - [ ] 3. `.ed-body` content styles everywhere (editor, read-only, shared MoM, A4); legacy-content check on real old MoMs (W11).
@@ -819,7 +819,9 @@ Each screen is done when its §4 map is implemented against real data, its defau
 - **Interim copy (§9.1 G18).** Two messages are not in the design: a reset that fails for a reason other than a bad address (offline, too many tries), and a reset address that is malformed. Both are marked in the code.
 - **Checked (Chromium, real Firebase, nothing that writes data):** 28 checks: landing on `#/signin` with the shell hidden; title from `APP_NAME`; "Stay signed in" checked; empty and partly filled submits; the eye toggle; wrong details against the real Auth service (busy state, both messages, button usable again, stays on the page); Forgot password and Back; the reset empty and sent states; the new-member card; no page errors; no horizontal scroll at 390 px. Visual comparison with the prototype (`app.html`), sheet kept in the scratchpad: sign in default in light and dark, phone light, wrong details, reset empty and sent, new member. The new-member card in the build shows no name because no test account is signed in (Q4), so the name line is data-dependent and left to the owner's side-by-side review.
 - **Not checked:** a successful sign-in (no test account, Q4), so the post-sign-in path to Today or New member is not exercised here; "Stay signed in" off (persistence is set, but the session isn't exercised); the sign-in and reset **missing-password / phone dark / tablet** rows (§5 49–53 stay open where not ticked); the old app's three sign-in tests against the preview (not run here: they target the deployed site).
-- **Not done here:** the Missing page (task 1b), the `visitor` role and anonymous sign-in for share links (task 2).
+- **Missing page (task 1b).** `VIEWS.missing` in `js/ui/home.js`, the prototype's card (alert icon, "This page isn’t here", one line, Go to Today and Open Deleted), using the existing `.locked .locked-top` classes. Any unknown address lands here for a signed-in person with access; a signed-out visitor goes to `#/signin` first, as the prototype's guard does. Checked: 7 checks (sign-out redirect, heading, copy, both links, the 56 px top margin, no page errors); light and dark side by side with the prototype (§5 row 60). Phone not compared, so row 60's phone boxes stay open.
+- **Follow-up, not changed here.** The area and MoM not-found screens (`missingAreaHTML`, `missingMomHTML`) use their own wording ("This area isn’t here", "This MoM isn’t here") and an older layout. The prototype shows the Missing page for both. They are in the Area and MoM screens, which are already ticked, so I left them for the owner to decide.
+- **Not done here:** the `visitor` role and anonymous sign-in for share links (task 2).
 
 **Done when:** every §6 row has its counterpart built; §5 rows 49–63 are ticked; the installed preview opens offline.
 
