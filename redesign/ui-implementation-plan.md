@@ -593,7 +593,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 5 | ✅ Empty, loading, no-match and member states | Haiku · high | Fixed copy and markup |
 | 5 | ✅ Offline, "Saved on this device", couldn't save + Retry, catching up | **Opus · medium** | Needs Opus's knowledge of Firestore offline behaviour, but the states are clearly specified |
 | 5 | ✅ Remote change bar (S2), colleague toast (S1) | **Opus · high** | Applying someone else's changes while you type, without losing your place or unsaved edits; the most subtle logic in the app |
-| 6 | Sign in, Reset, New member, Missing page | Haiku · high | Fixed screens |
+| 6 | ✅ Sign in, Reset, New member | Haiku · high | Fixed screens |
+| 6 | Missing page | Haiku · high | Fixed screen |
 | 6 | Guest views, `visitor` role, old share-link redirects | Sonnet · high | Access rules for people without accounts |
 | 6 | `.ed-body` content styles, A4 export, print | Sonnet · high | Check against real old notes |
 | 6 | Manifest, icons, theme-color, new `sw.js`, `pwa.js` banner | Sonnet · high | Service-worker caching |
