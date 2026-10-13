@@ -169,7 +169,7 @@ body.selecting .cw > .row { padding-left: 52px; }
 .btn:focus-visible, .subcard:focus-visible, .acard:focus-visible, .mcard:focus-visible,
 .ftile:focus-visible, .qtile:focus-visible, .sel-box:focus-visible, .kind:focus-visible,
 .emoji-grid button:focus-visible, .swatch:focus-visible, .toast button:focus-visible,
-.tag-add:focus-visible, .pal-in input:focus-visible { box-shadow: var(--focus); }
+.tag-add:focus-visible, .pal-in input:focus-visible, .check-row input:focus-visible { box-shadow: var(--focus); }   /* a checkbox has no border to change, and base.css clears the ring on every input */
 /* Touch target: the toast's action is 44 px like every other control (tokens --hit). */
 .toast button { min-height: var(--hit); }
 
@@ -271,7 +271,7 @@ body.selecting .cw > .row { padding-left: 52px; }
 
 /* Sign in, Reset, New member (design: auth card). The card's own rules live in base.css. */
 .auth .notice { margin-bottom: 16px; }   /* auth card: the notice sits above the fields */
-.auth .btn-primary { margin-top: 8px; }   /* auth card: the submit sits under the fields */
+.auth .check-row + .btn-primary { margin-top: 8px; }   /* sign-in only: the submit sits under "Stay signed in"; the reset card has no gap (design) */
 .auth-acts { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }   /* new member card: the two actions */
 .auth-acts > .btn-primary { flex: 1; }
 .auth .foot .link-btn { padding: 0 4px; }   /* auth card: the links line up with the fields' text */

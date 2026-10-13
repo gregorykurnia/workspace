@@ -601,8 +601,8 @@ The cheapest model that can do each task safely. Switch with `/model` (and the e
 | 7 | ✅ Switch-over commit and deletions | Sonnet · high | Mostly deleting files and running the old-names check and tests; the phase's Opus review is the safety net |
 | 7 | ✅ Old-names check script | Haiku · high | Simple script |
 | 8 | ✅ Playwright tests from §8.1 | Haiku · high | Written from the behaviour table |
-| 8 | Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
-| 8 | Fixing failures found in QA | The tier of the task the bug is in | — |
+| 8 | ✅ Screenshot capture script, axe and keyboard checks | Sonnet · high | Test tooling |
+| 8 | ✅ Fixing failures found in QA (the two found so far; the signed-in checks have not run, see the Phase 8 notes) | The tier of the task the bug is in | — |
 
 ✅ = done (also ticked in that phase's task list below).
 
@@ -865,6 +865,16 @@ All of §8 on the preview, plus fixes. Then merge `redesign` → `main` (product
 - **Cleanup.** Every signed-in test records the areas it creates. `cleanUp` deletes each one through the area's ⋯ menu, then removes every `[TEST-…]` row in Deleted through "Remove … forever". It never uses Empty all. Nothing has been written to Firestore by these tests yet, since none ran signed in.
 - **Bugs found.** None. No signed-out test failed, and no signed-in test ran.
 
+**Notes from Phase 8 screenshot capture, axe and keyboard checks (2026-10-14):**
+- **Files.** New: `tests/visual/capture.spec.js`, `tests/visual/global-setup.js`, `tests/accessibility.spec.js`. Changed: `playwright.config.js` (the capture folder is ignored unless `CAPTURE=1`; the global setup empties the report folder), `package.json` (`npm run capture`; `@axe-core/playwright` as a dev dependency), `.gitignore` (`visual-report/`), `css/app.css` (the two fixes below).
+- **Capture (§8.2).** Each surface is captured from the prototype (`redesign/design/prototype/app.html`, switched through its own role and theme state) and from the build, at 390 / 900 / 1280 px in light and dark, then written to `visual-report/index.html` with the share of pixels that differ (measured in the browser, no extra library). Run here, signed out: **sign in, reset, link unavailable, 18 captures, all inside a 1% tolerance** (they differ by 0.12–0.62%, from the product name "Workbench" against the prototype's "Daybook" and the prototype's pre-filled sign-in address, which the script clears). Wired but **not run** (need `TEST_EMAIL` / `TEST_PASSWORD`, Q4): the Missing page and the New area dialog (dialog only), 12 captures. Their tolerances (1% and 2%) are guesses until a first run. The pixel-diff is asserted only for those five data-independent surfaces. Empty states, other dialogs and every data-dependent screen are left for the owner's side-by-side review, since the build has no fixture workspace to capture them from. The gallery is gone (Phase 7), so it isn't captured.
+- **axe (§8.3).** `@axe-core/playwright` on sign in, reset and link unavailable in light and dark: **no serious or critical issue** (6 checks, desktop viewport). Wired but **not run**: Today, All areas, Flagged, Recent, Deleted, Account, Missing page, the New area dialog and the command bar, in both themes.
+- **Keyboard (§8.3).** Every Tab stop on the three signed-out screens must show a change when focused (outline, shadow, border, background, position or opacity), the skip link must be the first stop and move focus to the content, and Enter must submit the sign-in and reset forms. These pass. The Esc order and ↑↓↵ in ⌘K were already in `tests/keyboard.spec.js` (signed in, not run). The same Tab-stop check is wired for every signed-in screen above, not run.
+- **Touch targets (§8.3).** At 390 px with touch (and the page reports `pointer: coarse`), every visible interactive element must be at least 44 × 44 px (a control inside a label counts as the label; a link inside a sentence is exempt). Passes on the three signed-out screens; the signed-in screens are wired, not run.
+- **Bugs found and fixed (the "fixing failures" row).** (1) **Reset card:** the submit button sat 8 px lower than in the design, because the sign-in card's gap rule applied to every auth card. Found by the capture at 390 px (6% of pixels differed); the rule now applies only when the button follows "Stay signed in" (`css/app.css`). Afterwards the reset page differs by 0.12–0.58%. (2) **Checkbox focus:** "Stay signed in" showed no focus indicator at all, because `base.css` clears the ring on every input and a checkbox has no border to change. Found by the Tab-stop check; the shared ring now shows on `.check-row input` (`css/app.css`), looked at in a screenshot. The prototype has the same gap, so the owner may want to tell the designer. The "Link is on" checkbox in the Share dialog uses the same row, so it is fixed too, but that one hasn't been looked at.
+- **Run here.** `node -c` on every changed file; `check-old-names` and `check-app-name` pass; `BASE_URL=http://127.0.0.1:5270 npx playwright test` (Chromium and phone): **43 passed, 147 skipped, 0 failed** (the earlier 28 plus 15 new; every skip is a signed-in test waiting for Q4); `npm run capture` (Chromium): 18 passed, 12 skipped.
+- **Still open for Phase 8.** Everything signed in has never run: the behaviour specs, the capture's two signed-in surfaces and the signed-in axe, keyboard and touch-target checks. The first run with a real account will find selector and timing faults and, very likely, real accessibility issues on the data screens. The radio inputs used as "kind" pickers in the upload and link dialogs are visually hidden (`.sr`); whether their focus shows is exactly what that run will tell. Not written: the screen-reader pass, and the Esc order's editor step.
+
 ---
 
 ## 8. Testing & QA
@@ -886,7 +896,7 @@ All of §8 on the preview, plus fixes. Then merge `redesign` → `main` (product
 - **CI:** add a `deployment_status` trigger so tests run against each Vercel **preview** URL (`target_url`) on the `redesign` branch, using the Vercel protection-bypass header if previews are protected. Test data keeps the `[TEST-runId]` prefix, and the global setup cleans it up.
 
 ### 8.2 Screenshot comparison
-- A script (`tests/visual/capture.spec.js`) captures each §5 row from **both** the prototype (served from `redesign/design/`, driving the Prototype panel for states) and the build, at 390 / 900 / 1280 px in light and dark. It writes a side-by-side HTML report.
+- A script (`tests/visual/capture.spec.js`, run with `npm run capture`; it is not part of the default run) captures each §5 row from **both** the prototype (served from `redesign/design/`, driving the Prototype panel for states) and the build, at 390 / 900 / 1280 px in light and dark. It writes a side-by-side HTML report.
 - Pixel-diff (`toHaveScreenshot`, small tolerance) only for **data-independent** surfaces: sign in, reset, link unavailable, missing page, empty states, every dialog in its empty state, the gallery. Data-dependent screens are reviewed side by side by the owner, since real data never matches the prototype's sample data.
 
 ### 8.3 Accessibility
