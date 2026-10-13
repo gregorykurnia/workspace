@@ -57,7 +57,26 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:vercel.app)"
+      "WebFetch(domain:vercel.app)",
+      "Bash(git -C:*)",
+      "Bash(git -c:*)",
+      "Bash(git --no-pager:*)",
+      "Bash(git --git-dir:*)",
+      "Bash(git --work-tree:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git for-each-ref:*)",
+      "Bash(git name-rev:*)",
+      "Bash(git show-ref:*)",
+      "Bash(git describe:*)",
+      "Bash(git whatchanged:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git format-patch:*)",
+      "Bash(git bundle:*)",
+      "Bash(git read-tree:*)",
+      "Bash(git sparse-checkout:*)",
+      "Bash(git notes:*)",
+      "Read(~/inventory-test/**)",
+      "Read(~/brief-session/**)"
     ]
   }
 }
