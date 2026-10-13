@@ -267,7 +267,7 @@ The only influence that should remain is the feature set itself, which the new d
 
 **Brief (you, without opening the app)**
 - [x] Step 2: open questions in `inventory-notes.md` §4–§5 decided; new needs added to `inventory.md` (F13, F14; see notes §9)
-- [ ] Step 2: `priorities.md` filled in, every job tagged daily / weekly / rare / drop, status `FILLED`
+- [x] Step 2: `priorities.md` filled in, every job tagged daily / weekly / rare / drop, status `FILLED`
 - [ ] Step 3: `brief.md` filled in, including the branding decision, status `FILLED`
 
 **Design (in `design-studio`, never sees old app)**
