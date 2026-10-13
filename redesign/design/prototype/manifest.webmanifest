@@ -1,0 +1,14 @@
+{
+  "name": "Daybook",
+  "short_name": "Daybook",
+  "description": "Minutes, files and areas for your team.",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F8FC",
+  "theme_color": "#4338CA",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

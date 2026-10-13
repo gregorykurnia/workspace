@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F4F5F7; --surface: #FFFFFF; --text: #16181D; --muted: #5B6170;
+    --line: #E3E5EA; --accent: #2F3BD1; --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 20px 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+  .seg button { font: inherit; font-size: 14px; border: 0; background: none; color: var(--muted); min-height: 36px; padding: 0 16px; border-radius: 999px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .seg button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  main { display: grid; gap: 24px; padding: 0 24px 32px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .col h2 { font-size: 15px; font-weight: 600; margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+  .col h2 a { color: var(--accent); font-weight: 500; font-size: 13px; text-decoration: none; }
+  .col .sub { color: var(--muted); font-size: 13px; margin: -6px 0 0; }
+  .frame { position: relative; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .frame iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; background: #fff; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Three directions, side by side</h1>
+    <p>Each frame is a live prototype. Use "Open full" for the real experience; resize the window to see the phone layout.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Preview size">
+    <button type="button" data-mode="desktop" aria-pressed="true">Desktop 1440</button>
+    <button type="button" data-mode="phone" aria-pressed="false">Phone 390</button>
+  </div>
+</header>
+<main>
+  <section class="col">
+    <h2>A · Folio <a href="a-folio/app.html" target="_blank" rel="noopener">Open full ↗</a></h2>
+    <p class="sub">Sidebar tree workbench · precise · indigo · Inter</p>
+    <div class="frame"><iframe src="a-folio/app.html" title="Direction A, Folio"></iframe></div>
+  </section>
+  <section class="col">
+    <h2>B · Daybook <a href="b-daybook/app.html" target="_blank" rel="noopener">Open full ↗</a></h2>
+    <p class="sub">Today hub + command bar · warm · coral · Plus Jakarta Sans</p>
+    <div class="frame"><iframe src="b-daybook/app.html" title="Direction B, Daybook"></iframe></div>
+  </section>
+  <section class="col">
+    <h2>C · Atlas <a href="c-atlas/app.html" target="_blank" rel="noopener">Open full ↗</a></h2>
+    <p class="sub">Finder-style columns · Swiss, airy · teal · Geist</p>
+    <div class="frame"><iframe src="c-atlas/app.html" title="Direction C, Atlas"></iframe></div>
+  </section>
+</main>
+<script>
+  const SIZES = { desktop: [1440, 900], phone: [390, 844] };
+  let mode = 'desktop';
+
+  function layout() {
+    const [w, h] = SIZES[mode];
+    document.querySelectorAll('.frame').forEach((frame) => {
+      const iframe = frame.querySelector('iframe');
+      const available = frame.parentElement.clientWidth;
+      const scale = Math.min(1, available / w);
+      frame.style.width = mode === 'phone' ? Math.min(available, w) + 'px' : '100%';
+      frame.style.height = Math.round(h * scale) + 'px';
+      iframe.style.width = w + 'px';
+      iframe.style.height = h + 'px';
+      iframe.style.transform = `scale(${scale})`;
+    });
+  }
+
+  document.querySelectorAll('.seg button').forEach((button) => {
+    button.addEventListener('click', () => {
+      mode = button.dataset.mode;
+      document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      layout();
+    });
+  });
+  window.addEventListener('resize', layout);
+  layout();
+</script>
+</body>
+</html>
