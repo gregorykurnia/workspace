@@ -1,0 +1,96 @@
+# Inventory Notes — OWNER ONLY
+
+> ⛔ **Never put this file in the design handoff package.** It references code, current labels, and current behaviour. It exists for you (Steps 1b–2) and for Agent C (Step 6).
+
+Written by Agent A while extracting `inventory.md` from the code at commit `47e9f44`.
+
+---
+
+## 1. Sources read
+`js/app.js` (all 1,751 lines), `js/auth.js`, `js/rbac.js`, `js/tiptap.js`, `js/pwa.js`, `sw.js`, `manifest.webmanifest`, `index.html`, `css/styles.css` (media queries / print only), `tests/*.spec.js`.
+
+## 2. Story → code trace (for Agent C)
+
+| Story | Code |
+|---|---|
+| C1 | `newMom` |
+| C2, C3 | `bindMomEditor` `onUpdate` autosave (1.5 s), `setSaveStatus`, `saveMom`, `backMom`, Cmd/Ctrl+S keydown |
+| C4, C5 | `momEdHTML` fields `#mt #md #mg #mgdoc`, `collectMom` |
+| C6–C8 | `openAddDoc`, `uploadCL` (error messages) |
+| W1–W5 | `#tt-toolbar` in `momEdHTML`; command wiring in `bindMomEditor`; extensions in `js/tiptap.js` |
+| W3 | `updateTableOverlay`, `_moveTableRow`, `_moveTableCol`, `Table.configure({resizable:true})` |
+| W4 | `ResizableImage` in `js/tiptap.js`, `_insertImagePrompt`, `_handleEditorImagePaste` |
+| W6 | `openDocPicker`, `insertDocLink` |
+| W7 | `openMomPicker`; `mom.local/` click interception in `bindMomEditor` |
+| W8 | `isProspectJournal`, `addDetailedRemarksColumn`, `openRemarkEditor`, `decorateReadOnlyRemarks`, `bindMomReadOnlyEvents` |
+| W9 | `exportPDF` (html2pdf) |
+| W11 | `deltaToHTML` / `momDeltaToHTML` (legacy Quill Delta → HTML via Quill CDN) |
+| F1 | `openGlobalSearch` |
+| F2 | `applySubFilter`, `applyMomFilter`, `applyDocFilter`, `updateFilterEmpty` |
+| F3 | `starredTabHTML`, `data-starmom` / `data-stardoc` |
+| F4 | `homeHTML`, `fcard` |
+| F5 | `renderBC`, `#folder-back` |
+| F6 | `renderTree`, `buildNode`, `EXP` / `G_exp` |
+| F7 | `buildHash`, `applyHash`, `hashchange` |
+| F8 | `folderHTML` summary meta |
+| F9 | `openLightbox`, `data-openurl` |
+| F10 | `downloadFile` |
+| F11 | `docCardHTML` icon map + `.dc-thumb` |
+| F12 | `#tb-date` in `renderBC` |
+| O1, O2 | `openNewFolder`, `openRename`, `EMOJIS` |
+| O3, O7 | `openBulkMoveModal` (descendant guard), `toggleSelMode`, `selBarHTML`, `selectAllVisible` |
+| O4 | `openNewDocFolder` / `openNewMomFolder`, rename/delete counterparts |
+| O5 | `openMoveModal`, `bindMoveSearch` |
+| O6 | `openRenameMom`, `openRenameDoc` |
+| O8 | `askDeleteFolder`, `askDelMom`, `askDelMomFromCard`, `askDelDoc`, `askDeleteDocFolder`, `askDeleteMomFolder`, `openBulkTrashModal` |
+| O9 | `trashHTML`, `bindTrashEvents`, `restoreItem`, `clearTrash`, `_autopurge`, `_softDel` |
+| P1–P4 | `openLockModal`, `unlockFolder` / `doUF`, `unlockDoc` / `doUD`, `relock`, `relockDoc`, `ifl`, `hw` |
+| P5 | `openShareModal` |
+| P6 | `openAccessModal`, `canSeeFolder` (`js/rbac.js`) |
+| P7 | `data-togglero`, `data-toggleromom`, `#mom-togglero`, `momReadOnlyHTML` |
+| S1 | `startListeners` |
+| S2 | `_momListener` in `bindMomEditor` |
+| S3 | `setSS`, `#sdot` |
+| S4 | `toast` |
+| A1 | `_setSidebar`, `@media(max-width:700px)`, `@media(hover:none)` |
+| A2–A4 | `manifest.webmanifest`, `sw.js`, `js/pwa.js` (`#sw-update`) |
+| A5 | `@media(prefers-reduced-motion)` |
+| A6 | global `keydown` handler, Enter handlers in rename and unlock |
+| U1–U3 | `js/auth.js` |
+| U4 | `js/rbac.js` user record creation |
+| V1–V4 | `SHARE_MODE` parse, `chkLoad`, `renderSharedDoc`, `renderSharedMom`, `shareLinkDenied`, anonymous sign-in in `js/auth.js` |
+
+## 3. Where CLAUDE.md is out of date
+- The editor is **Tiptap**, not Quill. Quill is loaded only to convert legacy Delta content.
+- There are no checklists in the current editor (StarterKit has no task list).
+- Additional Firestore collections: `docfolders`, `momfolders`, `users`, `folder_access`.
+- Deletes are soft (`deleted`, `deletedAt`) with 7-day purge.
+- Missing from CLAUDE.md: share links, RBAC, read-only, bulk actions, Trash, global search, prospect journal, PWA, Playwright tests.
+- There is no sign-up flow. The plan's Step 6 mentions "sign-up", but accounts are created outside the app.
+
+## 4. Placeholders in the current UI (not built)
+These show up in the current UI but do nothing. **You decide** whether each one is a real need. If it is, add it to `inventory.md` as a new job story before handoff. They are not in the inventory now.
+- **Recent**: e.g. "When I return, I want to reopen the things I worked on most recently, wherever they live."
+- **Workspace-wide flagged items**: flags are only grouped per area today. A version across the whole workspace would be a new story.
+- **Settings**: shown in two places, no content.
+- **Notifications**: no backing feature.
+
+## 5. Behaviour vs. intent: bugs and gaps found while reading
+The inventory describes the **intended** behaviour. Here the code differs, or the intent is unclear:
+
+1. **Shared-link visitors get the `member` role** (`js/rbac.js`, anonymous branch). Inside a shared area, they may be able to create or edit MoMs, add files, rename, etc. The share copy says "can view", so the inventory says visitors can only read (V1).
+2. **The "Copy link" control on files is not wired.** It has no data attribute or handler (`docCardHTML`, `starredTabHTML`). It is not in the inventory as a separate need, since P5 and F9/F10 cover sharing and opening. Decide whether "copy a file's direct address" is a need.
+3. **Global search ignores access.** `openGlobalSearch` searches `F`/`M`/`D` without `canSeeFolder`, so members can find areas they can't open.
+4. **The file-link picker ignores access.** `openDocPicker` lists every file with a URL, in any area.
+5. **Trash is not role-gated.** Any signed-in user can restore or permanently delete, and Trash lists items from areas they can't access. The inventory records "Recover deleted items: Admin ✓, Member ✓" as current behaviour. Confirm whether members should have this.
+6. **Members can password-restrict any area they can see.** Admins aren't exempt from the password, so a member could lock admins out. Confirm the intent.
+7. **A read-only MoM can still be renamed or moved by members** from the MoM summary (`momCardHTML` doesn't check `readOnly`).
+8. **"Cancel" in the MoM editor saves anyway** (`backMom` calls `collectMom` + `sM`). The inventory treats leaving as "save and leave" (C3) and doesn't promise a discard. Decide whether "discard changes" is a need.
+9. **Sorting sub-areas by "Newest first" doesn't reorder anything** (`applySubFilter` only handles `name`).
+10. **The upload copy says "up to 100MB",** but PDFs over 10 MB fail on the Cloudinary free plan.
+11. **The prospect journal depends on an exact title match** ("Clients - Prospect Journal"). The designer may propose a general mechanism; you decide.
+12. **`#pdf-print` print styles are dead code.** Nothing populates `#pdf-print`. PDF export uses html2pdf.
+13. **MoM search matches on the hidden preview text** (the first 140 characters of the body), not the full body. The inventory says "title and opening text" to match.
+
+## 6. Deliberately left out of the inventory
+Product name, logo, colours, fonts, current labels ("Starred", "Trash", "Lock", "Workspaces", "Subfolders", "Meeting notes", "Files"), the order of sections, and the per-area colour tints derived from IDs.

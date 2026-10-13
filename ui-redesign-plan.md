@@ -221,8 +221,8 @@ The only influence that should remain is the feature set itself, which the new d
 ## Checklist
 
 **Discovery (sees old app)**
-- [ ] Step 1: `inventory.md` written as job stories, grouped by jobs (Agent A)
-- [ ] Step 1b: banned-word scan clean
+- [x] Step 1: `inventory.md` written as job stories, grouped by jobs (Agent A) — `redesign/inventory.md`; owner-only notes in `redesign/inventory-notes.md` (never hand off)
+- [x] Step 1b: banned-word scan clean
 - [ ] Step 1b: fresh agent can't guess the current layout
 
 **Brief (you, without opening the app)**
