@@ -12,7 +12,20 @@ Choices made, open questions, and proposals for the owner. Nothing in "Proposals
 | 2026-10-13 | Directions are designed in light mode only. Dark mode is designed in step 4, on the chosen direction. | The brief puts light first. Dark is secondary but still required. |
 | 2026-10-13 | The interface uses sans-serif type only. "Serif" exists only as a content typeface inside the editor. | The brief rules out a classic serif feel. W1 still requires a serif option for note text. |
 | 2026-10-13 | Each direction's page is `app.html`, and `index.html` is a one-line redirect to it. | The studio's permission settings block the file tools on any file named `index.html`, probably as part of the firewall. The redirect keeps the required `index.html` entry point. |
-| _pending_ | **Which direction (or combination) to take forward.** | Step 3. The owner chooses. |
+| 2026-10-13 | **Chosen: combine B · Daybook with A · Folio's sidebar.** (C · Atlas not taken forward.) | Owner's choice. B has the welcome-back home page and warm brightness; A's sidebar keeps the area structure visible on desktop. |
+
+### What the combination takes from each
+
+| From **B · Daybook** | From **A · Folio** |
+|---|---|
+| **Today** home page: Continue (F4/F13), one-tap create with a "Creating in" place chip, Flagged, and Recently added (F4b) | **Always-visible left sidebar on desktop:** Today, Flagged, Recent, the collapsible **area tree**, then Deleted and account at the bottom (F5/F6) |
+| Personality: Plus Jakarta Sans, warm coral accent, soft bright colour washes, large radius, the most spacious layout | Breadcrumb in the top bar of every area and MoM |
+| ⌘K command bar for jumping and creating | "+ New MoM here" inside each grouping, and a split **New** button in the top bar |
+| Files as visual tiles with image samples, with a list/grid switch | Compact row lists, an option for busy areas |
+| Editor: centred canvas, a floating bar for formatting selected text, a "/" insert menu, and a minimal top toolbar | |
+| **Phone:** bottom tabs (Today · Areas · ＋ · Flagged · Search) and the create sheet. The **Areas** tab shows A's tree as a full screen. | |
+
+The sidebar is restyled in B's look: a soft tinted panel rather than a grey utility column, and spacing is kept generous so the combination stays calm.
 
 ## CDN libraries used
 
@@ -27,7 +40,7 @@ Icons are inline SVG, and the prototypes use no other libraries. The editor in t
 
 ## Open questions for the owner
 
-1. **Which direction?** Pick A, B or C, or combine them (e.g. "B's Today page and personality with A's sidebar").
+1. ~~**Which direction?**~~ Decided 2026-10-13: B combined with A's sidebar (see above).
 2. **Working names** (Folio / Daybook / Atlas) are placeholders, one per direction. Keep one, or give the product its real name.
 3. **Ranking within "weekly".** The weekly tier is unranked, so I propose this order of prominence after the daily jobs: **O5 Move** (you named it the most frequent) → F1 Search → F13 Recent / F4 Continue → F3 Flagged → O4 Groupings → everything else. Is that right?
 
