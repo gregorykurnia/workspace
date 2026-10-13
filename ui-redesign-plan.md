@@ -274,7 +274,7 @@ The only influence that should remain is the feature set itself, which the new d
 - [ ] Direction chosen; all job stories and states prototyped
 - [ ] Design guide complete: tokens, components, screens, patterns, copy, accessibility
 - [ ] Step 5: coverage audit passed; gaps sent back as needs
-- [ ] Step 5b: design guide approved and versioned; `redesign/studio.sh import` run on `main`
+- [x] Step 5b: design guide approved and versioned; `redesign/studio.sh import` run on `main`
 
 **Implementation plan (sees repo + approved design)**
 - [ ] Step 6: `redesign/ui-implementation-plan.md` written (Agent C)
