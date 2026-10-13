@@ -242,3 +242,5 @@ body.selecting .cw > .row { padding-left: 52px; }
 .share-link .input { flex: 1; }
 .locked-plain { margin-top: 56px; }
 .acct-grid { margin-top: 24px; }
+/* Upload dialog: the gap above the name field. */
+.up-gap { margin-top: 18px; }

@@ -14,11 +14,16 @@ async function uploadCL(file,onProg){
       else{
         var msg='Upload failed ('+xhr.status+')';
         try{var er=JSON.parse(xhr.responseText);msg=er.error&&er.error.message?er.error.message:msg;}catch(e){}
-        if(xhr.status===400&&msg.toLowerCase().includes('format')){msg='This file format is not allowed in your Cloudinary preset. Go to Cloudinary → Settings → Upload → upload preset → Allowed formats, and add the format.';}
-        else if(xhr.status===401){msg='Cloudinary auth error. Check your upload preset is set to Unsigned.';}
-        rej(new Error(msg));
+        var low=msg.toLowerCase(),code='other';
+        if(xhr.status===401||xhr.status===403||xhr.status===404||low.includes('preset')||low.includes('unsigned'))code='storage';
+        else if(xhr.status===413||low.includes('too large')||low.includes('file size'))code='size';
+        else if(xhr.status===400&&(low.includes('format')||low.includes('not allowed')))code='type';
+        // The old screens show the message as written; the new ones map `code` to plain reasons.
+        if(xhr.status===400&&low.includes('format'))msg='This file format is not allowed in your Cloudinary preset. Go to Cloudinary → Settings → Upload → upload preset → Allowed formats, and add the format.';
+        else if(xhr.status===401)msg='Cloudinary auth error. Check your upload preset is set to Unsigned.';
+        var err=new Error(msg);err.code=code;rej(err);
       }
     };
-    xhr.onerror=()=>rej(new Error('Network error'));xhr.send(fd);
+    xhr.onerror=()=>{var e=new Error('Network error');e.code='offline';rej(e);};xhr.send(fd);
   });
 }

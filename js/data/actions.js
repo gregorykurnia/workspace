@@ -169,3 +169,9 @@ function removeGroup(kind,id){
 // Rename an area (name and emoji) or a file. Writes only the fields given.
 function renameArea(id,name,icon){return _w(db.collection('folders').doc(id).update({name:name,icon:icon||''}));}
 function renameFile(id,name){return _w(db.collection('docs').doc(id).update({name:name}));}
+
+// Restrict an area or a file with a password, or lift it. hash is the SHA-256 hex from hw(), or null to remove.
+function setPassword(kind,id,hash){
+  var col=kind==='a'?'folders':'docs';
+  return _w(db.collection(col).doc(id).update({pw:hash?hash:firebase.firestore.FieldValue.delete()}));
+}

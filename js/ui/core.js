@@ -499,12 +499,12 @@ function quickTileHTML({ primary = false, icon, title, sub, act = '', data = {},
 }
 
 /* 3.2 Inputs */
-function fieldHTML({ id, label, control, required = false, error = '', hint = '' }) {
-  return `<div class="field${error ? ' err' : ''}" id="${id}-field"><label class="lab" for="${id}">${esc(label)}${required ? ' <em>required</em>' : ''}</label>${control}${error ? `<span class="ferr" role="alert" id="${id}-err">${ic('alert', 'sm')}${esc(error)}</span>` : ''}${hint ? `<div class="hcopy" id="${id}-hint">${esc(hint)}</div>` : ''}</div>`;
+function fieldHTML({ id, label, control, required = false, note = '', error = '', hint = '' }) {
+  return `<div class="field${error ? ' err' : ''}" id="${id}-field"><label class="lab" for="${id}">${esc(label)}${required ? ' <em>required</em>' : note ? ` <em>${esc(note)}</em>` : ''}</label>${control}${error ? `<span class="ferr" role="alert" id="${id}-err">${ic('alert', 'sm')}${esc(error)}</span>` : ''}${hint ? `<div class="hcopy" id="${id}-hint">${esc(hint)}</div>` : ''}</div>`;
 }
-function inputHTML({ id, name = id, type = 'text', value = '', placeholder = '', autocomplete = 'off', error = '', hint = '', inputmode = '' }) {
+function inputHTML({ id, name = id, type = 'text', value = '', placeholder = '', autocomplete = 'off', error = '', hint = '', inputmode = '', disabled = false }) {
   const desc = descFor(id, error, hint);
-  return `<input class="input" id="${id}" name="${esc(name)}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="${autocomplete}"${inputmode ? ` inputmode="${inputmode}"` : ''}${error ? ' aria-invalid="true"' : ''}${desc ? ` aria-describedby="${desc}"` : ''}>`;
+  return `<input class="input" id="${id}" name="${esc(name)}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="${autocomplete}"${inputmode ? ` inputmode="${inputmode}"` : ''}${disabled ? ' disabled' : ''}${error ? ' aria-invalid="true"' : ''}${desc ? ` aria-describedby="${desc}"` : ''}>`;
 }
 function textareaHTML({ id, name = id, value = '', placeholder = '', error = '', hint = '', rows = 4 }) {
   const desc = descFor(id, error, hint);
@@ -515,9 +515,9 @@ function selectHTML({ id, name = id, options, value = '', error = '', hint = '' 
   return `<select class="select" id="${id}" name="${esc(name)}"${error ? ' aria-invalid="true"' : ''}${desc ? ` aria-describedby="${desc}"` : ''}>${options.map(([v, l]) => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 }
 /* strength: 0–4 for the restriction meter (0 = empty). */
-function pwFieldHTML({ id, label, value = '', hint = '', error = '', meter = false, strength = 0, required = false }) {
-  const control = `<div class="pw-row">${inputHTML({ id, type: 'password', value, autocomplete: 'new-password', error, hint })}<button type="button" class="icon-btn" aria-label="Show password" aria-pressed="false" data-act="pw-toggle" data-for="${id}">${ic('eye')}</button></div>${meter ? `<div class="pw-meter" aria-hidden="true"><i class="s${strength}"></i></div>` : ''}`;
-  return fieldHTML({ id, label, control, required, error, hint });
+function pwFieldHTML({ id, label, value = '', hint = '', error = '', meter = false, strength = 0, required = false, note = '', autocomplete = 'new-password' }) {
+  const control = `<div class="pw-row">${inputHTML({ id, type: 'password', value, autocomplete, error, hint })}<button type="button" class="icon-btn" aria-label="Show password" aria-pressed="false" data-act="pw-toggle" data-for="${id}">${ic('eye')}</button></div>${meter ? `<div class="pw-meter" aria-hidden="true"><i class="s${strength}"></i></div>` : ''}`;
+  return fieldHTML({ id, label, control, required, note, error, hint });
 }
 function searchInHTML({ value = '', label = 'Filter this area', placeholder = 'Filter this area' }) {
   return `<div class="search-wrap"><label class="search-in"><span class="sr">${esc(label)}</span>${ic('search', 'sm')}<input type="search" data-input="filter" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"></label>${value ? `<button type="button" class="icon-btn sm search-clear" data-act="clear-filter" aria-label="Clear filter">${ic('x', 'sm')}</button>` : ''}</div>`;
@@ -846,6 +846,7 @@ onForm('unlock', async (f) => {
   if (pw && (await hw(pw)) === target.pw) {
     (kind === 'a' ? UF : UD).add(id);
     closeAll();
+    toast(kind === 'a' ? `${target.name} is open for this session` : `Unlocked “${target.name}”`, { icon: 'unlock' });
     render();
     if (kind === 'f' && ACT['open-file']) ACT['open-file']({ id });
     return;

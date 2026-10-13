@@ -75,3 +75,50 @@ on('revoke-access', d => {
     () => toast('Couldn’t remove access. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }));
   closeAll();
 });
+
+/* ---------- Restrict, change or remove a password (P1) ---------- */
+/* The password is stored only as a SHA-256 hash (hw). Restricting an area also covers everything
+   inside it; a restricted file keeps its name visible but its contents behind the password. */
+const pwTarget = (kind, id) => (kind === 'a' ? gf(id) : D.find(d => d.id === id));
+const pwStrength = v => (v.length === 0 ? 0 : Math.min(4, 1 + (v.length >= 6) + (v.length >= 10) + (/[A-Z]/.test(v) && /\d|\W/.test(v))));
+function passwordDialog(kind, id) {
+  const it = pwTarget(kind, id); if (!it) return;
+  const name = it.name || 'Untitled', has = !!it.pw;
+  layer({
+    label: has ? 'Change or remove password' : 'Restrict with a password',
+    html: `<form data-form="password" data-kind="${esc(kind)}" data-id="${esc(id)}" novalidate>${dialogHTML({
+      title: has ? 'Change or remove password' : 'Restrict with a password',
+      text: has ? `${name} is restricted. Enter the current password to change or remove it.` : `Only people who know the password can open ${name}${kind === 'a' ? ', or anything inside it' : ''}.`,
+      body: (has ? pwFieldHTML({ id: 'pwCur', label: 'Current password', autocomplete: 'current-password' }) : '')
+        + pwFieldHTML({ id: 'pwNew', label: has ? 'New password' : 'Password', note: has ? 'leave blank to remove' : '', hint: 'At least 6 characters. Stored only as a hash.', meter: true })
+        + pwFieldHTML({ id: 'pwConf', label: 'Type it again' }),
+      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: has ? 'Save' : 'Restrict', type: 'submit' }),
+    })}</form>`,
+  });
+  const n = $('#pwNew'); if (n) n.setAttribute('data-input', 'pw-meter');
+}
+onInput('pw-meter', el => { const i = el.closest('.field').querySelector('.pw-meter i'); if (i) i.className = 's' + pwStrength(el.value); });
+/* Areas: admins only. Files: anyone who can edit them (a final file only by an admin; readOnly() already says so). */
+const canChangePassword = (kind, it) => (kind === 'a' ? isAdmin() : !readOnly(it));
+on('restrict', d => {
+  const it = pwTarget(d.kind, d.id); if (!it) return;
+  if (!canChangePassword(d.kind, it)) { toast(d.kind === 'a' ? 'Only admins can restrict areas.' : 'This file is marked final. Only an admin can change it.', { icon: 'alert', tone: 'warn' }); return; }
+  passwordDialog(d.kind, d.id);
+});
+on('unrestrict', d => ACT.restrict(d));
+onForm('password', async f => {
+  const { kind, id } = f.dataset, it = pwTarget(kind, id); if (!it) return;
+  const has = !!it.pw, cur = has ? f.elements.pwCur.value : '', pw = f.elements.pwNew.value, conf = f.elements.pwConf.value;
+  if (has && !(cur && (await hw(cur)) === it.pw)) { fieldError(f, 'pwCur', 'That isn’t the current password.'); f.elements.pwCur.value = ''; f.elements.pwCur.focus(); return; }
+  const fail = e => toast('Couldn’t save the password. Check your connection, then try again.', { icon: 'alert', tone: 'warn' });
+  if (has && !pw) {   // blank new password: remove it
+    closeAll(); (kind === 'a' ? UF : UD).delete(id);
+    setPassword(kind, id, null).then(() => toast('Password removed', { icon: 'unlock' }), fail);
+    return;
+  }
+  if (pw.length < 6) { fieldError(f, 'pwNew', 'Use at least 6 characters.'); f.elements.pwNew.focus(); return; }
+  if (pw !== conf) { fieldError(f, 'pwConf', 'The two passwords don’t match.'); f.elements.pwConf.focus(); return; }
+  const hash = await hw(pw);
+  closeAll(); (kind === 'a' ? UF : UD).delete(id);   // a changed or new password closes it for this session, as the design shows
+  setPassword(kind, id, hash).then(() => toast(has ? 'Password changed' : 'Restricted with a password', { icon: 'lock' }), fail);
+});
