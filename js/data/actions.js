@@ -65,7 +65,9 @@ function createMom(fields){
 // survives). Every content save also records editedBy and edited.
 function updateMom(id,fields){
   var f=Object.assign({},fields);
-  if('content' in f||'title' in f||'date' in f||'tags' in f||'gdoc' in f){f.edited=Date.now();var who=_author();if(who)f.editedBy=who;}
+  // edited (ms) names this version; prevEdited (written by the new editor) names the version it was
+  // based on, so another open copy can merge the two (js/data/merge.js).
+  if('content' in f||'title' in f||'date' in f||'tags' in f||'gdoc' in f){f.edited=f.edited||Date.now();var who=_author();if(who)f.editedBy=who;}
   return _w(db.collection('moms').doc(id).update(f));
 }
 // Flag / unflag a MoM ('m') or file ('f').

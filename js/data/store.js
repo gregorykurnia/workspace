@@ -45,10 +45,12 @@ function _onSnap(col,key,set,snap){
   _fromCache[key]=!!meta.fromCache;
   if(!meta.fromCache)_fromServer[key]=true;
   if(!LOADED[key]||snap.docChanges().length){
+    var later=LOADED[key];
     set(snap.docs.map(d=>d.data()));
     LOADED[key]=true;
     chkLoad();
     Store._emit(col);
+    if(later&&(key==='m'||key==='d'))_added(col,snap);
   }else chkLoad();
   _syncUpdate();
 }
@@ -59,6 +61,13 @@ function _pendingMoms(snap){
   var now=new Set();snap.docs.forEach(function(d){if(d.metadata&&d.metadata.hasPendingWrites)now.add(d.id);});
   var same=now.size===Store.pendingMoms.size;now.forEach(function(id){if(!Store.pendingMoms.has(id))same=false;});
   if(!same){Store.pendingMoms=now;Store._emit('pending');}
+}
+// New MoMs and files that arrived after the first load and aren't this device's own unsent writes
+// (S1). Emits 'added' with { col, items }; the screens decide whose they are and what to say.
+function _added(col,snap){
+  var items=snap.docChanges().filter(function(c){return c.type==='added'&&c.doc&&!(c.doc.metadata&&c.doc.metadata.hasPendingWrites);})
+    .map(function(c){return c.doc.data();}).filter(function(x){return x&&!x.deleted;});
+  if(items.length)Store._emit('added',{col:col,items:items});
 }
 var _listenersStarted=false;
 function startListeners(){

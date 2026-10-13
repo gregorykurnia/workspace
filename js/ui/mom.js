@@ -9,6 +9,10 @@ const ED = {
   known: null,          // the stored fields this editor last loaded or saved (remote-change check)
   remote: null,         // a colleague's saved version waiting behind the remote bar
   unwatch: null, slash: null, cell: null, rmTimer: null, uploads: new Map(), created: new Set(),
+  // Versions of the body (S2), so a colleague's save can be merged with what's on screen:
+  // vers: key -> { html, parents: [keys] }. Keys are the `edited` times of saved versions, or
+  // 'L1', 'L2'… for what the editor held when it saved a merged version.
+  vers: new Map(), base: '', head: '', mine: new Map(), seq: 0, gone: '',
 };
 const FONT_STACK = { serif: 'Georgia, "Times New Roman", serif', mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' };
 const SAVE_DELAY = 800;
@@ -113,7 +117,7 @@ VIEWS.mom = {
         <h1 class="ed-title" id="edTitle" contenteditable="${ro ? 'false' : 'plaintext-only'}" spellcheck="true" aria-label="Title" data-input="ed-title" data-key="ed-title">${esc(v.title)}</h1>
         <div class="ed-meta" id="edMeta">${metaHTML(v, ro)}</div>
         ${ro ? noticeHTML({ tone: 'info', icon: 'lock', title: 'Marked final.', text: 'An admin has agreed this record, so you can read, flag and export it, but not change it.', role: 'note' }) : ''}
-        <div id="remoteHost"></div>
+        <div id="remoteHost" data-keepfocus></div>
         <div id="journalHost"></div>
         <div id="edMount" class="ed-mount" aria-busy="true"><div class="skel skel-line"></div><div class="skel skel-line"></div></div>
       </div>`;
@@ -190,6 +194,9 @@ async function openEditor(m) {
   });
   ED.editor = editor;
   refreshChrome(); paintJournal();
+  ED.vers = new Map(); ED.mine = new Map(); ED.seq = 0; ED.gone = ''; ED.snapSeq = 0;
+  ED.base = ED.head = m.edited ? String(m.edited) : 'v0';
+  ED.vers.set(ED.base, { html: editor.getHTML(), parents: [] });
   ED.unwatch = watchMom(m.id, onRemoteSnap);
   paintQueued();
   touchRecent('m', m.id);
@@ -197,7 +204,7 @@ async function openEditor(m) {
   ED.backup = null;
   if (journal && journal.changed && !ED.ro) {
     const converted = editor.getHTML();
-    ED.backup = m.content; ED.known.content = converted;
+    ED.backup = m.content; ED.known.content = converted; ED.vers.get(ED.base).html = converted;
     convertMomContent(m.id, m.content, converted).then(done => { if (done && ED.id === m.id) ED.backup = null; }, () => { /* offline: the next save keeps the backup */ });
   }
   if (ED.created.has(m.id)) { ED.created.delete(m.id); editor.commands.focus('end'); }
@@ -211,7 +218,7 @@ function closeEditor() {
   ED.inflight = 0;
   closeSlash();
   if (ED.editor) { try { ED.editor.destroy(); } catch (e) { /* already gone */ } ED.editor = null; }
-  ED.id = null; ED.cell = null; ED.remote = null; ED.pending = {}; ED.bodyDirty = false;
+  ED.id = null; ED.cell = null; ED.remote = null; ED.pending = {}; ED.bodyDirty = false; ED.gone = ''; ED.snapSeq = (ED.snapSeq || 0) + 1;
 }
 on('ed-reopen', () => render());
 
@@ -232,8 +239,13 @@ function saveNow(withToast) {
   if (fields.content != null && ED.backup != null && stored && stored.contentBackup == null) { fields.contentBackup = ED.backup; ED.backup = null; }
   if ('date' in fields) fields.date = msOf(isoOf(fields.date));
   if (!Object.keys(fields).length) { if (withToast) toast('Saved', { icon: 'check', ms: 2000 }); return Promise.resolve(); }
+  if (!stampVersion(fields)) {   // waiting to read a colleague's old-format version; nothing is lost (it stays pending)
+    if (fields.contentBackup != null) ED.backup = fields.contentBackup;
+    return Promise.resolve();
+  }
   ED.pending = {}; ED.bodyDirty = false;
   Object.keys(fields).forEach(k => { ED.known[k] = k === 'tags' ? JSON.stringify(fields[k]) : fields[k]; });
+  if (fields.edited) ED.mine.set(keyOf(fields.edited), knownSig());   // to recognise this save when it comes back
   setStatus(waitingStatus());
   ED.inflight = (ED.inflight || 0) + 1;
   // No answer yet: the connection is probably gone even if the browser hasn't noticed.
@@ -828,32 +840,179 @@ on('link-insert', () => {
   toast(`Inserted ${n} link${n === 1 ? '' : 's'}`, { icon: 'link' });
 });
 
-/* ---------- A colleague's save (S2) ---------- */
-function onRemoteSnap(snap) {
-  if (!snap.exists || snap.metadata.hasPendingWrites || !ED.editor) return;
-  const d = snap.data(), k = ED.known; if (!k) return;
+/* ---------- A colleague's save (S2) ----------
+   Someone else's save never replaces what's on screen by itself: it waits behind the remote bar,
+   so the caret never jumps. Nothing is lost either way:
+   - "Show changes" merges their version into what's on screen, unsaved edits included
+     (js/data/merge.js), and keeps your place (the same block, the same scroll position).
+   - If you keep typing instead, each save writes the merge of your text and theirs, so their
+     change is never overwritten; the bar stays until you look.
+   The merge needs the version both sides started from. Every save writes `edited` (its own key)
+   and `prevEdited` (the version it was based on); ED.vers remembers the versions seen here. */
+const keyOf = v => (v == null ? '' : String(v));
+/* The five fields a MoM save changes, as one string: what we wrote, or what a snapshot holds. */
+const knownSig = () => { const k = ED.known; return JSON.stringify([k.content, k.title, k.date, k.tags, k.gdoc]); };
+const docSig = d => JSON.stringify([d.content || '', d.title || '', d.date, JSON.stringify(d.tags || []), d.gdoc || '']);
+const verHTML = k => (ED.vers.get(k) || {}).html || '';
+/* The newest version that both a and b come from. */
+function commonBase(a, b) {
+  const seen = new Set(), walk = [a];
+  while (walk.length) { const k = walk.shift(); if (seen.has(k)) continue; seen.add(k); ((ED.vers.get(k) || {}).parents || []).forEach(p => walk.push(p)); }
+  const q = [b], been = new Set();
+  while (q.length) { const k = q.shift(); if (seen.has(k)) return k; if (been.has(k)) continue; been.add(k); ((ED.vers.get(k) || {}).parents || []).forEach(p => q.push(p)); }
+  return a;   // no shared history known: treat what's on screen as the starting point
+}
+/* Before a save goes out: name it, and if a colleague's version is waiting, write the merge.
+   Returns false when the save must wait (see below). */
+function stampVersion(fields) {
+  if (!['content', 'title', 'date', 'tags', 'gdoc'].some(k => k in fields)) return true;
+  const head = ED.vers.get(ED.head);
+  if ('content' in fields && ED.base !== ED.head && head && head.pendingRaw != null) {
+    // Theirs is in an old format that couldn't be read yet (G14): never save over it. Read it
+    // again; the save goes out once it can be merged.
+    const id = ED.id, again = () => { if (ED.id === id) saveNow(false); };
+    bodyHTML(head.pendingRaw, mom(id) || {}).then(html => { head.html = html; head.pendingRaw = null; again(); }, () => setTimeout(again, 5000));
+    return false;
+  }
+  const key = keyOf(Math.max(Date.now(), Number(ED.head) + 1 || 0));
+  fields.edited = Number(key);
+  if (/^\d+$/.test(ED.head)) fields.prevEdited = Number(ED.head);
+  if (!('content' in fields)) {   // fields only: the body is the server's as it was
+    ED.vers.set(key, { html: verHTML(ED.head), parents: [ED.head] });
+    if (ED.base === ED.head) ED.base = key;
+    ED.head = key;
+    return true;
+  }
+  if (ED.base === ED.head) {
+    ED.vers.set(key, { html: fields.content, parents: [ED.base] });
+    ED.base = ED.head = key;
+    return true;
+  }
+  // A colleague's version is waiting: keep both. The editor keeps showing your text (L…) until
+  // you press Show changes; the server gets the merge.
+  const merged = mergeBodies(verHTML(commonBase(ED.base, ED.head)), fields.content, verHTML(ED.head));
+  const local = 'L' + (++ED.seq);
+  ED.vers.set(local, { html: fields.content, parents: [ED.base] });
+  ED.vers.set(key, { html: merged.html, parents: [ED.head, local] });
+  fields.content = merged.html;
+  ED.known.content = merged.html;
+  ED.base = local; ED.head = key;
+  return true;
+}
+/* A stored body as this editor shows it: converted, as a journal if it is one, and through the
+   editor's own schema, so versions compare block for block. */
+async function bodyHTML(raw, m) {
+  const TT = await whenTiptap();
+  let html = (await toEditorHTML(raw)).html;
+  if (isProspectJournal(m)) html = journalize(html).html;
+  const el = document.createElement('div');
+  const ed = new TT.Editor({ element: el, content: html, extensions: editorExtensions(TT) });
+  const out = ed.getHTML();
+  ed.destroy();
+  return out;
+}
+const whoOf = d => (d && d.editedBy && d.editedBy.name) || 'Someone';
+function showBar(opts) { const host = $('#remoteHost'); if (host) host.innerHTML = remoteBarHTML(opts); }
+async function onRemoteSnap(snap) {
+  const id = ED.id, n = ++ED.snapSeq;
+  if (!ED.editor || !id) return;
+  if (!snap.exists) {   // removed for good while open: keep the text on screen so it can be copied
+    if (ED.gone !== 'removed') { ED.gone = 'removed'; showBar({ text: 'Someone removed this MoM for good. Copy anything you need before leaving.', action: null }); }
+    return;
+  }
+  if (snap.metadata.hasPendingWrites) return;   // our own save, not yet confirmed
+  const d = snap.data();
+  if (d.deleted) {
+    if (ED.gone !== 'deleted') { ED.gone = 'deleted'; showBar({ text: 'Someone moved this MoM to Deleted. Your changes are kept there.', action: { act: 'restore', label: 'Restore', data: { kind: 'm', id } } }); }
+    return;
+  }
+  if (ED.gone) { ED.gone = ''; showBar({ text: 'This MoM is back.', action: null }); setTimeout(() => { if (!ED.gone && !ED.remote && $('#remoteHost')) $('#remoteHost').innerHTML = ''; }, 2500); if (ED.remote) showBar({ who: ED.remote.who }); }
+  const key = keyOf(d.edited);
+  // Our own save, confirmed: its name and its contents both match. (The old app doesn't write
+  // `edited`, so its saves keep the name of the last save before them; the contents tell them apart.)
+  if (key && ED.mine.get(key) === docSig(d)) return;
+  const k = ED.known; if (!k) return;
   const changed = (d.content || '') !== k.content || (d.title || '') !== k.title || d.date !== k.date || JSON.stringify(d.tags || []) !== k.tags || (d.gdoc || '') !== k.gdoc;
   if (!changed) return;
-  ED.remote = d;
-  const host = $('#remoteHost');
-  if (host) host.innerHTML = remoteBarHTML({ who: (d.editedBy && d.editedBy.name) || 'Someone' });
-}
-on('apply-remote', async () => {
-  const d = ED.remote, e = ED.editor; if (!d || !e) return;
   let html;
-  try { html = (await toEditorHTML(d.content)).html; } catch (err) { toast('Couldn’t show the changes. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }); return; }
-  const { from, to } = e.state.selection;
-  e.chain().command(({ tr }) => { tr.setMeta('remote', true); return true; }).setContent(html, false).run();
-  const size = e.state.doc.content.size;
-  try { e.commands.setTextSelection({ from: Math.min(from, size), to: Math.min(to, size) }); } catch (err) { /* the old place is gone */ }
+  try { html = await bodyHTML(d.content, d); } catch (err) { html = null; }   // an old format offline (G14): Show changes tries again
+  if (ED.id !== id || n !== ED.snapSeq) return;   // a newer snapshot or another MoM took over
+  // Unnamed, or a name (and base) left over from an earlier save, as the old app's saves are: then
+  // the only base we can trust is the last version seen here.
+  const reused = !key || ED.vers.has(key);
+  const vkey = reused ? `${key || 'r'}~${n}` : key;
+  const prev = reused ? '' : keyOf(d.prevEdited);
+  ED.vers.set(vkey, { html: html == null ? verHTML(ED.head) : html, parents: [prev && ED.vers.has(prev) ? prev : ED.head], pendingRaw: html == null ? d.content : null });
+  ED.head = vkey;
   ED.known = { content: d.content || '', title: d.title || '', date: d.date, tags: JSON.stringify(d.tags || []), gdoc: d.gdoc || '' };
-  ED.pending = {}; ED.bodyDirty = false; ED.remote = null;
-  const t = $('#edTitle'); if (t) t.textContent = d.title || '';
+  ED.remote = { who: whoOf(d), title: d.title || '' };
+  if (ED.ro) { applyRemote({ quiet: true }); return; }   // read only: nothing of yours to keep, just show it
+  showBar({ who: ED.remote.who });
+}
+/* Where the person is: the selection (by block and offset, so it survives blocks added or removed
+   elsewhere) and a block to hold still on screen: the caret's block when it's in view, else the
+   first block in view. */
+function placeNow(e) {
+  const doc = e.state.doc, view = e.view, starts = [];
+  doc.forEach((node, off) => starts.push(off));
+  const blockAt = pos => { let i = 0; while (i + 1 < starts.length && starts[i + 1] <= pos) i++; return i; };
+  const sel = e.state.selection, idx = blockAt(sel.from);
+  const topOf = i => { const el = starts.length ? view.nodeDOM(starts[i]) : null; return el && el.getBoundingClientRect ? el.getBoundingClientRect() : null; };
+  let anchor = idx, r = topOf(idx);
+  if (!r || r.bottom < 0 || r.top > window.innerHeight) {
+    anchor = 0;
+    for (let i = 0; i < starts.length; i++) { const b = topOf(i); if (b && b.bottom > 0) { anchor = i; break; } }
+    r = topOf(anchor);
+  }
+  return { idx, within: sel.from - (starts[idx] || 0), span: sel.to - sel.from, anchor, top: r ? r.top : null, focused: view.hasFocus() };
+}
+function restorePlace(e, place, blocks) {
+  const doc = e.state.doc, starts = [], sizes = [];
+  doc.forEach((node, off) => { starts.push(off); sizes.push(node.nodeSize); });
+  if (!starts.length) return;
+  // Your block i is now at index find(i); a block of yours that's gone falls back to the nearest one before it.
+  const find = i => {
+    if (blocks.length !== starts.length) return Math.min(i, starts.length - 1);
+    let j = blocks.findIndex(b => b.ours === i);
+    if (j < 0) for (let k = 0; k < blocks.length; k++) if (blocks[k].ours >= 0 && blocks[k].ours < i) j = k;
+    return Math.max(0, j);
+  };
+  const j = find(place.idx);
+  const from = starts[j] + Math.min(place.within, sizes[j] - 1);
+  try { e.commands.setTextSelection({ from, to: Math.min(from + place.span, doc.content.size) }); } catch (err) { /* not a text position */ }
+  if (place.focused && !e.view.hasFocus()) e.view.focus();
+  const el = e.view.nodeDOM(starts[find(place.anchor)]);
+  if (place.top != null && el && el.getBoundingClientRect) window.scrollBy(0, el.getBoundingClientRect().top - place.top);
+}
+async function applyRemote({ quiet = false } = {}) {
+  const e = ED.editor, r = ED.remote; if (!e || !r) return;
+  if (ED.uploads.size) { toast('An image is still uploading. Show the changes when it’s done.', { icon: 'info' }); return; }
+  const head = ED.vers.get(ED.head);
+  if (head.pendingRaw != null) {   // couldn't be converted when it arrived: try now
+    try { head.html = await bodyHTML(head.pendingRaw, mom(ED.id) || {}); head.pendingRaw = null; }
+    catch (err) { toast('Couldn’t show the changes. Check your connection, then try again.', { icon: 'alert', tone: 'warn' }); return; }
+  }
+  if (ED.editor !== e) return;
+  const mine = e.getHTML();
+  const merged = mergeBodies(verHTML(commonBase(ED.base, ED.head)), mine, head.html);
+  // Measure first, then change everything above and in the note, then put the place back.
+  const place = placeNow(e);
+  ED.base = ED.head; ED.remote = null;
+  if (!('title' in ED.pending)) { const t = $('#edTitle'); if (t && t.textContent !== r.title) t.textContent = r.title; }
   paintMeta(); paintJournal();
-  $('#remoteHost').innerHTML = '';
-  setStatus('saved');
-  toast(`Updated with ${(d.editedBy && d.editedBy.name) || 'the latest'} changes. Your place is kept.`, { icon: 'cloud-check' });
-});
+  const host = $('#remoteHost'); if (host && !ED.gone) host.innerHTML = '';
+  if (merged.html !== mine) e.chain().command(({ tr }) => { tr.setMeta('remote', true); tr.setMeta('addToHistory', false); return true; }).setContent(merged.html, false).run();
+  restorePlace(e, place, merged.blocks);
+  // What's on screen now differs from the server (your unsaved edits, or a part kept twice): save it.
+  if (e.getHTML() !== head.html) { ED.bodyDirty = true; schedule(); }
+  else if (!Object.keys(ED.pending).length && !ED.inflight && UI.edStatus !== 'failed') setStatus('saved');
+  if (quiet) return;
+  const whose = r.who === 'Someone' ? 'the latest changes' : `${r.who}’s changes`;
+  toast(merged.conflicts
+    ? `Updated with ${whose}. Where you both changed the same part, both versions are kept, theirs first.`
+    : `Updated with ${whose}. Your place is kept.`, { icon: 'cloud-check', ms: merged.conflicts ? 7000 : 4200 });
+}
+on('apply-remote', () => applyRemote());
 
 /* Data changes elsewhere repaint what the editor shows around the note (flag, meta, journal). */
 Store.onChange(what => {

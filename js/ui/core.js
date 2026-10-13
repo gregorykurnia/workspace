@@ -473,7 +473,7 @@ function guessKind(addr) {
   return 'link';
 }
 /* The signed-in account, or null (the gallery and the sign-in screen have none). */
-const signedInUser = () => (typeof auth !== 'undefined' && auth ? auth.currentUser : null);
+const signedInUser = () => sessionUser();   // one accessor, in js/data/store.js
 const descFor = (id, error, hint) => [error ? `${id}-err` : '', hint ? `${id}-hint` : ''].filter(Boolean).join(' ');
 
 /* 3.1 Buttons */
@@ -757,8 +757,9 @@ function linkPillHTML({ kind = 'web', href, label, id = '' }) {
   if (kind === 'file') return `<a class="ref" data-file="${esc(id)}" href="${esc(href)}" contenteditable="false">${ic('file', 'sm')}${esc(label)}</a>`;
   return `<a class="ref mom" data-mom="${esc(id)}" href="${esc(href)}" contenteditable="false">${ic('doc', 'sm')}${esc(label)}</a>`;
 }
-function remoteBarHTML({ who }) {
-  return `<div class="remote-bar" role="status">${ic('users', 'sm')}<span>${esc(who)} saved changes to this MoM</span><span class="spacer"></span><button type="button" class="link-btn" data-act="apply-remote">Show changes</button></div>`;
+/* S2. who: the colleague's name. text / action ({ act, label, data }) replace the usual line and button. */
+function remoteBarHTML({ who = 'Someone', text = '', action = { act: 'apply-remote', label: 'Show changes' } }) {
+  return `<div class="remote-bar" role="status">${ic('users', 'sm')}<span>${esc(text || `${who} saved changes to this MoM`)}</span><span class="spacer"></span>${action ? `<button type="button" class="link-btn" data-act="${action.act}"${attrs(action.data || {})}>${esc(action.label)}</button>` : ''}</div>`;
 }
 /* The A4 export preview. body is the note's own HTML (already escaped by the editor). */
 function a4HTML({ title, area, date, tags = [], body = '', stamp = '' }) {
@@ -923,7 +924,24 @@ on('undo', d => {
 });
 
 /* ---------- Store events and boot ---------- */
-Store.onChange(what => {
+/* A colleague added a MoM or a file (S1): the lists already show it; say who and where. Only for
+   what this person can see, never for their own additions (another tab or device), never for test
+   data ([TEST-…] names), and only when the author is known (older apps don't record it: G6). */
+function colleagueAdded({ col, items }) {
+  const me = signedInUser();
+  if (!me || me.isAnonymous) return;
+  const kind = col === 'moms' ? 'm' : 'f';
+  const nameOf = x => (kind === 'm' ? x.title || 'Untitled meeting' : x.name || 'Untitled file');
+  const seen = items.filter(x => x.createdBy && x.createdBy.uid && x.createdBy.uid !== me.uid && !/^\[TEST-/.test(nameOf(x)) && x.folderId && canSee(x.folderId) && !lockedArea(x.folderId));
+  if (!seen.length) return;
+  const who = seen[0].createdBy.name || 'A colleague', oneWho = seen.every(x => x.createdBy.uid === seen[0].createdBy.uid);
+  const a = area(seen[0].folderId), oneArea = seen.every(x => x.folderId === seen[0].folderId);
+  const where = oneArea && a ? ` to ${a.name}` : '';
+  toast(seen.length === 1 ? `${who} added “${nameOf(seen[0])}”${where}`
+    : oneWho ? `${who} added ${seen.length} ${kind === 'm' ? 'MoMs' : 'files'}${where}` : `${seen.length} new ${kind === 'm' ? 'MoMs' : 'files'} from your team${where}`, { icon: 'users' });
+}
+Store.onChange((what, info) => {
+  if (what === 'added') { colleagueAdded(info); return; }   // the collection's own event already redraws
   if (what === 'role' || what === 'guest') UI.roleReady = true;
   if (what === 'access' || what === 'guest') UI.accessReady = true;
   if (what === 'error') console.error('A live listener failed');
