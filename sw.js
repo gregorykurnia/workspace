@@ -7,7 +7,6 @@ const RUNTIME_CACHE = 'workbench-runtime-v3';
 const APP_SHELL = [
   './',
   './index.html',
-  './next.html',
   './manifest.webmanifest',
   './icon.svg',
   './icons/apple-touch-icon.png',

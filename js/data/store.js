@@ -87,16 +87,10 @@ function gf(id){return F.find(f=>f.id===id);}
 function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
 function momsOf(fid){return M.filter(m=>m.folderId===fid);}
 function docsOf(fid){return D.filter(d=>d.folderId===fid);}
-function pathTo(id){var p=[],c=gf(id);while(c){p.unshift(c.id);c=c.parent?gf(c.parent):null;}return p;}
-function cnt(fid){return kids(fid).length+momsOf(fid).length+docsOf(fid).length;}
-function folderLabel(id){var p=[],c=gf(id);while(c){p.unshift(c.name);c=c.parent?gf(c.parent):null;}return p.join(' / ');}
-function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
 function docsOfDF(dfid){return D.filter(d=>d.docFolderId===dfid);}
-function docsUngrp(fid){return D.filter(d=>d.folderId===fid&&!d.docFolderId);}
+function docFoldersOf(fid){return DF.filter(df=>df.folderId===fid);}
 function momFoldersOf(fid){return MF.filter(mf=>mf.folderId===fid);}
 function momsOfMF(mfid){return M.filter(m=>m.momFolderId===mfid);}
-function momsUngrp(fid){return M.filter(m=>m.folderId===fid&&!m.momFolderId);}
-function ifl(id){var f=gf(id);return f&&f.pw&&!UF.has(id);}
 
 // ---------- Who may see what (the new UI; the old page keeps canSeeFolder in session.js) ----------
 // The signed-in person (null when signed out). A function so it is read at call time.

@@ -25,8 +25,6 @@ function dFDeep(fid){
   ps.push(dF(fid));
   return _all(ps);
 }
-function restoreItem(col,id){return _w(db.collection(col).doc(id).update({deleted:false,deletedAt:firebase.firestore.FieldValue.delete()}));}
-function permDeleteItem(col,id){return _permDel(col,id);}
 function clearTrash(){
   var ps=[];
   TF.forEach(f=>ps.push(_permDel('folders',f.id)));

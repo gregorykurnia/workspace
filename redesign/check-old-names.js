@@ -4,7 +4,7 @@
    files before they were deleted. Plain words in copy don't count: only class="…" attributes,
    classList calls, selector strings handed to $ / $$ / querySelector / closest / matches,
    getElementById, id="…", and the selectors in the stylesheets.
-   Usage: node redesign/check-old-names.js [file or folder …]   (default: index.html, next.html, css, js, dev) */
+   Usage: node redesign/check-old-names.js [file or folder …]   (default: index.html, css, js) */
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const list = fs.readFileSync(path.join(__dirname, 'old-names.txt'), 'utf8').split('\n');
@@ -40,7 +40,7 @@ const walk = p => {
   if (fs.statSync(p).isFile()) return [p];
   return fs.readdirSync(p, { withFileTypes: true }).flatMap(e => e.name === 'node_modules' ? [] : walk(path.join(p, e.name)));
 };
-const targets = (process.argv.length > 2 ? process.argv.slice(2) : ['index.html', 'next.html', 'css', 'js', 'dev']).map(t => path.resolve(ROOT, t));
+const targets = (process.argv.length > 2 ? process.argv.slice(2) : ['index.html', 'css', 'js']).map(t => path.resolve(ROOT, t));
 const files = targets.flatMap(walk).filter(f => /\.(html|css|js)$/.test(f));
 const hits = [];
 files.forEach(f => {

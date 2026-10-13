@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const name = (/const APP_NAME = '([^']+)'/.exec(read('js/ui/core.js')) || [])[1];
-const page = fs.existsSync(path.join(root, 'index.html')) ? 'index.html' : 'next.html';
+const page = 'index.html';
 const title = (/<title>([^<]*)<\/title>/.exec(read(page)) || [])[1];
 const manifest = JSON.parse(read('manifest.webmanifest'));
 const bad = [];

@@ -450,7 +450,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- Components (Phase 3): pure builders. Data in, markup out; no store reads, no inline
-   styles, no inline handlers. Screens (Phase 4+) and dev/gallery.html call these. ---------- */
+   styles, no inline handlers. Screens call these. ---------- */
 const KINDS = {
   pdf: { label: 'PDF', icon: 'pdf', ext: 'PDF', tile: 'k-pdf' },
   image: { label: 'Image', icon: 'image', ext: 'IMG', tile: 'k-image' },

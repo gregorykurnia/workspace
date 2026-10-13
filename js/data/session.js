@@ -87,28 +87,3 @@ function startSession(){
   });
 }
 
-// Returns true if the current user can see a given folder
-function canSeeFolder(fid){
-  if(CURR_USER_ROLE==='admin')return true;
-  var user=auth.currentUser;
-  if(!user)return false;
-  // Anonymous share-link guests: allow access only within a folder tree that
-  // has link-sharing explicitly turned on
-  if(user.isAnonymous&&typeof SHARE_MODE!=='undefined'&&SHARE_MODE&&SHARE_FOLDER_ID){
-    var shareRoot=gf(SHARE_FOLDER_ID);
-    if(!shareRoot||!shareRoot.shared)return false;
-    var check=gf(fid);
-    while(check){
-      if(check.id===SHARE_FOLDER_ID)return true;
-      check=check.parent?gf(check.parent):null;
-    }
-    return false;
-  }
-  // Walk up the folder tree — access on any ancestor grants access
-  var current=gf(fid);
-  while(current){
-    if(FA.some(function(fa){return fa.folderId===current.id&&fa.uid===user.uid;}))return true;
-    current=current.parent?gf(current.parent):null;
-  }
-  return false;
-}
