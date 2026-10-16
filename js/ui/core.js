@@ -794,7 +794,7 @@ const noAccessPartHTML = () => emptyHTML({ icon: 'shelf', title: 'No areas yet',
 /* A shared link that is off or gone. */
 const unavailableHTML = () => `<div class="vpage"><div class="vcard vcard-center">${emptyHTML({ small: true, icon: 'lock', title: 'This link is no longer available', text: 'The link may have been turned off, or the item was removed. Ask the person who shared it for a new link.' })}</div></div>`;
 /* The header on shared pages: no accounts, read only. */
-const visitorHeadHTML = () => `<header class="vhead"><span class="brand-mark">${ic('book')}</span><span class="who-line">${esc(APP_NAME)}</span><span class="spacer"></span>${readOnlyPillHTML()}</header>`;
+const visitorHeadHTML = () => `<header class="vhead"><img class="brand-mark brand-logo" src="icon.svg" alt=""><span class="who-line">${esc(APP_NAME)}</span><span class="spacer"></span>${readOnlyPillHTML()}</header>`;
 
 /* Today's first-run variant: one wide tile, then the three steps inside an area. */
 function quickFirstHTML({ act = 'new-area', adminOff = '' }) {

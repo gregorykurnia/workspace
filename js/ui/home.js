@@ -202,7 +202,7 @@ function setSubmitting(btn, on) { busy(btn, on); btn.disabled = !!on; }
 VIEWS.signin = {
   html() {
     return `<div class="auth-wrap"><form class="auth" data-form="signin" novalidate>
-      <span class="brand-mark">${ic('book')}</span>
+      <img class="brand-mark brand-logo" src="icon.svg" alt="">
       <h1>Sign in to ${esc(APP_NAME)}</h1>
       <p class="sub">Your meetings, files and areas, in one place.</p>
       <div data-slot="notice"></div>
