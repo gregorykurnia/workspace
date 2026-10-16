@@ -58,7 +58,7 @@ function sidebarHTML(r, opts = {}) {
   const flaggedCount = M.filter(m => m.starred && canSee(m.folderId) && !hiddenItem('m', m)).length + D.filter(d => d.starred && canSee(d.folderId) && !hiddenItem('f', d)).length;
   const nav = (href, icon, label, active, count) => `<a class="nav-item" href="${href}" ${active ? 'aria-current="page"' : ''}>${ic(icon)}<span>${label}</span>${count ? `<span class="count">${count}</span>` : ''}</a>`;
   const me = currentUser();
-  return `<div class="side-brand"><span class="brand-mark">${ic('book')}</span><span>${esc(APP_NAME)}</span></div>
+  return `<div class="side-brand"><img class="brand-mark brand-logo" src="icon.svg" alt=""><span>${esc(APP_NAME)}</span></div>
     <nav class="side-nav" aria-label="Main">
       ${nav('#/today', 'sun', 'Today', r.name === 'today')}
       ${nav('#/flagged', 'flag', 'Flagged', r.name === 'flagged', flaggedCount || '')}

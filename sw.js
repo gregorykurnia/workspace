@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'workbench-static-v6';
+const STATIC_CACHE = 'workbench-static-v7';
 const RUNTIME_CACHE = 'workbench-runtime-v4';
 
 // The app shell: the page, its styles, fonts, icons and every script, so the installed app opens

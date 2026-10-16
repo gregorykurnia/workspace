@@ -74,6 +74,8 @@ kbd { font-family: var(--font); font-size: 12px; font-weight: 700; color: var(--
 .side-brand { display: flex; align-items: center; gap: 10px; min-height: var(--hit); padding: 0 10px; font-weight: 800; font-size: 19px; letter-spacing: -.02em; border-radius: var(--r-sm); }
 .brand-mark { width: 34px; height: 34px; border-radius: 11px; background: linear-gradient(140deg, #6366F1, #4338CA); display: grid; place-items: center; color: #fff; box-shadow: 0 4px 12px -4px rgba(67, 56, 202, .6), inset 0 1px 0 rgba(255, 255, 255, .35); flex: none; }
 .brand-mark .i { stroke-width: 2.1; width: 19px; height: 19px; }
+/* The logo is its own tile (icon.svg), so it drops the drawn background and keeps its own corners. */
+img.brand-mark.brand-logo { background: none; border-radius: 22.6%; box-shadow: 0 4px 12px -4px rgba(17, 24, 39, .55); }
 .side-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
 .nav-item { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: var(--r-sm); font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); }
 .nav-item:hover { background: var(--surface); color: var(--text); }
