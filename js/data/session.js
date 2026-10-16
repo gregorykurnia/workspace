@@ -56,11 +56,18 @@ function startSession(){
       return;
     }
 
-    // Get or create this user's record in Firestore
-    db.collection('users').doc(user.uid).get().then(function(doc){
+    // Get or create this user's record in Firestore. Read through a listener, not get(): get() waits
+    // for the server, and on the shared connection that means waiting until every collection has
+    // caught up (after a while away, all the MoMs again), or ~10 s when the network is poor, with the
+    // app on a skeleton although its data is already on this device. The device copy answers at once;
+    // the server's answer follows and replaces it, then the listener stops.
+    var offUser=db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges:true},function(doc){
+      var fromCache=!!(doc.metadata&&doc.metadata.fromCache);
       if(doc.exists){
         CURR_USER_ROLE=doc.data().role||'member';
         CURR_USER_RECENT=Array.isArray(doc.data().recent)?doc.data().recent:[];
+      }else if(fromCache){
+        return;   // not on this device yet: only the server can say the record doesn't exist
       }else{
         _w(db.collection('users').doc(user.uid).set({
           uid:user.uid,
@@ -71,7 +78,8 @@ function startSession(){
         CURR_USER_ROLE='member';
       }
       Store._emit('role');
-    });
+      if(!fromCache)offUser();
+    },function(e){console.error(e);});
 
     // Watch folder_access collection
     db.collection('folder_access').onSnapshot(function(snap){
