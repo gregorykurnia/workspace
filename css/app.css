@@ -83,8 +83,12 @@
 .acard-id .n { display: block; }
 .acard-id .restrictmark { margin-top: 6px; }
 
+/* Palette search: the field is the whole row, so the focus mark is the row's underline, not a ring that the panel clips. */
+.pal-in:focus-within { border-bottom-color: var(--sky-strong); box-shadow: inset 0 -1px 0 var(--sky-strong); }
+.pal-in input::-webkit-search-cancel-button, .pal-in input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 /* Selection: the check box sits on the card, and selecting mode shifts the card content. */
 .cw > .sel-box { position: absolute; left: 12px; top: 12px; z-index: 2; }
+.agrid .cw > .sel-box { top: 31px; left: 16px; }   /* centred on the area avatar */
 body.selecting .cw > .mcard { padding-left: 46px; }
 body.selecting .cw > .row { padding-left: 52px; }
 /* A file tile's Final mark sits in the tile's corner. */
@@ -169,7 +173,7 @@ body.selecting .cw > .row { padding-left: 52px; }
 .btn:focus-visible, .subcard:focus-visible, .acard:focus-visible, .mcard:focus-visible,
 .ftile:focus-visible, .qtile:focus-visible, .sel-box:focus-visible, .kind:focus-visible,
 .emoji-grid button:focus-visible, .swatch:focus-visible, .toast button:focus-visible,
-.tag-add:focus-visible, .pal-in input:focus-visible, .check-row input:focus-visible { box-shadow: var(--focus); }   /* a checkbox has no border to change, and base.css clears the ring on every input */
+.tag-add:focus-visible, .check-row input:focus-visible { box-shadow: var(--focus); }   /* a checkbox has no border to change, and base.css clears the ring on every input */
 /* Touch target: the toast's action is 44 px like every other control (tokens --hit). */
 .toast button { min-height: var(--hit); }
 

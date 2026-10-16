@@ -725,7 +725,7 @@ main#view:focus, main#view:focus-visible { box-shadow: none; outline: none; }
 .selecting .subgrid .cw > .subcard { padding-left: 48px; }
 .cw.is-selected > .subcard { box-shadow: 0 0 0 2px var(--accent), var(--shadow-2); }
 .agrid .cw > .acard { height: 100%; }
-.selecting .agrid .cw > .acard { padding-top: 52px; }
+.selecting .agrid .cw > .acard { padding-left: 54px; }
 .cw.is-selected > .acard { box-shadow: 0 0 0 2px var(--accent), var(--shadow-2); }
 .desk-only-inline { display: inline-flex; }
 @media (max-width: 767px) { .desk-only-inline { display: none; } }
