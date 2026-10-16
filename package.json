@@ -3,12 +3,14 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "capture": "CAPTURE=1 playwright test tests/visual",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "check:names": "node redesign/check-old-names.js",
     "check:app-name": "node redesign/check-app-name.js"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.48.0"
   }
 }

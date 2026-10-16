@@ -3,6 +3,9 @@ const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
+  // The screenshot capture is slow and writes a report, so it only runs on request (npm run capture).
+  globalSetup: process.env.CAPTURE ? './tests/visual/global-setup.js' : undefined,
+  testIgnore: process.env.CAPTURE ? [] : ['**/visual/**'],
 timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // serial — tests share Firebase state

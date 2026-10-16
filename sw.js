@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'workbench-static-v5';
-const RUNTIME_CACHE = 'workbench-runtime-v3';
+const STATIC_CACHE = 'workbench-static-v6';
+const RUNTIME_CACHE = 'workbench-runtime-v4';
 
 // The app shell: the page, its styles, fonts, icons and every script, so the installed app opens
 // with no connection. Firebase, Tiptap and Quill come from other hosts and are kept the first time
@@ -116,7 +116,10 @@ self.addEventListener('fetch', (event) => {
   // Other people's files (Firebase, Quill, html2pdf, fonts): cache first, they are versioned.
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
+      // An opaque copy (kept from a page that asked without `crossorigin`) can't answer a request
+      // made with it, e.g. the Firebase scripts with `integrity`: the browser blocks it and the
+      // app is blank. Fetch those again instead.
+      if (cached && !(cached.type === 'opaque' && request.mode === 'cors')) return cached;
       return fetch(request).then((response) => {
         if (!response || (response.status !== 200 && response.type !== 'opaque')) return response;
         const copy = response.clone();

@@ -34,3 +34,25 @@ test('an old share address is rewritten to the new one', async ({ page }) => {
   await expect(page).toHaveURL(/#\/s\/m\/does-not-exist$/);
   await expect(page.getByRole('heading', { name: 'This link is no longer available' })).toBeVisible({ timeout: 30000 });
 });
+
+// A visitor from the old app has Firebase kept as opaque copies in the service worker's cache. The page now
+// asks for those scripts with `integrity`, so serving an opaque copy blanked the whole app.
+test('opens (not blank) when the cache holds opaque copies of the Firebase scripts', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Sign in to/ })).toBeVisible({ timeout: 20000 });
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 10000 }).catch(async () => { await page.reload(); });
+  await page.evaluate(async () => {
+    const cache = await caches.open('stale-opaque-copies');
+    for (const name of ['app', 'firestore', 'auth']) {
+      const url = `https://www.gstatic.com/firebasejs/9.23.0/firebase-${name}-compat.js`;
+      await cache.put(url, await fetch(url, { mode: 'no-cors' }));
+    }
+  });
+  errors.length = 0;
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /Sign in to/ })).toBeVisible({ timeout: 20000 });
+  expect(errors).toEqual([]);
+});
