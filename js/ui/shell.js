@@ -4,12 +4,12 @@
 
 /* ---------- Where "create" lands ---------- */
 /* Where "create" lands: the area you are in, the MoM's area, the place you chose, or the area you
-   opened last. group is a grouping of that area; gkind says whether it holds MoMs or files. */
+   opened last. group is a grouping of that area; gkind says whether it holds MoMs, files or both. */
 function createPlace(r) {
   const usable = id => id && area(id) && canSee(id) && !lockedArea(id);
   if (r && r.name === 'area' && usable(r.id)) return { area: r.id, group: null };
   const m = r && r.name === 'mom' ? mom(r.id) : null;
-  if (m && usable(m.folderId)) return { area: m.folderId, group: m.momFolderId || null, gkind: 'mom' };
+  if (m && usable(m.folderId)) return { area: m.folderId, group: m.momFolderId || null, gkind: (MF.find(g => g.id === m.momFolderId) || {}).holds === 'both' ? 'both' : 'mom' };
   if (UI.place && usable(UI.place.area)) return UI.place;
   const last = recentEntries()[0];
   const lastArea = last && (last.k === 'm' ? (mom(last.id) || {}).folderId : (D.find(d => d.id === last.id) || {}).folderId);
@@ -18,7 +18,7 @@ function createPlace(r) {
   return first ? { area: first.id, group: null } : null;
 }
 /* The grouping to use for one kind of new item ('mom' or 'file'), or ''. */
-const groupFor = (p, kind) => (p && p.group && p.gkind === kind ? p.group : '');
+const groupFor = (p, kind) => (p && p.group && (p.gkind === kind || p.gkind === 'both') ? p.group : '');
 function placeName(p) {
   if (!p || !p.area) return 'Choose a place';
   const a = area(p.area); if (!a) return 'Choose a place';

@@ -621,9 +621,11 @@ function continueCardHTML({ href, tile = 'k-other', icon = 'doc', title, where =
 
 /* 3.5 Grouping shelf and permissions */
 /* body: the cards or rows, or emptyHTML({ small: true }) when count is 0. */
-function shelfBoxHTML({ name, kind = 'mom', count = 0, addLabel, addAct, addData = {}, groupId, body }) {
-  const isMom = kind === 'mom';
-  return `<section class="shelf${count ? '' : ' is-empty'}" aria-label="${esc(name)}"><div class="shelf-head"><span class="shelf-ic">${ic(isMom ? 'doc' : 'file', 'sm')}</span><b>${esc(name)}</b><span class="count">${count}</span><span class="spacer"></span><button type="button" class="shelf-add" data-act="${addAct}"${attrs(addData)}>${ic(isMom ? 'plus' : 'upload', 'sm')}${esc(addLabel)}<span class="hide-sm"> here</span></button><button type="button" class="icon-btn" data-act="group-menu" data-id="${esc(groupId)}" aria-label="More for ${esc(name)}" aria-haspopup="menu">${ic('more', 'sm')}</button></div>${body}</section>`;
+/* kind: 'mom', 'file' or 'both'. A grouping that holds both gets both add buttons. */
+function shelfBoxHTML({ name, kind = 'mom', count = 0, addData = {}, groupId, body }) {
+  const add = (act, icon, label) => `<button type="button" class="shelf-add" data-act="${act}"${attrs(addData)}>${ic(icon, 'sm')}${label}<span class="hide-sm"> here</span></button>`;
+  const adds = (kind !== 'file' ? add('new-mom', 'plus', 'New MoM') : '') + (kind !== 'mom' ? add('upload', 'upload', 'Add file') : '');
+  return `<section class="shelf${kind === 'both' ? ' shelf-both' : ''}${count ? '' : ' is-empty'}" aria-label="${esc(name)}"><div class="shelf-head"><span class="shelf-ic">${ic(kind === 'file' ? 'file' : 'doc', 'sm')}</span><b>${esc(name)}</b><span class="count">${count}</span><span class="spacer"></span>${adds}<button type="button" class="icon-btn" data-act="group-menu" data-id="${esc(groupId)}" aria-label="More for ${esc(name)}" aria-haspopup="menu">${ic('more', 'sm')}</button></div>${body}</section>`;
 }
 /* Items for a grouping's ⋯ menu. Remove grouping is admin only. */
 const groupMenuItems = groupId => [

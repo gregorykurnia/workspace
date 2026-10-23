@@ -21,9 +21,9 @@ function areaItems(a) {
     .map(d => ({ d, name: d.name || 'Untitled file', at: docAddedValue(d) })).sort(pick).map(x => x.d);
   return { subs, moms, files };
 }
-/* Groupings of an area, MoM and file ones together. */
+/* Groupings of an area, MoM and file ones together. kind is 'mom', 'file' or 'both' (holds both). */
 const groupsOf = a => [
-  ...momFoldersOf(a.id).map(g => ({ id: g.id, name: g.name || 'Grouping', kind: 'mom' })),
+  ...momFoldersOf(a.id).map(g => ({ id: g.id, name: g.name || 'Grouping', kind: g.holds === 'both' ? 'both' : 'mom' })),
   ...docFoldersOf(a.id).map(g => ({ id: g.id, name: g.name || 'Grouping', kind: 'file' })),
 ].sort(byName);
 /* Keys of everything matching the filter, for "Select all N matching" (O7). */
@@ -49,14 +49,16 @@ const noAccessAreaHTML = a => `<div class="locked locked-top locked-plain"><div 
 const missingAreaHTML = () => `<div class="page">${emptyHTML({ icon: 'shelf', title: 'This area isn’t here', text: 'It may have moved to Deleted, or the link may be out of date.', actions: btnHTML({ kind: 'primary', label: 'Go to Today', href: '#/today' }) + btnHTML({ kind: 'soft', label: 'Open Deleted', href: '#/deleted' }) })}</div>`;
 
 function shelfFor(g, a, items, filtering) {
-  const isMom = g.kind === 'mom';
-  const mine = isMom ? items.moms.filter(m => m.momFolderId === g.id) : items.files.filter(d => d.docFolderId === g.id);
-  const total = isMom ? momsOfMF(g.id).length : docsOfDF(g.id).length;
-  if (filtering && !mine.length) return '';
-  const body = mine.length
-    ? (isMom ? `<div class="cards">${mine.map(momCardFor).join('')}</div>` : filesHTML(mine))
-    : emptyHTML({ small: true, icon: isMom ? 'doc' : 'upload', title: 'Empty grouping', text: isMom ? 'Add a MoM here, or move one in.' : 'Add a file or link here, or move one in.' });
-  return shelfBoxHTML({ name: g.name, kind: g.kind, count: total, addLabel: isMom ? 'New MoM' : 'Add file', addAct: isMom ? 'new-mom' : 'upload', addData: { area: a.id, group: g.id }, groupId: g.id, body });
+  const holdsMoms = g.kind !== 'file', holdsFiles = g.kind !== 'mom';
+  const moms = holdsMoms ? items.moms.filter(m => m.momFolderId === g.id) : [];
+  const files = holdsFiles ? items.files.filter(d => d.docFolderId === g.id) : [];
+  const total = (holdsMoms ? momsOfMF(g.id).length : 0) + (holdsFiles ? docsOfDF(g.id).length : 0);
+  if (filtering && !moms.length && !files.length) return '';
+  const emptyText = g.kind === 'both' ? 'Add a MoM, a file or a link here, or move one in.' : holdsMoms ? 'Add a MoM here, or move one in.' : 'Add a file or link here, or move one in.';
+  const body = moms.length || files.length
+    ? (moms.length ? `<div class="cards">${moms.map(momCardFor).join('')}</div>` : '') + (files.length ? filesHTML(files) : '')
+    : emptyHTML({ small: true, icon: holdsMoms ? 'doc' : 'upload', title: 'Empty grouping', text: emptyText });
+  return shelfBoxHTML({ name: g.name, kind: g.kind, count: total, addData: { area: a.id, group: g.id }, groupId: g.id, body });
 }
 
 /* ---------- Bulk bar ---------- */
@@ -151,7 +153,7 @@ function destRows({ type, exclude, itemKind, q }) {
     const path = crumbPath(a.id).slice(0, -1).map(x => x.name).join(' › ');
     rows.push({ kind: 'area', id: a.id, depth: d, label: a.name, emoji: areaEmoji(a), sub: path || 'Top level', disabled: exclude.has(a.id) || locked, lock: locked });
     if (locked) return;
-    if (type === 'place') groupsOf(a).forEach(g => rows.push({ kind: 'group', id: g.id, area: a.id, depth: d + 1, label: g.name, sub: `${a.name} · grouping, ${g.kind === 'mom' ? 'MoMs' : 'files'}`, disabled: itemKind === 'mixed' || (!!itemKind && itemKind !== g.kind) }));
+    if (type === 'place') groupsOf(a).forEach(g => rows.push({ kind: 'group', id: g.id, area: a.id, depth: d + 1, label: g.name, sub: `${a.name} · grouping, ${g.kind === 'both' ? 'MoMs and files' : g.kind === 'mom' ? 'MoMs' : 'files'}`, disabled: g.kind !== 'both' && (itemKind === 'mixed' || (!!itemKind && itemKind !== g.kind)) }));
     walk(kids(a.id).filter(k => visible.has(k.id)), d + 1);
   });
   walk(visibleRoots(), 0);
@@ -459,12 +461,8 @@ function newGroupDialog(areaId) {
   layer({
     label: 'New grouping',
     html: `<form data-form="new-group" data-area="${esc(areaId)}" novalidate>${dialogHTML({
-      title: 'New grouping', text: `A grouping bunches things inside ${area(areaId).name}. Removing one keeps its contents here.`,
-      body: fieldHTML({ id: 'grpIn', label: 'Name', required: true, control: inputHTML({ id: 'grpIn', name: 'name', placeholder: 'e.g. Steering committee' }) })
-        + `<fieldset class="field fieldset"><legend class="lab">Holds</legend><div class="kinds">`
-        + `<label class="kind kind-pick"><input type="radio" name="kind" value="mom" checked class="sr">${ic('doc')}MoMs</label>`
-        + `<label class="kind kind-pick"><input type="radio" name="kind" value="file" class="sr">${ic('file')}Files and links</label>`
-        + `</div></fieldset>`,
+      title: 'New grouping', text: `A grouping bunches MoMs, files and links inside ${area(areaId).name}. Removing one keeps its contents here.`,
+      body: fieldHTML({ id: 'grpIn', label: 'Name', required: true, control: inputHTML({ id: 'grpIn', name: 'name', placeholder: 'e.g. Steering committee' }) }),
       foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Create grouping', type: 'submit' }),
     })}</form>`,
   });
@@ -473,13 +471,12 @@ on('new-group', d => newGroupDialog(d.area || (createPlace(route()) || {}).area)
 onForm('new-group', f => {
   const name = f.elements.name.value.trim();
   if (!name) { fieldError(f, 'grpIn', 'Give the grouping a name.'); return; }
-  const kind = f.elements.kind.value === 'file' ? 'file' : 'mom';
-  const doc = { id: newId(), folderId: f.dataset.area, name };
-  const write = kind === 'mom' ? sMF(doc) : sDF(doc);
+  // New groupings hold MoMs and files both. They live with the MoM groupings, marked holds: 'both'.
+  const write = sMF({ id: newId(), folderId: f.dataset.area, name, holds: 'both' });
   closeAll();
   afterWrite(write, [`Added grouping “${name}”`, { icon: 'folder-plus' }], 'Couldn’t create the grouping. Check your connection, then try again.');
 });
-const groupOf = id => { const m = MF.find(g => g.id === id); return m ? { kind: 'mom', g: m } : (() => { const f = DF.find(g => g.id === id); return f ? { kind: 'file', g: f } : null; })(); };
+const groupOf = id => { const m = MF.find(g => g.id === id); return m ? { kind: m.holds === 'both' ? 'both' : 'mom', g: m } : (() => { const f = DF.find(g => g.id === id); return f ? { kind: 'file', g: f } : null; })(); };
 on('rename-group', d => {
   const hit = groupOf(d.id); if (!hit) return;
   layer({
@@ -499,11 +496,13 @@ onForm('rename-group', f => {
 });
 on('remove-group', d => {
   const hit = groupOf(d.id); if (!hit) return;
-  const items = hit.kind === 'mom' ? M.filter(m => m.momFolderId === d.id).length : D.filter(x => x.docFolderId === d.id).length;
+  const moms = hit.kind !== 'file' ? M.filter(m => m.momFolderId === d.id).length : 0;
+  const files = hit.kind !== 'mom' ? D.filter(x => x.docFolderId === d.id).length : 0;
+  const what = hit.kind === 'both' ? `${plural(moms, 'MoM')} and ${plural(files, 'file')}` : hit.kind === 'mom' ? plural(moms, 'MoM') : plural(files, 'file');
   const a = area(hit.g.folderId);
   confirmDialog({
     title: `Remove “${hit.g.name}”?`, text: 'Removing a grouping keeps everything in it, in the area.',
-    impact: `${plural(items, hit.kind === 'mom' ? 'MoM' : 'file')} stay in ${esc(a ? a.name : 'the area')}.`,
+    impact: `${what} stay in ${esc(a ? a.name : 'the area')}.`,
     cta: 'Remove grouping', act: 'remove-group-now', data: { id: d.id, kind: hit.kind },
   });
 });

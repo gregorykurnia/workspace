@@ -136,6 +136,17 @@ body.selecting .cw > .row { padding-left: 52px; }
 .lb-acts { display: flex; gap: 8px; }
 /* An empty grouping has no left inset. */
 .shelf .empty.small { padding-left: 0; }
+/* A grouping that holds both: a gap between its MoMs and its files. */
+.shelf .cards + .ftiles, .shelf .cards + .flist { margin-top: 12px; }
+/* On a phone, its two add buttons share a row under the name. */
+@media (max-width: 767px) {
+  .shelf-both .shelf-head { flex-wrap: wrap; row-gap: 0; }
+  .shelf-both .shelf-head b { max-width: calc(100% - 150px); }
+  .shelf-both .shelf-head .count { margin-right: auto; }
+  .shelf-both .shelf-head .spacer { display: none; }
+  .shelf-both .shelf-head::after { content: ''; order: 1; flex-basis: 100%; }
+  .shelf-both .shelf-add { order: 2; flex: 1 1 0; justify-content: center; margin-top: 10px; }
+}
 
 /* Tree depth (sidebar and Areas tab): 6 px plus 14 px per level, up to level 8. */
 .tree-row[data-depth="0"] { padding-left: 6px; }
@@ -256,7 +267,6 @@ body.selecting .cw > .row { padding-left: 52px; }
 /* Dialogs: the fieldset, the kind choice for groupings, the access list, the share link. */
 .fieldset { border: 0; padding: 0; margin: 0; }
 .fieldset .lab { padding: 0; }
-.kind-pick { cursor: pointer; }
 .access-list { padding: 4px; margin-bottom: 16px; }
 .access-row { padding: 8px 12px; }
 .share-toggle { min-height: 52px; font-weight: 700; }

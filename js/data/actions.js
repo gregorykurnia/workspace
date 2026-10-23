@@ -146,21 +146,23 @@ function purgeBatch(list){
   list.forEach(function(x){b.delete(db.collection(x[0]).doc(x[1]));});
   return _w(b.commit());
 }
-// Groupings: which collection a grouping lives in, by its kind.
-function groupCol(kind){return kind==='mom'?'momfolders':'docfolders';}
+// Groupings: which collection a grouping lives in, by its kind ('mom', 'file' or 'both').
+// A grouping that holds both lives in momfolders (holds: 'both'); its files point at it by docFolderId.
+function groupCol(kind){return kind==='file'?'docfolders':'momfolders';}
 function renameGroup(kind,id,name){return _w(db.collection(groupCol(kind)).doc(id).update({name:name}));}
-// Remove a grouping: its MoMs or files stay in the area (their grouping field is cleared), and the
+// Remove a grouping: its MoMs and files stay in the area (their grouping field is cleared), and the
 // grouping goes to Deleted. Returns { done, undo }. undo() puts the grouping and its items back.
 function removeGroup(kind,id){
-  var FV=firebase.firestore.FieldValue,b=db.batch(),moved=[],items=kind==='mom'?M:D,field=kind==='mom'?'momFolderId':'docFolderId',col=kind==='mom'?'moms':'docs';
-  items.forEach(function(x){if(x[field]===id){moved.push(x.id);b.update(db.collection(col).doc(x.id),{[field]:FV.delete()});}});
+  var FV=firebase.firestore.FieldValue,b=db.batch(),moved=[];
+  var parts=kind==='both'?[[M,'momFolderId','moms'],[D,'docFolderId','docs']]:kind==='mom'?[[M,'momFolderId','moms']]:[[D,'docFolderId','docs']];
+  parts.forEach(function(p){p[0].forEach(function(x){if(x[p[1]]===id){moved.push([p[2],x.id,p[1]]);b.update(db.collection(p[2]).doc(x.id),{[p[1]]:FV.delete()});}});});
   b.update(db.collection(groupCol(kind)).doc(id),{deleted:true,deletedAt:Date.now()});
   return{
     done:_w(b.commit()),
     undo:function(){
       var u=db.batch();
       u.update(db.collection(groupCol(kind)).doc(id),{deleted:false,deletedAt:FV.delete()});
-      moved.forEach(function(mid){var o={};o[field]=id;u.update(db.collection(col).doc(mid),o);});
+      moved.forEach(function(m){var o={};o[m[2]]=id;u.update(db.collection(m[0]).doc(m[1]),o);});
       return _w(u.commit());
     },
   };
