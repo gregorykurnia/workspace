@@ -134,6 +134,9 @@ body.selecting .cw > .row { padding-left: 52px; }
 .noresult-act { margin-top: 12px; }
 /* The lightbox's buttons. */
 .lb-acts { display: flex; gap: 8px; }
+/* The first grouping sits under the filter bar with room to breathe. */
+.filterbar + .shelf { margin-top: 22px; }
+@media (max-width: 767px) { .filterbar + .shelf { margin-top: 16px; } }
 /* An empty grouping has no left inset. */
 .shelf .empty.small { padding-left: 0; }
 /* A grouping that holds both: a gap between its MoMs and its files. */
