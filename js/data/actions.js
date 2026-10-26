@@ -106,6 +106,12 @@ function _subtree(areaId,stop){
   return out;
 }
 function _pv(x){return x&&x.privateTo?x.privateTo:null;}
+// An area made private in its own right carries privateRoot: true (set by setPrivate). It stays private
+// when the area around it is made visible or it is moved somewhere public. An area without the mark
+// counts as its own when its parent is public.
+function _ownPrivate(a){return!!_pv(a)&&(a.privateRoot===true||!privOf(a.parent));}
+// `stop` plus every area private in its own right: _subtree leaves them, and what's inside, as they are.
+function _keepRoots(stop){var r=new Set(stop||[]);F.concat(TF).forEach(function(a){if(a.privateRoot===true&&_pv(a))r.add('a:'+a.id);});return r;}
 // Write a list of { col, id, data, root } updates in batches of 400 (Firestore takes 500 at most).
 // One batch is all-or-nothing. When there are more, they are sent in an order that fails closed
 // (the SDK applies one client's writes in order): roots turning public first, then everything
@@ -125,7 +131,9 @@ function _refused(why){var p=Promise.reject(new Error(why));p.catch(function(){}
 // Make an area private to the signed-in admin (on) or visible to the team again (off). Writes
 // privateTo on the area and everything inside it, deleted items too. Only for an admin, on an area
 // whose parent isn't private, that is public or already the caller's (running it again finishes a
-// half-done write). Making private also turns the area's share link off; making visible leaves it off.
+// half-done write). Making private also turns the share links of the area and of everything inside it
+// off; making visible leaves them off. Making visible leaves sub-areas private in their own right
+// (privateRoot) private, with everything inside them.
 // Returns { ok, reason, done }: reason is 'admin', 'missing', 'inside' (the parent is private) or
 // 'owner' (someone else's) when ok is false; done resolves when every batch is written.
 function setPrivate(areaId,on){
@@ -135,18 +143,23 @@ function setPrivate(areaId,on){
   else if(privOf(a.parent))why='inside';
   else if(_pv(a)&&_pv(a)!==u.uid)why='owner';
   if(why)return{ok:false,reason:why,done:_refused(why)};
-  var v=on?u.uid:null,root={privateTo:v};
+  var v=on?u.uid:null,root={privateTo:v,privateRoot:on?true:firebase.firestore.FieldValue.delete()};
   if(on)root.shared=false;
   var ws=[{col:'folders',id:a.id,data:root,root:true}];
-  _subtree(a.id).forEach(function(p){if(p[1].privateTo!==v)ws.push({col:p[0],id:p[1].id,data:{privateTo:v}});});
+  _subtree(a.id,on?null:_keepRoots()).forEach(function(p){
+    var d={};
+    if(p[1].privateTo!==v)d.privateTo=v;
+    if(on&&p[1].shared===true)d.shared=false;   // an item's own link would work again once visible
+    if(Object.keys(d).length)ws.push({col:p[0],id:p[1].id,data:d});
+  });
   return{ok:true,reason:null,done:_writeAll(ws)};
 }
 
 // The privateTo a moved MoM, file or area ends with: the destination's, except that an area private in
-// its own right (its parent isn't) stays private when it lands somewhere public.
+// its own right (_ownPrivate) stays private when it lands somewhere public.
 function _landsPrivate(t,cur,dest){
   var v=privOf(dest.area);
-  return t==='a'&&!v&&_pv(cur)&&!privOf(cur.parent)?_pv(cur):v;
+  return t==='a'&&!v&&_ownPrivate(cur)?_pv(cur):v;
 }
 // The keys among `keys` that moving them to `dest` would make visible to the team (the move-out
 // warning, spec §G): private now, public after. The same rule moveItems writes, and the same items
@@ -161,9 +174,8 @@ function moveExposes(keys,dest){
 // Move MoMs ('m'), files ('f') and areas ('a'). keys: ['m:id', ...].
 // dest: { area, group } (area null = top level, areas only; group is a grouping of that area).
 // Moved items take the destination's privateTo, and a moved area's contents (deleted ones too)
-// follow it. Two exceptions keep things private: an area private in its own right (its parent
-// isn't) stays private when moved somewhere public, and a public area's own private sub-areas
-// stay private when it moves somewhere public. Up to 400 writes go in one all-or-nothing batch.
+// follow it. Two exceptions keep things private: an area private in its own right (_ownPrivate)
+// stays private when moved somewhere public, and so do the ones inside a moved area. Up to 400 writes go in one all-or-nothing batch.
 // Returns { ok, done, undo }: ok is false when nothing could be moved (an area into itself, or a
 // missing item); done resolves when written; undo() writes every old place and privateTo back.
 function moveItems(keys,dest){
@@ -188,9 +200,9 @@ function moveItems(keys,dest){
     nv=_landsPrivate(t,cur,dest);
     now.privateTo=nv;old.privateTo=_pv(cur);
     ws.push({col:col,id:id,data:now,root:true});back.push({col:col,id:id,data:old,root:true});
-    // An area whose value changes takes its contents along (a public area moving somewhere
-    // public keeps its private sub-areas as they are). Selected items inside are moved on their own.
-    if(t==='a'&&nv!==_pv(cur))_subtree(id,stop).forEach(function(p){
+    // An area whose value changes takes its contents along, except sub-areas private in their own
+    // right when it turns public. Selected items inside are moved on their own.
+    if(t==='a'&&nv!==_pv(cur))_subtree(id,nv?stop:_keepRoots(stop)).forEach(function(p){
       if(p[1].privateTo===nv)return;
       ws.push({col:p[0],id:p[1].id,data:{privateTo:nv}});back.push({col:p[0],id:p[1].id,data:{privateTo:_pv(p[1])}});
     });

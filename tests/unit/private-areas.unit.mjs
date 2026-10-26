@@ -249,3 +249,45 @@ test('an area can\'t move into itself', async () => {
   await assert.rejects(mv.done);
   assert.equal(commits.length, 0);
 });
+
+// R2 review: share links inside, and sub-areas private in their own right (privateRoot).
+test('setPrivate on turns off the links of what is inside too, and marks the area; off removes the mark', async () => {
+  const w = world();
+  w.folders[1].shared = true; w.moms[0].shared = true; w.docs[0].shared = false;
+  const { run, commits } = load(w);
+  await run("setPrivate('A',true)").done;
+  assert.equal(w.folders[1].shared, false);
+  assert.equal(w.moms[0].shared, false);
+  assert.equal(w.folders[0].privateRoot, true);
+  assert.ok(!commits.flat().some(u => u[0] === 'docs/fA' && 'shared' in u[1]), 'a link already off is not rewritten');
+  await run("setPrivate('A',false)").done;
+  assert.equal('privateRoot' in w.folders[0], false);
+  assert.equal(w.moms[0].shared, false, 'links stay off once visible again');
+});
+
+test('a sub-area made private on its own stays private when the area around it is made private, then visible', async () => {
+  const w = world(), { run, priv } = load(w);
+  await run("setPrivate('A1',true)").done;
+  await run("setPrivate('A',true)").done;
+  await run("setPrivate('A',false)").done;
+  assert.equal(priv('folders').A, null);
+  assert.equal(priv('docs').fA, null);
+  assert.equal(priv('folders').A1, 'admin1');
+  assert.equal(priv('folders').A1a, 'admin1');
+  assert.equal(priv('moms').mA, 'admin1');
+});
+
+test('moving out of a private area: a sub-area private on its own stays private, inside a moved area too', async () => {
+  const w = world();
+  w.folders.push({ id: 'B2', name: 'B2', parent: 'B1', privateTo: 'admin1', privateRoot: true }, { id: 'B3', name: 'B3', parent: 'B', privateTo: 'admin1', privateRoot: true });
+  w.moms.push({ id: 'mB2', folderId: 'B2', privateTo: 'admin1' });
+  const { run, priv } = load(w);
+  assert.deepEqual([...run("moveExposes(['a:B3','a:B1'],{area:'A'})")], ['a:B1'], 'only B1 gets the warning');
+  await run("moveItems(['a:B3'],{area:'A'})").done;
+  assert.equal(priv('folders').B3, 'admin1');
+  await run("moveItems(['a:B1'],{area:'A'})").done;
+  assert.equal(priv('folders').B1, null);
+  assert.equal(priv('moms').mB, null);
+  assert.equal(priv('folders').B2, 'admin1');
+  assert.equal(priv('moms').mB2, 'admin1');
+});
