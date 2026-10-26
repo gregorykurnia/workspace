@@ -1,7 +1,7 @@
 // Fills the running Auth and Firestore emulators: an admin, a member, an unapproved user, sample data.
 // Refuses to run unless both emulator hosts are set and local, so it can never write to the live project.
 import { pathToFileURL } from 'node:url';
-import { ADMIN, MEMBER, STRANGER, PASSWORD, PROJECT, AREA, AREA2, ACCESS, MOM, FILE } from './accounts.mjs';
+import { ADMIN, MEMBER, STRANGER, PASSWORD, PROJECT, AREA, AREA2, AREA_P, AREA_O, ACCESS, MOM, FILE, MOM_P, MOM_O } from './accounts.mjs';
 
 const LOCAL = /^(127\.0\.0\.1|localhost):\d+$/;
 
@@ -28,8 +28,10 @@ export async function seed() {
   }
   batch.set(db.collection('folders').doc(AREA.id), AREA);
   batch.set(db.collection('folders').doc(AREA2.id), AREA2);
+  for (const a of [AREA_P, AREA_O]) batch.set(db.collection('folders').doc(a.id), a);
   for (const g of ACCESS) batch.set(db.collection('folder_access').doc(g.id), g);
   batch.set(db.collection('moms').doc(MOM.id), MOM);
+  for (const m of [MOM_P, MOM_O]) batch.set(db.collection('moms').doc(m.id), m);
   batch.set(db.collection('docs').doc(FILE.id), FILE);
   await batch.commit();
 }
