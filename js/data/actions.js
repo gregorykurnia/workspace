@@ -2,11 +2,13 @@
 // No DOM.
 function _w(p){p.catch(console.error);return p;}
 function _all(ps){var p=Promise.all(ps);p.catch(function(){});return p;}
-function sF(f){return _w(db.collection('folders').doc(f.id).set(f));}
-function sM(m){return _w(db.collection('moms').doc(m.id).set(m));}
-function sD(d){return _w(db.collection('docs').doc(d.id).set(d));}
-function sDF(df){return _w(db.collection('docfolders').doc(df.id).set(df));}
-function sMF(mf){return _w(db.collection('momfolders').doc(mf.id).set(mf));}
+// Every create copies its area's privateTo (null at the top level). Only fills it in when the caller left it out.
+function _priv(o,areaId){if(o.privateTo===undefined)o.privateTo=privOf(areaId);return o;}
+function sF(f){return _w(db.collection('folders').doc(f.id).set(_priv(f,f.parent)));}
+function sM(m){return _w(db.collection('moms').doc(m.id).set(_priv(m,m.folderId)));}
+function sD(d){return _w(db.collection('docs').doc(d.id).set(_priv(d,d.folderId)));}
+function sDF(df){return _w(db.collection('docfolders').doc(df.id).set(_priv(df,df.folderId)));}
+function sMF(mf){return _w(db.collection('momfolders').doc(mf.id).set(_priv(mf,mf.folderId)));}
 var _WEEK=7*24*60*60*1000;
 function _softDel(col,id){return _w(db.collection(col).doc(id).update({deleted:true,deletedAt:Date.now()}));}
 function _permDel(col,id){return _w(db.collection(col).doc(id).delete());}

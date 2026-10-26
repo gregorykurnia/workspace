@@ -84,6 +84,8 @@ function watchMom(id,fn){return db.collection('moms').doc(id).onSnapshot(fn);}
 
 function docAddedValue(d){var v=d&&d.added;if(!v)return 0;if(typeof v==='number')return v;if(v&&typeof v.toMillis==='function')return v.toMillis();var n=new Date(v).getTime();return Number.isNaN(n)?0:n;}
 function gf(id){return F.find(f=>f.id===id);}
+// privateTo of an area (the uid of the admin it is private to), or null: public, unknown, or no area.
+function privOf(areaId){var a=areaId?gf(areaId):null;return a&&a.privateTo?a.privateTo:null;}
 function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
 function momsOf(fid){return M.filter(m=>m.folderId===fid);}
 function docsOf(fid){return D.filter(d=>d.folderId===fid);}

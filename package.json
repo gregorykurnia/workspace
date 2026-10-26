@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:unit": "node --test tests/unit/*.unit.mjs scripts/admin",
     "capture": "CAPTURE=1 playwright test tests/visual",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
