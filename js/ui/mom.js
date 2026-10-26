@@ -363,7 +363,7 @@ on('editor-menu', (d, el) => {
     blocked('Rename', 'pencil', 'ed-rename', { id: m.id }),
     blocked('Move to…', 'move', 'move-item', { kind: 'm', id: m.id }),
     { label: m.readOnly ? 'Unmark final' : 'Mark as final', icon: 'lock', act: 'final', data: { kind: 'm', id: m.id }, admin: { k: 'final', label: 'mark MoMs as final' } },
-    { label: 'Share a link', icon: 'share', act: 'share', data: { kind: 'm', id: m.id }, admin: { k: 'shareLinks', label: 'share links' } },
+    ...(isPrivate('m', m) ? [] : [{ label: 'Share a link', icon: 'share', act: 'share', data: { kind: 'm', id: m.id }, admin: { k: 'shareLinks', label: 'share links' } }]),
     '-',
     { label: 'Delete', icon: 'trash', act: 'delete-item', data: { kind: 'm', id: m.id }, danger: true, admin: { k: 'deleteItem', label: 'delete MoMs' } },
   ], 'MoM');

@@ -86,6 +86,27 @@ function docAddedValue(d){var v=d&&d.added;if(!v)return 0;if(typeof v==='number'
 function gf(id){return F.find(f=>f.id===id);}
 // privateTo of an area (the uid of the admin it is private to), or null: public, unknown, or no area.
 function privOf(areaId){var a=areaId?gf(areaId):null;return a&&a.privateTo?a.privateTo:null;}
+// What the private-area screens offer (spec §F, §G). Pure reads, so the unit tests can run them.
+// Privacy is only real once the listeners filter by privateTo (plan 2.1) and the rules are deployed (plan O5).
+// Until then the live site doesn't offer "Make private": it would promise what nothing enforces. The emulator
+// runs the rules, so it does. Step O5 sets PRIVATE_LIVE to true.
+var PRIVATE_LIVE=false;
+function privateOffered(){return PRIVATE_LIVE||(typeof EMULATOR!=='undefined'&&EMULATOR);}
+// The ⋯ menu entry of an area: 'make' (Make private) or 'release' (Make visible to the team), or null.
+// Only an admin gets one, and never inside a private area (its parent's value decides) or on an area
+// that is private to someone else.
+function privateAction(areaId){
+  var u=sessionUser(),a=gf(areaId);
+  if(!privateOffered()||!a||!u||u.isAnonymous||CURR_USER_ROLE!=='admin'||privOf(a.parent))return null;
+  var pv=privOf(areaId);
+  return!pv?'make':pv===u.uid?'release':null;
+}
+// Is this area ('a'), MoM ('m') or file ('f') private, in its own right or by being inside a private area?
+// Share a link and Access are off for these.
+function isPrivate(kind,it){
+  if(!it)return false;
+  return kind==='a'?!!privOf(it.id):!!it.privateTo||!!privOf(it.folderId);
+}
 function kids(pid){return F.filter(f=>f.parent===pid).sort((a,b)=>(a.name||'').localeCompare((b.name||''),undefined,{sensitivity:'base'}));}
 function momsOf(fid){return M.filter(m=>m.folderId===fid);}
 function docsOf(fid){return D.filter(d=>d.folderId===fid);}

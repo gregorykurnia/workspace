@@ -267,6 +267,9 @@ main { outline: none; }
 .flagmark { color: var(--flag); display: inline-flex; }
 .finalmark { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 750; color: var(--text-2); background: var(--surface-3); border-radius: var(--r-pill); padding: 2px 8px; }
 .restrictmark { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 750; color: var(--danger); background: var(--danger-tint); border-radius: var(--r-pill); padding: 2px 8px; }
+.privatemark { display: inline-flex; align-items: center; gap: 4px; flex: none; font-size: 12px; font-weight: 750; color: var(--accent-strong); background: var(--accent-tint); border-radius: var(--r-pill); padding: 2px 8px; white-space: nowrap; }
+.side-tree:not(.tree-page) .privatemark { padding: 2px 5px; }
+.side-tree:not(.tree-page) .privatemark .pm-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .more { position: absolute; top: 6px; right: 6px; width: var(--hit); height: var(--hit); border-radius: 50%; display: grid; place-items: center; color: var(--text-3); opacity: 0; transition: opacity var(--dur-1), background var(--dur-1); }
 .more:hover { background: var(--surface-3); color: var(--text); }
 .cw:hover .more, .more:focus-visible, .more[aria-expanded="true"] { opacity: 1; }
@@ -411,6 +414,7 @@ main { outline: none; }
 .dest-search .input { padding-left: 46px; }
 .current { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--r-md); background: var(--surface-2); font-size: 14px; color: var(--text-2); margin-bottom: 14px; flex-wrap: wrap; }
 .current b { color: var(--text); }
+#destWarn .notice { margin-top: 10px; }
 .dests { max-height: 300px; overflow: auto; border-radius: var(--r-md); border: 1.5px solid var(--line); padding: 6px; }
 .dest { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 12px; border-radius: var(--r-sm); text-align: left; }
 .dest:hover { background: var(--surface-2); }
@@ -662,7 +666,7 @@ body.visitor .shell { grid-template-columns: minmax(0, 1fr); }
 .crumb-now:hover { background: transparent; }
 .top-right { flex: none; }
 .top-right .cmd-trigger { width: 200px; }
-.tree-row .nm > span:not(.em):not(.lk):not(.ct) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tree-row .nm > span:not(.em):not(.lk):not(.ct):not(.privatemark) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .hide-sm { display: inline; }
 .shelf-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (min-width: 768px) and (max-width: 1023px) {

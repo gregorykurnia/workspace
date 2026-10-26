@@ -114,7 +114,7 @@ VIEWS.area = {
         <div class="ttl">
           <p class="eyebrow">${path.length > 1 ? 'Sub-area' : 'Area'}${a.pw ? ' · Restricted' : ''}</p>
           <h1 class="h-page">${esc(a.name)}</h1>
-          <div class="meta"><span>${sizeText(a.id)}</span>${created ? `<span>${esc(created)}</span>` : ''}${a.pw ? lockPillHTML({ open: UF.has(a.id), id: a.id }) : ''}</div>
+          <div class="meta">${isPrivate('a', a) ? privateMarkHTML() : ''}<span>${sizeText(a.id)}</span>${created ? `<span>${esc(created)}</span>` : ''}${a.pw ? lockPillHTML({ open: UF.has(a.id), id: a.id }) : ''}</div>
         </div>
         <div class="aactions">
           ${btnHTML({ kind: 'primary', label: 'New MoM', icon: 'plus', act: 'new-mom', data: { area: a.id } })}
@@ -168,10 +168,25 @@ function destListHTML(P) {
     return `<button type="button" class="dest" role="option" id="dest-${i}" aria-selected="${P.sel === rowKey(r)}" aria-disabled="${!!r.disabled}" data-act="pick-dest" data-i="${i}" data-depth="${Math.min(r.depth, 6)}">${lead}<span class="mid"><b>${esc(r.label)}</b><small>${esc(r.sub)}${r.disabled && r.kind !== 'group' ? (r.lock ? ' · restricted' : ' · can’t move here') : ''}</small></span>${badge}</button>`;
   }).join('');
 }
+/* Moving something out of a private area makes it visible to the team (spec §G). Said under the list as soon as
+   such a destination is chosen, before Move is pressed; the toast that follows the move offers Undo. */
+function destWarnHTML(P) {
+  const r = P.keys && P.sel ? P.rows.find(x => rowKey(x) === P.sel) : null;
+  if (!r) return '';
+  const n = moveExposes(P.keys, { area: r.kind === 'top' ? null : r.kind === 'area' ? r.id : r.area }).length;
+  return n ? noticeHTML({ tone: 'warn', icon: 'alert', title: 'This will be visible to the team.', text: `${n === 1 ? 'It stops' : `${plural(n, 'item')} stop`} being private once moved. You can Undo right after.`, role: 'status' }) : '';
+}
+/* The footer follows the choice: Move is on once something is chosen, and the warning shows if it applies. */
+function syncPickerFoot() {
+  const P = UI.picker; if (!P) return;
+  $('#destGo').disabled = !P.sel;
+  $('#destWarn').innerHTML = destWarnHTML(P);
+}
 /* opts: title, current ({area, group}), type ('area' | 'place'), exclude (Set of area ids),
-   itemKind ('mom' | 'file' | 'mixed' | null), cta, onPick({area, group}). */
-function destPicker({ title, current, type = 'area', exclude = new Set(), itemKind = null, cta, onPick }) {
-  const P = UI.picker = { type, exclude, itemKind, onPick, rows: [], sel: null, layer: null };
+   itemKind ('mom' | 'file' | 'mixed' | null), keys (what is moving, as 'm:id' / 'f:id' / 'a:id': for the
+   move-out warning), cta, onPick({area, group}). */
+function destPicker({ title, current, type = 'area', exclude = new Set(), itemKind = null, keys = null, cta, onPick }) {
+  const P = UI.picker = { type, exclude, itemKind, keys, onPick, rows: [], sel: null, layer: null };
   const here = current && current.area ? `Currently in <b>${esc(placeName(current))}</b>` : (type === 'area' ? 'Currently at the <b>top level</b>' : 'Choose a destination');
   P.rows = destRows({ type, exclude, itemKind, q: '' });
   P.layer = layer({
@@ -179,6 +194,7 @@ function destPicker({ title, current, type = 'area', exclude = new Set(), itemKi
     html: `<div class="dlg-head"><div class="tt2"><h2>${esc(title)}</h2><p>${here}</p></div><button type="button" class="icon-btn" data-act="close" aria-label="Close">${ic('x')}</button></div>
       <div class="dest-search">${ic('search', 'sm')}<input class="input" id="destQ" type="search" placeholder="Search areas and groupings" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="destList" aria-label="Search destinations" data-input="dest-search" data-key="dest-search"></div>
       <div class="dests" id="destList" role="listbox" aria-label="Destinations">${destListHTML(P)}</div>
+      <div id="destWarn"></div>
       <div class="dlg-foot"><button type="button" class="btn btn-soft" data-act="close">Cancel</button><button type="button" class="btn btn-primary" id="destGo" data-act="dest-go" disabled>${esc(cta)}</button></div>`,
     onMount(panel) { const q = panel.querySelector('#destQ'); q.focus(); },
     onClose() { if (UI.picker === P) UI.picker = null; },
@@ -189,7 +205,7 @@ function repaintPicker() {
   P.rows = destRows({ type: P.type, exclude: P.exclude, itemKind: P.itemKind, q: ($('#destQ') || {}).value || '' });
   if (P.sel && !P.rows.some(r => rowKey(r) === P.sel && !r.disabled)) P.sel = null;
   $('#destList').innerHTML = destListHTML(P);
-  $('#destGo').disabled = !P.sel;
+  syncPickerFoot();
 }
 onInput('dest-search', () => repaintPicker());
 onKey('dest-search', e => {
@@ -201,7 +217,7 @@ onKey('dest-search', e => {
     const cur = ok.findIndex(i => rowKey(P.rows[i]) === P.sel);
     const next = ok[Math.min(ok.length - 1, Math.max(0, cur + (e.key === 'ArrowDown' ? 1 : -1)))];
     P.sel = rowKey(P.rows[next]);
-    $('#destList').innerHTML = destListHTML(P); $('#destGo').disabled = false;
+    $('#destList').innerHTML = destListHTML(P); syncPickerFoot();
     const n = $('#dest-' + next); if (n) { n.scrollIntoView({ block: 'nearest' }); $('#destQ').setAttribute('aria-activedescendant', n.id); }
   }
   if (e.key === 'Enter' && P.sel) { e.preventDefault(); ACT['dest-go'](); }
@@ -211,7 +227,7 @@ on('pick-dest', d => {
   const r = P.rows[Number(d.i)]; if (!r || r.disabled) return;
   P.sel = rowKey(r);
   $('#destList').innerHTML = destListHTML(P);
-  $('#destGo').disabled = false;
+  syncPickerFoot();
   $('#destQ').focus();   // the search stays the keyboard's home: Enter confirms, ↑ ↓ move on
 });
 on('dest-go', () => {
@@ -241,13 +257,13 @@ function moveItem(kind, id) {
   const isMom = kind === 'm';
   destPicker({
     title: `Move “${itemName(kind, it)}”`, current: { area: it.folderId, group: (isMom ? it.momFolderId : it.docFolderId) || null, gkind: isMom ? 'mom' : 'file' },
-    type: 'place', itemKind: isMom ? 'mom' : 'file', cta: 'Move here', onPick: p => doMove([kind + ':' + id], p, itemName(kind, it)),
+    type: 'place', itemKind: isMom ? 'mom' : 'file', keys: [kind + ':' + id], cta: 'Move here', onPick: p => doMove([kind + ':' + id], p, itemName(kind, it)),
   });
 }
 on('move-item', d => moveItem(d.kind, d.id));
 on('move-area', d => {
   const a = area(d.id); if (!a) return;
-  destPicker({ title: `Move ${a.name}`, current: { area: a.parent || null }, type: 'area', exclude: new Set(descIds(a.id)), cta: 'Move here', onPick: p => doMove(['a:' + a.id], p, a.name) });
+  destPicker({ title: `Move ${a.name}`, current: { area: a.parent || null }, type: 'area', exclude: new Set(descIds(a.id)), keys: ['a:' + a.id], cta: 'Move here', onPick: p => doMove(['a:' + a.id], p, a.name) });
 });
 on('bulk-move', () => {
   const keys = [...UI.sel]; if (!keys.length) return;
@@ -255,7 +271,7 @@ on('bulk-move', () => {
   const onlyAreas = kinds.size === 1 && kinds.has('a');
   const itemKind = onlyAreas ? null : kinds.size === 1 ? (kinds.has('m') ? 'mom' : 'file') : 'mixed';
   const exclude = new Set(keys.filter(k => k[0] === 'a').flatMap(k => descIds(k.slice(2))));   // an area can't go into itself or anything inside it
-  destPicker({ title: `Move ${plural(keys.length, 'item')}`, current: null, type: onlyAreas ? 'area' : 'place', itemKind, exclude, cta: 'Move here', onPick: p => doMove(keys, p) });
+  destPicker({ title: `Move ${plural(keys.length, 'item')}`, current: null, type: onlyAreas ? 'area' : 'place', itemKind, exclude, keys, cta: 'Move here', onPick: p => doMove(keys, p) });
 });
 /* The place chip: where new items land (UI.place). */
 on('pick-place', () => destPicker({
@@ -295,9 +311,46 @@ on('delete-area-now', d => {
   go(up);
 });
 
+/* ---------- Private areas (spec §F, §G) ---------- */
+/* Two confirmations, then setPrivate writes the area and everything inside it. Making private also turns the
+   area's share link off. The rules and who may do it live in the data layer (privateAction, setPrivate). */
+const PRIVATE_WHY = {
+  admin: 'Only admins can make areas private.', missing: 'That area isn’t here any more.',
+  inside: 'This area is inside a private area, so it is already private.', owner: 'This area is private to another admin.',
+};
+on('make-private', d => {
+  const a = area(d.id); if (!a) return;
+  if (!isAdmin()) { toast(PRIVATE_WHY.admin, { icon: 'alert', tone: 'warn' }); return; }
+  confirmDialog({
+    title: `Make “${a.name}” private?`, cta: 'Make private', act: 'make-private-now', data: { id: a.id },
+    text: `Only you will see <b>${esc(a.name)}</b> and everything inside it. Team members lose access, and its share links stop working.`,
+  });
+});
+on('make-visible', d => {
+  const a = area(d.id); if (!a) return;
+  if (!isAdmin()) { toast(PRIVATE_WHY.admin, { icon: 'alert', tone: 'warn' }); return; }
+  confirmDialog({
+    title: `Make “${a.name}” visible to the team?`, cta: 'Make visible', act: 'make-visible-now', data: { id: a.id },
+    text: a.parent ? `Everyone with access to the area above will see <b>${esc(a.name)}</b> again.`
+      : `Everyone who has been given access to <b>${esc(a.name)}</b> will see it again, with everything inside it.`,
+    note: 'Its share link stays off. You can turn it on again from the menu.',
+  });
+});
+function setPrivateNow(id, on) {
+  const a = area(id); if (!a) return;
+  const job = setPrivate(id, on);
+  closeAll();
+  if (!job.ok) { toast(PRIVATE_WHY[job.reason] || 'Couldn’t change that.', { icon: 'alert', tone: 'warn' }); return; }
+  afterWrite(job.done, on ? [`“${a.name}” is private. Only you can see it.`, { icon: 'lock' }] : [`“${a.name}” is visible to the team again.`, { icon: 'eye' }],
+    'Couldn’t change that. Check your connection, then try again.');
+}
+on('make-private-now', d => setPrivateNow(d.id, true));
+on('make-visible-now', d => setPrivateNow(d.id, false));
+
 /* ---------- Menus ---------- */
 on('area-menu', (d, el) => {
   const a = area(d.id); if (!a) return;
+  const privacy = privateAction(a.id);
   menu(el, [
     { label: 'Rename or change emoji', icon: 'pencil', act: 'rename', data: { kind: 'area', id: a.id } },
     { label: 'New sub-area', icon: 'shelf', act: 'new-area', data: { parent: a.id }, admin: { k: 'createArea', label: 'create sub-areas' } },
@@ -306,8 +359,12 @@ on('area-menu', (d, el) => {
     '-',
     { label: 'Move to…', icon: 'move', act: 'move-area', data: { id: a.id }, admin: { k: 'moveArea', label: 'move areas' } },
     { label: a.pw ? 'Remove password' : 'Restrict with password', icon: a.pw ? 'unlock' : 'lock', act: a.pw ? 'unrestrict' : 'restrict', data: { kind: 'a', id: a.id } },
-    { label: 'Share a link', icon: 'share', act: 'share', data: { kind: 'a', id: a.id }, admin: { k: 'shareLinks', label: 'share links' } },
-    { label: 'Access', icon: 'users', act: 'access', data: { id: a.id }, admin: { k: 'access', label: 'change access' } },
+    ...(isPrivate('a', a) ? [] : [
+      { label: 'Share a link', icon: 'share', act: 'share', data: { kind: 'a', id: a.id }, admin: { k: 'shareLinks', label: 'share links' } },
+      { label: 'Access', icon: 'users', act: 'access', data: { id: a.id }, admin: { k: 'access', label: 'change access' } },
+    ]),
+    ...(privacy === 'make' ? [{ label: 'Make private', icon: 'lock', act: 'make-private', data: { id: a.id } }]
+      : privacy === 'release' ? [{ label: 'Make visible to the team', icon: 'eye', act: 'make-visible', data: { id: a.id } }] : []),
     '-',
     { label: 'Delete area', icon: 'trash', act: 'delete-area', data: { id: a.id }, danger: true, admin: { k: 'deleteItem', label: 'delete areas' } },
   ], 'Area');
@@ -326,7 +383,7 @@ on('item-menu', (d, el) => {
   if (!isMom) items.push(guard({ label: it.pw ? 'Remove password' : 'Restrict with password', icon: it.pw ? 'unlock' : 'lock', act: 'restrict', data: { kind: 'f', id } }));
   if (!isMom) items.push('-', { label: 'Download', icon: 'download', act: 'download', data: { id } }, { label: 'Copy address', icon: 'copy', act: 'copy-address', data: { id } });
   items.push('-', { label: it.readOnly ? 'Unmark final' : 'Mark as final', icon: 'lock', act: 'final', data: { kind: d.kind, id }, admin: { k: 'final', label: 'mark MoMs and files as final' } });
-  items.push({ label: 'Share a link', icon: 'share', act: 'share', data: { kind: d.kind, id }, admin: { k: 'shareLinks', label: 'share links' } });
+  if (!isPrivate(d.kind, it)) items.push({ label: 'Share a link', icon: 'share', act: 'share', data: { kind: d.kind, id }, admin: { k: 'shareLinks', label: 'share links' } });
   items.push('-', { label: 'Delete', icon: 'trash', act: 'delete-item', data: { kind: d.kind, id }, danger: true, admin: { k: 'deleteItem', label: 'delete items' } });
   menu(el, items, isMom ? 'MoM' : 'File');
 });

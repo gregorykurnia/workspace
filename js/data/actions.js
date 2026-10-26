@@ -142,6 +142,22 @@ function setPrivate(areaId,on){
   return{ok:true,reason:null,done:_writeAll(ws)};
 }
 
+// The privateTo a moved MoM, file or area ends with: the destination's, except that an area private in
+// its own right (its parent isn't) stays private when it lands somewhere public.
+function _landsPrivate(t,cur,dest){
+  var v=privOf(dest.area);
+  return t==='a'&&!v&&_pv(cur)&&!privOf(cur.parent)?_pv(cur):v;
+}
+// The keys among `keys` that moving them to `dest` would make visible to the team (the move-out
+// warning, spec §G): private now, public after. The same rule moveItems writes, and the same items
+// it skips (a MoM or file can't go to the top level).
+function moveExposes(keys,dest){
+  return keys.filter(function(k){
+    var t=k.charAt(0),id=k.slice(2),cur=t==='a'?gf(id):(t==='m'?M:D).find(function(x){return x.id===id;});
+    if(!cur||(t!=='a'&&!dest.area))return false;
+    return!!(_pv(cur)||privOf(t==='a'?cur.parent:cur.folderId))&&!_landsPrivate(t,cur,dest);
+  });
+}
 // Move MoMs ('m'), files ('f') and areas ('a'). keys: ['m:id', ...].
 // dest: { area, group } (area null = top level, areas only; group is a grouping of that area).
 // Moved items take the destination's privateTo, and a moved area's contents (deleted ones too)
@@ -153,15 +169,13 @@ function setPrivate(areaId,on){
 function moveItems(keys,dest){
   var FV=firebase.firestore.FieldValue,ws=[],back=[],stop=new Set(keys.filter(function(k){return k[0]==='a'||dest.area;}));
   var destChain=dest.area?areaChain(dest.area).map(function(a){return a.id;}):[];
-  var v=privOf(dest.area);
   for(var i=0;i<keys.length;i++){
-    var t=keys[i].charAt(0),id=keys[i].slice(2),col,cur,now={},old={},nv=v;
+    var t=keys[i].charAt(0),id=keys[i].slice(2),col,cur,now={},old={},nv;
     if(t==='a'){
       cur=gf(id);if(!cur)continue;col='folders';
       if(dest.area&&(dest.area===id||destChain.indexOf(id)>-1))return{ok:false,done:_refused('cycle'),undo:function(){return Promise.resolve();}};
       now.parent=dest.area||FV.delete();
       old.parent='parent' in cur?cur.parent:FV.delete();
-      if(!v&&_pv(cur)&&!privOf(cur.parent))nv=_pv(cur);   // private in its own right: stays private
     }else if(t==='m'){
       cur=M.find(function(x){return x.id===id;});if(!cur||!dest.area)continue;col='moms';
       now.folderId=dest.area;now.momFolderId=dest.group||FV.delete();
@@ -171,6 +185,7 @@ function moveItems(keys,dest){
       now.folderId=dest.area;now.docFolderId=dest.group||FV.delete();
       old.folderId=cur.folderId;old.docFolderId='docFolderId' in cur?cur.docFolderId:FV.delete();
     }
+    nv=_landsPrivate(t,cur,dest);
     now.privateTo=nv;old.privateTo=_pv(cur);
     ws.push({col:col,id:id,data:now,root:true});back.push({col:col,id:id,data:old,root:true});
     // An area whose value changes takes its contents along (a public area moving somewhere

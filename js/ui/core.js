@@ -568,6 +568,8 @@ function lockPillHTML({ open = false, id = '' }) {
 }
 const finalMarkHTML = () => `<span class="finalmark">${ic('lock', 'sm')}Final</span>`;
 const restrictMarkHTML = () => `<span class="restrictmark">${ic('lock', 'sm')}Restricted</span>`;
+/* In the sidebar tree the label is for screen readers only (css), so names keep their room. */
+const privateMarkHTML = () => `<span class="privatemark">${ic('lock', 'sm')}<span class="pm-t">Private</span></span>`;
 const flagMarkHTML = () => `<span class="flagmark" role="img" aria-label="Flagged">${ic('flag-fill', 'sm')}</span>`;
 const readOnlyPillHTML = () => `<span class="readonly-pill">${ic('eye', 'sm')}Read only</span>`;
 const edReadOnlyHTML = () => `<span class="ed-readonly">${ic('lock', 'sm')}Final · read only</span>`;

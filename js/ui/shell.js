@@ -39,10 +39,11 @@ function treeHTML(r, opts = {}) {
     const current = r && r.name === 'area' && r.id === a.id;
     const c = locked ? null : countsOf(a.id);
     const count = c ? c.moms + c.files : null;
+    const privRoot = isPrivate('a', a) && !privOf(a.parent);   // the areas inside it are private too, and sit right under it
     const toggle = children.length
       ? `<button type="button" class="tg" data-act="tree-toggle" data-id="${esc(a.id)}" aria-expanded="${open}" aria-label="${open ? 'Collapse' : 'Expand'} ${esc(a.name)}">${ic('chev-d', 'sm')}</button>`
       : `<span class="tg" disabled aria-hidden="true"></span>`;
-    let html = `<div class="tree-row" role="treeitem" aria-level="${depth + 1}" data-depth="${Math.min(depth, 8)}"${children.length ? ` aria-expanded="${open}"` : ''} aria-current="${current}">${toggle}<a class="nm" href="${areaHref(a.id)}" ${current ? 'aria-current="page"' : ''}>${locked ? `<span class="lk" aria-label="Restricted">${ic('lock', 'sm')}</span>` : ''}<span class="em" aria-hidden="true">${esc(areaEmoji(a))}</span><span>${esc(a.name)}</span>${count != null ? `<span class="ct">${count}</span>` : ''}</a></div>`;
+    let html = `<div class="tree-row" role="treeitem" aria-level="${depth + 1}" data-depth="${Math.min(depth, 8)}"${children.length ? ` aria-expanded="${open}"` : ''} aria-current="${current}">${toggle}<a class="nm" href="${areaHref(a.id)}" ${current ? 'aria-current="page"' : ''}>${locked ? `<span class="lk" aria-label="Restricted">${ic('lock', 'sm')}</span>` : ''}<span class="em" aria-hidden="true">${esc(areaEmoji(a))}</span><span>${esc(a.name)}</span>${privRoot ? privateMarkHTML() : ''}${count != null ? `<span class="ct">${count}</span>` : ''}</a></div>`;
     if (open && children.length) html += children.map(k => rowFor(k, depth + 1)).join('');
     return html;
   };

@@ -25,7 +25,11 @@ function shareDialog(kind, id) {
       <div class="dlg-foot">${btnHTML({ kind: 'primary', label: 'Done', act: 'close' })}</div>`,
   });
 }
-on('share', d => { if (!isAdmin()) { toast('Only admins can share links.', { icon: 'alert', tone: 'warn' }); return; } shareDialog(d.kind, d.id); });
+on('share', d => {
+  if (!isAdmin()) { toast('Only admins can share links.', { icon: 'alert', tone: 'warn' }); return; }
+  if (isPrivate(d.kind, d.kind === 'a' ? gf(d.id) : itemOf(d.kind, d.id))) { toast('Private areas and what’s inside them can’t be shared.', { icon: 'lock', tone: 'warn' }); return; }
+  shareDialog(d.kind, d.id);
+});
 on('copy-share', d => {
   const done = () => toast('Link copied', { icon: 'copy' });
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.url).then(done, () => toast('Couldn’t copy. Select the link and copy it by hand.', { icon: 'alert', tone: 'warn' }));
@@ -62,7 +66,11 @@ function accessDialog(areaId) {
         : `<p class="hint">${ic('info', 'sm')}Every member already has access, or no other members exist yet.</p><div class="dlg-foot">${btnHTML({ kind: 'primary', label: 'Done', act: 'close' })}</div>`}`,
   });
 }
-on('access', d => { if (!isAdmin()) { toast('Only admins can change access.', { icon: 'alert', tone: 'warn' }); return; } accessDialog(d.id); });
+on('access', d => {
+  if (!isAdmin()) { toast('Only admins can change access.', { icon: 'alert', tone: 'warn' }); return; }
+  if (isPrivate('a', gf(d.id))) { toast('Private areas are for you alone, so there’s no access to change.', { icon: 'lock', tone: 'warn' }); return; }
+  accessDialog(d.id);
+});
 onForm('grant', f => {
   const uid = f.elements.uid.value, a = f.dataset.area;
   const u = WORKSPACE_USERS.find(x => x.uid === uid); if (!u) return;
