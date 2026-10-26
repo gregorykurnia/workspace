@@ -1,10 +1,13 @@
 const { test, expect } = require('@playwright/test');
+const { filterListeners } = require('./emu-support');
 
 // `npm run test:emu` sets EMU=1: the app runs on localhost against the Auth and Firestore emulators (plan 1.3).
 const EMU = !!process.env.EMU;
 
 test.describe('on the emulator', () => {
   test.skip(!EMU, 'only runs under npm run test:emu');
+  test.use({ serviceWorkers: 'block' });
+  test.beforeEach(async ({ context }) => { await filterListeners(context); });   // plan 1.5: until 2.1, see emu-support.js
 
   test('the seeded admin signs in', async ({ page }) => {
     const errors = [];

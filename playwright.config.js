@@ -6,6 +6,9 @@ module.exports = defineConfig({
   // The screenshot capture is slow and writes a report, so it only runs on request (npm run capture).
   globalSetup: process.env.CAPTURE ? './tests/visual/global-setup.js' : undefined,
   testIgnore: process.env.CAPTURE ? [] : ['**/visual/**'],
+  // npm run test:emu (EMU=1) runs only the specs written for the emulator: they open every URL with ?emulator.
+  // The other specs sign in at '/', which would reach the live Firebase project. Add new emulator specs here.
+  testMatch: process.env.EMU ? ['**/smoke.spec.js', '**/phase1-rules.spec.js'] : undefined,
 timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // serial — tests share Firebase state
