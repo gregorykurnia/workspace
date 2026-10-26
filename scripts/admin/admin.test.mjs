@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeEmail, parseEmails, missingPrivateTo, readKey, UserError, DEFAULT_KEY_PATH } from './lib.mjs';
 import { addEmails, removeEmails, listEmails } from './allowlist.mjs';
 import { backfill } from './backfill-private.mjs';
+import { unfilteredReads } from './rules-preflight.mjs';
 
 // Minimal in-memory Firestore: collection(name).doc(id) / .get(), db.batch().
 function fakeDb(data = {}) {
@@ -94,4 +95,13 @@ test('backfill: dry run counts and writes nothing; apply sets only missing priva
   assert.equal(db.cols.folders.get('f2').privateTo, 'u1');
   assert.deepEqual(db.cols.moms.get('m2'), { title: 'y', privateTo: null });
   assert.equal((await backfill(db)).folders.missing, 0);
+});
+
+test('rules preflight: finds unfiltered list reads of the item collections only', () => {
+  const src = `db.collection('folders').onSnapshot(opt,f);
+    db.collection("moms") . get();
+    db.collection('docs').where('privateTo','==',null).onSnapshot(f);
+    db.collection('moms').doc(id).onSnapshot(f);
+    db.collection('users').onSnapshot(f);`;
+  assert.deepEqual(unfilteredReads(src), ['folders', 'moms']);
 });

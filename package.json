@@ -10,7 +10,8 @@
     "check:names": "node redesign/check-old-names.js",
     "check:app-name": "node redesign/check-app-name.js",
     "test:emu": "node scripts/emu/test.mjs",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-workspace \"node --test tests/rules/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-workspace \"node --test tests/rules/*.test.mjs\"",
+    "rules:deploy": "node scripts/admin/rules-preflight.mjs && firebase deploy --only firestore:rules --project greg-project-5b838"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

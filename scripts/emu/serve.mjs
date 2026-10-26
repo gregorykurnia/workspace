@@ -8,7 +8,8 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/ja
 
 export function serve(port = 0) {
   const server = createServer(async (req, res) => {
-    let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    let path;
+    try { path = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch { res.writeHead(400).end(); return; }   // a bad %-escape would otherwise end the run
     if (path.endsWith('/')) path += 'index.html';
     const file = normalize(join(ROOT, path));
     if (!file.startsWith(ROOT + '/') || /\/(\.|node_modules|scripts)/.test(file.slice(ROOT.length))) { res.writeHead(404).end(); return; }
