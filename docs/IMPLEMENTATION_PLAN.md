@@ -16,7 +16,7 @@ order below keeps every push safe: nothing depends on a rule or data change that
 ## Before the run (owner)
 - [ ] O1 *owner*: Firebase console → Authentication → Sign-in method → Email/Password → turn on **Email link (passwordless sign-in)**. Under Settings → Authorized domains, check the live Vercel domain is listed.
 - [ ] O2 *owner*: Firebase console → Project settings → Service accounts → **Generate new private key**. On the server run `mkdir -p ~/.config/workbench`, then from the Mac `scp -i ~/.ssh/oracle_vm2.key <key>.json ubuntu@100.118.18.29:~/.config/workbench/firebase-admin.json`. Never commit it.
-- [ ] O3 *owner*: send Claude the approved emails (yours first). Claude adds them with `allowlist.mjs add` once task 1.1 is done.
+- [x] O3 *owner*: approved emails listed in `.approved-emails.txt` (git-ignored, one per line, never committed). Task 1.1 adds them with `allowlist.mjs add` once the O2 key is present.
 
 ## Phase 1: Groundwork (no visible change)
 - [ ] 1.1 Admin scripts in `scripts/admin/` (spec §A): `allowlist.mjs list|add|remove`, `backfill-private.mjs` (dry run by default). Add `firebase-admin` as a dev dependency. Done when: `node --test scripts/admin` passes, and with the O2 key present the dry run prints counts per collection (without it, both scripts exit with the "key missing" message) · Sonnet 5.5 High: small scripts, but they touch production data
