@@ -5,3 +5,4 @@ test-results/
 passwords.txt
 visual-report/
 .approved-emails.txt
+*-debug.log
