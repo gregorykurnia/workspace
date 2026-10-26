@@ -9,11 +9,14 @@
     "test:headed": "playwright test --headed",
     "check:names": "node redesign/check-old-names.js",
     "check:app-name": "node redesign/check-app-name.js",
-    "test:emu": "node scripts/emu/test.mjs"
+    "test:emu": "node scripts/emu/test.mjs",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-workspace \"node --test tests/rules/*.test.mjs\""
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@playwright/test": "^1.48.0",
+    "firebase": "^13.1.0",
     "firebase-admin": "^14.5.0",
     "firebase-tools": "^15.34.1"
   }

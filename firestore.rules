@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Security rules (plan spec §D). Tests: tests/rules/ (npm run test:rules).
+// approved = signed in by email (not anonymous), email verified, and on allowed_emails.
+// visitor  = anonymous share-link visitor: reads non-private items, writes nothing.
+// privateTo is null, or the uid of the admin whose private area holds the item (spec §B).
+// Anything not matched below is refused.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function visitor() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'; }
+    function emailUser() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.auth.token.email_verified == true;
+    }
+    function approved() {
+      return emailUser()
+        && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email.lower()));
+    }
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin';
+    }
+    // null or the caller's uid: the only privateTo values a caller may see or write.
+    function nullOrMine(p) { return p == null || p == request.auth.uid; }
+
+    // Reads: a list query must carry where('privateTo', '==', null) or ('==', uid), or it is refused.
+    function canRead() {
+      return (resource.data.privateTo == null && (approved() || visitor()))
+        || (approved() && resource.data.privateTo == request.auth.uid);
+    }
+    // Writes: the old value (null when creating, or on an item not yet backfilled) and the new value are
+    // each null or the caller's; going from null to a uid (making private) is for admins only.
+    // Creates and updates must carry the field ('missing' fails), so every item stays visible to the
+    // filtered queries.
+    function canWrite() {
+      let before = resource == null ? null : resource.data.get('privateTo', null);
+      let deleting = request.method == 'delete';
+      let after = deleting ? before : request.resource.data.get('privateTo', 'missing');
+      return approved() && nullOrMine(before) && nullOrMine(after)
+        && (before != null || after == null || isAdmin());
+    }
+
+    match /folders/{id}    { allow read: if canRead(); allow write: if canWrite(); }
+    match /moms/{id}       { allow read: if canRead(); allow write: if canWrite(); }
+    match /docs/{id}       { allow read: if canRead(); allow write: if canWrite(); }
+    match /docfolders/{id} { allow read: if canRead(); allow write: if canWrite(); }
+    match /momfolders/{id} { allow read: if canRead(); allow write: if canWrite(); }
+
+    // Workspace people. Each person creates and updates only their own record; roles are set in the
+    // console: a new record is a member (or has no role), and the client never changes role.
+    match /users/{uid} {
+      allow read: if approved();
+      allow create: if approved() && uid == request.auth.uid
+        && request.resource.data.get('role', 'member') == 'member';
+      allow update: if approved() && uid == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    match /folder_access/{id} {
+      allow read: if approved();
+      allow write: if approved() && isAdmin();
+    }
+
+    // The approved list: managed with scripts/admin/allowlist.mjs. A person may only check their own entry.
+    match /allowed_emails/{email} {
+      allow get: if emailUser() && email == request.auth.token.email.lower();
+    }
+  }
+}
