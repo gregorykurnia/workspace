@@ -10,7 +10,6 @@ const THEMES = ['light', 'dark'];
 /** Signed-out screens: where they are and what shows when they're ready. */
 const OPEN_SCREENS = [
   { name: 'Sign in', hash: '#/signin', ready: p => p.getByRole('heading', { name: /Sign in to/ }) },
-  { name: 'Reset your password', hash: '#/reset', ready: p => p.getByRole('heading', { name: 'Reset your password' }) },
   { name: 'Link unavailable', hash: '#/s/a/does-not-exist', ready: p => p.getByRole('heading', { name: 'This link is no longer available' }) },
 ];
 
@@ -154,12 +153,6 @@ test.describe('keyboard: every Tab stop shows focus', () => {
       expect(bad, `stops with no visible focus: ${bad.join(', ')}`).toEqual([]);
     });
   }
-
-  test('Enter submits the short reset form', async ({ page }) => {
-    await openScreen(page, OPEN_SCREENS[1], 'light');
-    await page.getByLabel('Email').press('Enter');
-    await expect(page.getByText('Enter your email first, so we know where to send the link.')).toBeVisible();
-  });
 
   test('Enter submits the short sign-in form', async ({ page }) => {
     await openScreen(page, OPEN_SCREENS[0], 'light');

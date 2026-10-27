@@ -45,12 +45,14 @@ const UI = {
 };
 
 /* ---------- Who is acting ---------- */
-/* admin | member | newmember | visitor | signedout | loading */
+/* admin | member | newmember | visitor | denied | signedout | loading. "denied" is a person signed in with an email that
+   isn't on the approved list (session.js ACCESS_DENIED); it comes before "loading" because nothing of theirs ever loads. */
 function sessionRole() {
   if (!UI.authReady) return 'loading';
   const u = auth.currentUser;
   if (!u) return 'signedout';
   if (u.isAnonymous) return 'visitor';
+  if (ACCESS_DENIED) return 'denied';
   if (!UI.roleReady) return 'loading';
   if (CURR_USER_ROLE === 'admin') return 'admin';
   if (!UI.accessReady) return 'loading';
@@ -261,7 +263,7 @@ function route() {
   if (!p.length || p[0] === 'today') return { name: 'today', q };
   switch (p[0]) {
     case 'areas': return p[1] ? { name: 'area', id: p[1], q } : { name: 'areas', q };
-    case 'flagged': case 'recent': case 'deleted': case 'account': case 'signin': case 'reset': return { name: p[0], q };
+    case 'flagged': case 'recent': case 'deleted': case 'account': case 'signin': return { name: p[0], q };
     case 'new-member': return { name: 'newmember', q };
     case 'mom': return { name: 'mom', id: p[1], q };
     case 's': return { name: 'shared', kind: p[1], id: p[2], q };
@@ -272,10 +274,11 @@ function route() {
 function guard(r) {
   const role = sessionRole();
   if (role === 'loading') return null;
-  if (role === 'signedout') return ['signin', 'reset'].includes(r.name) || r.name === 'shared' ? null : '#/signin';   // shared: anonymous sign-in is on its way
+  if (role === 'signedout') return r.name === 'signin' || r.name === 'shared' ? null : '#/signin';   // shared: anonymous sign-in is on its way
+  if (role === 'denied') return r.name === 'signin' ? null : '#/signin';   // the sign-in address shows the "can't open" screen
   if (role === 'newmember') return ['newmember', 'account', 'shared'].includes(r.name) ? null : '#/new-member';
   if (role === 'visitor') return r.name === 'shared' ? null : (UI.sharedHome || '#/signin');
-  if (['signin', 'reset', 'newmember'].includes(r.name)) return '#/today';
+  if (['signin', 'newmember'].includes(r.name)) return '#/today';
   return null;
 }
 function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
@@ -343,7 +346,7 @@ function render({ keepView = false } = {}) {
   if (role === 'visitor' && r.name === 'shared') UI.sharedHome = location.hash;
   /* A share address with nobody signed in: sign in as a guest (waits for a saved session first). */
   if (role === 'signedout' && r.name === 'shared' && !UI.visitorFailed) signInAsVisitor().catch(() => { UI.visitorFailed = true; scheduleRender(); });
-  const bare = ['signin', 'reset', 'newmember'].includes(r.name) || role === 'loading';
+  const bare = ['signin', 'newmember'].includes(r.name) || role === 'loading';
   const shared = r.name === 'shared' || role === 'visitor';
   const waiting = !bare && !dataLoaded();
   const key = r.name + ':' + (r.id || '');
@@ -964,6 +967,8 @@ function boot() {
   const legacy = legacyAddress(location);
   if (legacy) { location.replace(legacy); return; }
   UI.booted = true;
+  const link = signInLinkIn(location.href);   // the page was opened from the link in the sign-in email
+  if (link) openSignInLink(link);
   auth.onAuthStateChanged(u => {
     UI.authReady = true;
     if (!u) { UI.roleReady = false; UI.accessReady = false; } else startListeners();

@@ -1,4 +1,4 @@
-/* Account (U3), Install as an app, and Change password. The account is the signed-in person's: the
+/* Account (U3) and Install as an app. The account is the signed-in person's: the
    details, the role, the Appearance choice (per device, G_theme), and the areas they can see. */
 'use strict';
 
@@ -30,7 +30,6 @@ VIEWS.account = {
         <div class="acct-card">
           <div class="acct-hero"><span class="avatar">${esc(me.ini)}</span><div><b class="acct-name">${esc(me.name)}</b><span class="muted">${esc(me.email)}</span><div class="acct-role">${rolePillHTML(role)}</div></div></div>
           <div class="acct-list">
-            <button type="button" class="row" data-act="change-password">${ic('key')}<span class="mid"><span class="t">Change password</span><span class="p">At least 6 characters</span></span>${ic('chev-r', 'sm')}</button>
             <button type="button" class="row" data-act="install">${ic('install')}<span class="mid"><span class="t">Install ${esc(APP_NAME)}</span><span class="p">Open it on its own, like an app</span></span>${ic('chev-r', 'sm')}</button>
             <button type="button" class="row" data-act="sign-out">${ic('signout')}<span class="mid"><span class="t">Sign out</span><span class="p">On this device</span></span>${ic('chev-r', 'sm')}</button>
           </div>
@@ -50,30 +49,6 @@ VIEWS.account = {
   },
 };
 on('sign-out', () => { signOut().then(() => location.reload(), () => toast('Couldn’t sign out. Check your connection, then try again.', { icon: 'alert', tone: 'warn' })); });
-
-/* ---------- Change password (U3) ---------- */
-on('change-password', () => {
-  layer({
-    label: 'Change password',
-    html: `<form data-form="change-pw" novalidate>${dialogHTML({
-      title: 'Change password', text: 'Use at least 6 characters.',
-      body: fieldHTML({ id: 'cpCur', label: 'Current password', control: inputHTML({ id: 'cpCur', name: 'current', type: 'password', autocomplete: 'current-password' }) })
-        + fieldHTML({ id: 'cpNew', label: 'New password', control: inputHTML({ id: 'cpNew', name: 'next', type: 'password', autocomplete: 'new-password', hint: 'At least 6 characters' }), hint: 'At least 6 characters' })
-        + fieldHTML({ id: 'cpConf', label: 'Confirm new password', control: inputHTML({ id: 'cpConf', name: 'confirm', type: 'password', autocomplete: 'new-password' }) }),
-      foot: btnHTML({ kind: 'soft', label: 'Cancel', act: 'close' }) + btnHTML({ kind: 'primary', label: 'Change password', type: 'submit' }),
-    })}</form>`,
-  });
-});
-onForm('change-pw', f => {
-  const cur = f.elements.current.value, next = f.elements.next.value, conf = f.elements.confirm.value;
-  if (!cur) { fieldError(f, 'cpCur', 'Enter your current password.'); return; }
-  if (next.length < 6) { fieldError(f, 'cpNew', 'Use at least 6 characters.'); return; }
-  if (next !== conf) { fieldError(f, 'cpConf', 'The two new passwords don’t match.'); return; }
-  changePassword(cur, next).then(() => { closeAll(); toast('Password changed', { icon: 'key' }); }, e => {
-    if (e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')) fieldError(f, 'cpCur', 'That isn’t your current password.');
-    else toast('Couldn’t change the password. Check your connection, then try again.', { icon: 'alert', tone: 'warn' });
-  });
-});
 
 /* ---------- Install as an app ---------- */
 /* Browsers offer the install once; keep the offer and use it from the Account page. */

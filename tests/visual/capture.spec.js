@@ -30,11 +30,6 @@ const SURFACES = [
     build: { hash: '#/signin', ready: p => p.getByRole('heading', { name: /Sign in to/ }) },
   },
   {
-    id: 'reset', title: 'Reset your password', tolerance: 0.01,
-    proto: { role: 'signedout', hash: '#/reset' },
-    build: { hash: '#/reset', ready: p => p.getByRole('heading', { name: 'Reset your password' }) },
-  },
-  {
     id: 'link-unavailable', title: 'Link unavailable', tolerance: 0.01,
     proto: { role: 'visitor', hash: '#/s/a/does-not-exist' },
     build: { hash: '#/s/a/does-not-exist', ready: p => p.getByRole('heading', { name: 'This link is no longer available' }) },

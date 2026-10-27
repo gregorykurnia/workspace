@@ -31,18 +31,11 @@ test.describe('signed out, on the live site', () => {
     expect(errors).toEqual([]);
   });
 
-  test('wrong details are refused with a reason', async ({ page }) => {
+  test('an address that is not an email is refused before anything is sent', async ({ page }) => {
     await page.goto('/');
-    await page.getByLabel('Email').fill('nobody@example.com');
-    await page.getByLabel('Password', { exact: true }).fill('not-the-password');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByText('Couldn’t sign you in')).toBeVisible({ timeout: 20000 });
-  });
-
-  test('Forgot password opens the reset screen', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('link', { name: 'Forgot password?' }).click();
-    await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible();
+    await page.getByLabel('Email').fill('not-an-email');
+    await page.getByRole('button', { name: 'Send sign-in link' }).click();
+    await expect(page.getByText('Check the email address, then try again.')).toBeVisible();
   });
 
   test('a share link to something that does not exist says so', async ({ page }) => {

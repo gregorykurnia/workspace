@@ -3,9 +3,15 @@ const { test, expect } = require('./support');
 
 test('empty sign-in is refused before anything is sent', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Send sign-in link' }).click();
   await expect(page.getByText('Enter your email address.')).toBeVisible();
-  await expect(page.getByText('Enter your password.')).toBeVisible();
+});
+
+test('the sign-in screen has no password field and no reset link (sign-in is by email link)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Sign in to/ })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByLabel('Password')).toHaveCount(0);
+  await expect(page.getByText('Forgot password')).toHaveCount(0);
 });
 
 test('the sign-in screen shows no sidebar or navigation', async ({ page }) => {

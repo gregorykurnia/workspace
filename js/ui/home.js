@@ -186,9 +186,7 @@ VIEWS.deleted = {
   },
 };
 
-/* ---------- Sign in, Reset, New member (U1, U2, U4) ---------- */
-/* Wrong details: the two sign-in codes that mean "no such email and password pair". */
-const WRONG_DETAILS = ['auth/invalid-login-credentials', 'auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'];
+/* ---------- Sign in by email link, Can't open, New member (U1, U4; plan spec §H) ---------- */
 /* Clears the errors a previous submit left on an auth form. */
 function clearAuthErrors(f) {
   f.querySelectorAll('.field.err').forEach(x => x.classList.remove('err'));
@@ -198,68 +196,145 @@ function clearAuthErrors(f) {
 }
 /* A submit button is busy and can't be pressed twice while the request is out. */
 function setSubmitting(btn, on) { busy(btn, on); btn.disabled = !!on; }
+const showNotice = (f, n) => { f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ ...n, role: 'alert' }); };
+
+/* Where the person is: step is email (type it), sent (check your inbox, or paste the link), confirm (the link was
+   opened on another device or browser: type the email again) or finishing (the link is being used). The "This email
+   can't open the workspace" screen is no step: it shows whenever the session says so (sessionRole() === 'denied'). */
+const SIGNIN = { step: 'email', email: '', link: '', notice: null, err: '', focus: false };
+function showSignin(step, o = {}) {
+  Object.assign(SIGNIN, { step, notice: null, err: '', focus: true }, o);
+  render();
+}
+/* Messages the design doesn't cover (§9.1 G20): provisional, from the existing notice. */
+const sendFailedNotice = e => {
+  const code = e && e.code;
+  const text = code === 'auth/network-request-failed' ? 'Check your connection, then try again.'
+    : code === 'auth/too-many-requests' || code === 'auth/quota-exceeded' ? 'Too many tries. Wait a few minutes, then try again.'
+    : 'Try again in a moment.';
+  return { tone: 'danger', icon: 'alert', title: 'Couldn’t send the link', text };
+};
+
+const signinCard = inner => `<form class="auth" data-form="${inner.form}" novalidate>${inner.html}</form>`;
+const noticeSlot = () => `<div data-slot="notice">${SIGNIN.notice ? noticeHTML({ ...SIGNIN.notice, role: 'alert' }) : ''}</div>`;
+const SIGNIN_STEPS = {
+  email: () => signinCard({ form: 'signin', html: `
+      <img class="brand-mark brand-logo" src="icon.svg" alt="">
+      <h1>Sign in to ${esc(APP_NAME)}</h1>
+      <p class="sub">Enter your email and we’ll send you a link to sign in. No password needed.</p>
+      ${noticeSlot()}
+      ${fieldHTML({ id: 'sEmail', label: 'Email', control: inputHTML({ id: 'sEmail', name: 'email', type: 'email', autocomplete: 'email', placeholder: 'you@company.com', value: SIGNIN.email }) })}
+      <label class="check-row"><input type="checkbox" name="stay" checked> Stay signed in on this device</label>
+      ${btnHTML({ kind: 'primary', label: 'Send sign-in link', icon: 'mail', type: 'submit' })}` }),
+  sent: () => signinCard({ form: 'signin-sent', html: `
+      <span class="brand-mark">${ic('mail')}</span>
+      <h1>Check your inbox</h1>
+      <p class="sub">We sent a sign-in link to <b>${esc(SIGNIN.email)}</b>. Open it on this device and you’re in.</p>
+      ${noticeSlot()}
+      ${noticeHTML({ tone: 'info', icon: 'info', title: `Using ${APP_NAME} from your home screen?`, text: 'Copy the link from the email and paste it here instead of tapping it.' })}
+      ${fieldHTML({ id: 'sLink', label: 'Sign-in link', control: inputHTML({ id: 'sLink', placeholder: 'Paste the link from your email' }) })}
+      ${btnHTML({ kind: 'soft', label: 'Sign in with this link', type: 'submit' })}
+      <div class="foot">${btnHTML({ kind: 'link', label: 'Use a different email', icon: 'arrow-left', act: 'signin-back' })}${btnHTML({ kind: 'link', label: 'Send it again', act: 'signin-resend' })}</div>` }),
+  confirm: () => signinCard({ form: 'signin-confirm', html: `
+      <span class="brand-mark">${ic('mail')}</span>
+      <h1>Confirm your email</h1>
+      <p class="sub">This link was opened on a different device or browser. Enter the email you asked for it with.</p>
+      ${noticeSlot()}
+      ${fieldHTML({ id: 'cEmail', label: 'Email', error: SIGNIN.err, control: inputHTML({ id: 'cEmail', name: 'email', type: 'email', autocomplete: 'email', placeholder: 'you@company.com', value: SIGNIN.email, error: SIGNIN.err }) })}
+      ${btnHTML({ kind: 'primary', label: 'Sign in', type: 'submit' })}` }),
+  finishing: () => `<div class="auth" aria-busy="true">
+      <span class="brand-mark">${ic('mail')}</span>
+      <h1>Signing you in</h1>
+      <p class="sub" role="status">One moment…</p>
+    </div>`,
+};
+const deniedHTML = () => `<div class="auth">
+      <span class="brand-mark">${ic('lock')}</span>
+      <h1>This email can’t open the workspace</h1>
+      <p class="sub"><b>${esc(currentUser().email)}</b> isn’t on the list of approved emails. Ask the workspace owner to add it.</p>
+      <div class="auth-acts">${btnHTML({ kind: 'primary', label: 'Use a different email', icon: 'arrow-left', act: 'sign-out' })}${btnHTML({ kind: 'soft', label: 'Sign out', icon: 'signout', act: 'sign-out' })}</div>
+    </div>`;
 
 VIEWS.signin = {
   html() {
-    return `<div class="auth-wrap"><form class="auth" data-form="signin" novalidate>
-      <img class="brand-mark brand-logo" src="icon.svg" alt="">
-      <h1>Sign in to ${esc(APP_NAME)}</h1>
-      <p class="sub">Your meetings, files and areas, in one place.</p>
-      <div data-slot="notice"></div>
-      ${fieldHTML({ id: 'sEmail', label: 'Email', control: inputHTML({ id: 'sEmail', name: 'email', type: 'email', autocomplete: 'username' }) })}
-      ${pwFieldHTML({ id: 'sPw', label: 'Password', autocomplete: 'current-password' })}
-      <label class="check-row"><input type="checkbox" name="stay" checked> Stay signed in on this device</label>
-      ${btnHTML({ kind: 'primary', label: 'Sign in', type: 'submit' })}
-      <div class="foot">${btnHTML({ kind: 'link', label: 'Forgot password?', href: '#/reset' })}</div>
-    </form></div>`;
+    return `<div class="auth-wrap">${sessionRole() === 'denied' ? deniedHTML() : SIGNIN_STEPS[SIGNIN.step]()}</div>`;
+  },
+  mount(r, el) {
+    if (!SIGNIN.focus) return;   // only after a step change: on first load the keyboard stays down (a phone would open it)
+    SIGNIN.focus = false;
+    const first = $('input:not([type="checkbox"])', el);
+    if (first) requestAnimationFrame(() => first.focus());   // after the page itself takes focus
   },
 };
-onForm('signin', (f) => {
-  const email = f.elements.email.value.trim(), pw = f.elements.sPw.value;   // pwFieldHTML names its input after its id
-  const btn = f.querySelector('[type="submit"]');
-  clearAuthErrors(f);
-  if (!email) fieldError(f, 'sEmail', 'Enter your email address.');
-  if (!pw) fieldError(f, 'sPw', 'Enter your password.');
-  if (!email || !pw) return;
-  setSubmitting(btn, true);
-  signIn(email, pw, f.elements.stay.checked).then(() => {
-    go('#/today');   // the guard sends a person with no areas to New member once their access has loaded
+
+/* The page was opened from the link in the email (core.js boot calls this before the first draw). The link's
+   parameters leave the address at once, so a reload can't try a used-up link; the link itself stays in memory. */
+function openSignInLink(link) {
+  const q = new URLSearchParams(location.search);
+  ['apiKey', 'oobCode', 'mode', 'lang', 'continueUrl', 'tenantId'].forEach(k => q.delete(k));
+  const rest = q.toString().replace(/=(&|$)/g, '$1');   // a bare ?emulator stays bare
+  history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + '#/signin');
+  SIGNIN.link = link;
+  const email = pendingSignInEmail();   // asked for on this device: finish it; otherwise ask for the email again
+  if (email) { SIGNIN.email = email; SIGNIN.step = 'finishing'; finishLink(email, link); }
+  else SIGNIN.step = 'confirm';
+}
+/* Uses the link. Each way it can fail leads somewhere: a used-up or expired link needs a new one; another email than
+   the one it was sent to needs the right one; anything else (no connection) can be tried again. */
+function finishLink(email, link) {
+  return signInWithLink(email, link).then(() => {
+    SIGNIN.link = ''; SIGNIN.step = 'email';
+    go('#/today');   // the guard sends a person with no areas to New member, and an unapproved email to the "can't open" screen
   }, (e) => {
+    const why = linkProblem(e);
+    if (why === 'expired') {
+      showSignin('email', { link: '', notice: { tone: 'danger', icon: 'alert', title: 'That link has expired', text: 'A sign-in link works once, for a short time. Enter your email to get a new one.' } });   // interim copy, see §9.1 G20
+    } else if (why === 'email') {
+      showSignin('confirm', { email, err: 'That isn’t the email this link was sent to. Check it and try again.' });   // interim copy, see §9.1 G20
+    } else {
+      showSignin('confirm', { email, notice: { tone: 'danger', icon: 'alert', title: 'Couldn’t sign you in', text: 'Check your connection, then try again.' } });   // interim copy, see §9.1 G20
+    }
+  });
+}
+
+onForm('signin', (f) => {
+  const typed = f.elements.email.value.trim(), email = cleanEmail(typed), btn = f.querySelector('[type="submit"]');
+  clearAuthErrors(f);
+  if (!typed) { fieldError(f, 'sEmail', 'Enter your email address.'); return; }
+  if (!email) { fieldError(f, 'sEmail', 'Check the email address, then try again.'); return; }   // interim copy, see §9.1 G20
+  setSubmitting(btn, true);
+  sendSignInLink(email, f.elements.stay.checked).then(() => showSignin('sent', { email }), (e) => {
     setSubmitting(btn, false);
-    if (e && WRONG_DETAILS.includes(e.code)) fieldError(f, 'sPw', 'That email and password don’t match. Check them and try again.');
-    f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'danger', icon: 'alert', title: 'Couldn’t sign you in', text: 'Check your email and password, or reset your password.', role: 'alert' });
+    if (e && e.code === 'auth/invalid-email') fieldError(f, 'sEmail', 'Check the email address, then try again.');
+    else showNotice(f, sendFailedNotice(e));
   });
 });
-
-VIEWS.reset = {
-  html() {
-    return `<div class="auth-wrap"><form class="auth" data-form="reset" novalidate>
-      <span class="brand-mark">${ic('key')}</span>
-      <h1>Reset your password</h1>
-      <p class="sub">Enter the email you use for ${esc(APP_NAME)}. We’ll send a reset link to it.</p>
-      <div data-slot="notice"></div>
-      ${fieldHTML({ id: 'rEmail', label: 'Email', control: inputHTML({ id: 'rEmail', name: 'email', type: 'email', autocomplete: 'username', placeholder: 'you@company.com' }) })}
-      ${btnHTML({ kind: 'primary', label: 'Send reset email', type: 'submit' })}
-      <div class="foot">${btnHTML({ kind: 'link', label: 'Back to sign in', icon: 'arrow-left', href: '#/signin' })}</div>
-    </form></div>`;
-  },
-};
-onForm('reset', (f) => {
-  const email = f.elements.email.value.trim(), btn = f.querySelector('[type="submit"]');
+onForm('signin-sent', (f) => {
+  const raw = f.elements.sLink.value.trim(), btn = f.querySelector('[type="submit"]');
   clearAuthErrors(f);
-  if (!email) { fieldError(f, 'rEmail', 'Enter your email first, so we know where to send the link.'); return; }
-  const sent = () => {
-    setSubmitting(btn, false);
-    f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'info', icon: 'mail', title: 'Check your inbox', text: `If an account exists for ${email}, a reset link is on its way.`, role: 'status' });
-  };
+  if (!raw) { fieldError(f, 'sLink', 'Paste the link from your email.'); return; }
+  const link = signInLinkIn(raw);
+  if (!link) { fieldError(f, 'sLink', 'That isn’t a sign-in link. Copy the whole link from the email and paste it again.'); return; }   // interim copy, see §9.1 G20
+  SIGNIN.link = link;
+  const email = SIGNIN.email || pendingSignInEmail();
+  if (!email) { showSignin('confirm'); return; }
   setSubmitting(btn, true);
-  // An unknown email gets the same answer as a known one, so the form can't be used to find accounts.
-  sendReset(email).then(sent, (e) => {
-    if (e && e.code === 'auth/user-not-found') return sent();
-    setSubmitting(btn, false);
-    if (e && e.code === 'auth/invalid-email') fieldError(f, 'rEmail', 'Check the email address, then try again.');   // interim copy, see §9.1 G18
-    else f.querySelector('[data-slot="notice"]').innerHTML = noticeHTML({ tone: 'danger', icon: 'alert', title: 'Couldn’t send the reset email', text: 'Check your connection, then try again.', role: 'alert' });   // interim copy, see §9.1 G18
-  });
+  finishLink(email, link);
+});
+onForm('signin-confirm', (f) => {
+  const typed = f.elements.email.value.trim(), email = cleanEmail(typed), btn = f.querySelector('[type="submit"]');
+  clearAuthErrors(f);
+  if (!typed) { fieldError(f, 'cEmail', 'Enter your email address.'); return; }
+  if (!email) { fieldError(f, 'cEmail', 'Check the email address, then try again.'); return; }   // interim copy, see §9.1 G20
+  setSubmitting(btn, true);
+  finishLink(email, SIGNIN.link);
+});
+on('signin-back', () => showSignin('email'));   // the typed email stays in the field, for a typo
+on('signin-resend', (d, el) => {
+  const f = el.closest('form');
+  clearAuthErrors(f);
+  el.disabled = true;
+  sendSignInLink(SIGNIN.email).then(() => { el.disabled = false; toast(`Link sent again to ${SIGNIN.email}`, { icon: 'mail' }); }, (e) => { el.disabled = false; showNotice(f, sendFailedNotice(e)); });
 });
 
 VIEWS.newmember = {

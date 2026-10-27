@@ -62,6 +62,8 @@ Do not try to access Quill from outside the script block.
 ### 4. localStorage keys
 - `G_exp` — expanded folder IDs (JSON array)
 - `G_mp` — master PIN hash (removed, do not re-add)
+- `G_signin_email` — the email a sign-in link was asked for (removed once signed in)
+- `G_signin_stay` — `0` when "Stay signed in on this device" was off for that link (removed once signed in)
 
 ### 5. Passwords
 Stored as SHA-256 hashes. `hw(pw)` is the hash function.

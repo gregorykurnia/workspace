@@ -253,7 +253,7 @@ function paletteListHTML(q) {
 }
 on('palette', () => {
   const role = sessionRole();
-  if (role === 'visitor' || role === 'signedout' || role === 'loading' || LAYERS.some(l => l.el.classList.contains('layer-palette'))) return;
+  if (role === 'visitor' || role === 'signedout' || role === 'denied' || role === 'loading' || LAYERS.some(l => l.el.classList.contains('layer-palette'))) return;
   closeAll();
   layer({
     cls: 'layer-palette', label: 'Search or jump to',

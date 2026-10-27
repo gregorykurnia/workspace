@@ -24,29 +24,70 @@ function signInAsVisitor(){
   }
 })();
 
-// stay: "Stay signed in on this device" (U1). Off → the session ends when the browser closes.
-// Old callers pass no stay value and keep the on-device session they always had.
-function signIn(em,pw,stay){
-  var kind=stay===false?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL;
-  return auth.setPersistence(kind).then(function(){
-    return auth.signInWithEmailAndPassword(em,pw);
+// Sign-in by email link (plan spec §H). Firebase mails a link to any address typed: whether the email may open the
+// workspace is decided by the rules (allowed_emails), never by this screen. The email being waited for is kept in
+// localStorage G_signin_email (removed once signed in), and "Stay signed in on this device" in G_signin_stay.
+var SIGNIN_EMAIL_KEY='G_signin_email',SIGNIN_STAY_KEY='G_signin_stay';
+function _lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function _lsSet(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){/* private window: the choice just won't persist */}}
+function pendingSignInEmail(){return _lsGet(SIGNIN_EMAIL_KEY)||'';}
+// The address typed, trimmed. Empty when it can't be an email (the screen asks again before anything is sent).
+function cleanEmail(text){var t=String(text==null?'':text).trim();return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)?t:'';}
+// The link in a piece of text (a pasted email line, a whole address with spaces or <> around it), or ''. Only a
+// real sign-in link counts: the Firebase address from the email, or this app's address after the redirect.
+function signInLinkIn(text){
+  var m=String(text==null?'':text).replace(/&amp;/g,'&').match(/https?:\/\/[^\s<>"']+/);
+  var link=m?m[0]:'';
+  return link&&auth.isSignInWithEmailLink(link)?link:'';
+}
+// Asks Firebase to mail the link. The link comes back to this page (with ?emulator on the emulator, so the
+// returning page keeps talking to it).
+function sendSignInLink(email,stay){
+  var url=location.origin+location.pathname+(EMULATOR?'?emulator':'');
+  return auth.sendSignInLinkToEmail(email,{url:url,handleCodeInApp:true}).then(function(){
+    _lsSet(SIGNIN_EMAIL_KEY,email);
+    if(stay!==undefined)_lsSet(SIGNIN_STAY_KEY,stay===false?'0':'1');
   });
 }
-function sendReset(em){return auth.sendPasswordResetEmail(em);}
-function changePassword(cur,nw){
-  var user=auth.currentUser;
-  var credential=firebase.auth.EmailAuthProvider.credential(user.email,cur);
-  return user.reauthenticateWithCredential(credential).then(function(){
-    return user.updatePassword(nw);
+// Finishes the link. "Stay signed in" off → the session ends when the browser closes; the choice was made
+// where the link was asked for, so it is read back here (it can't be known on another device: stays on).
+function signInWithLink(email,link){
+  var stay=_lsGet(SIGNIN_STAY_KEY)!=='0';
+  var kind=stay?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION;
+  return auth.setPersistence(kind).then(function(){
+    return auth.signInWithEmailLink(email,link);
+  }).then(function(cred){
+    _lsSet(SIGNIN_EMAIL_KEY,null);_lsSet(SIGNIN_STAY_KEY,null);
+    return cred;
   });
+}
+// What went wrong with a link: 'expired' (used up, out of time or not a real link: it needs a new one), 'email'
+// (it was sent to another address) or 'retry' (anything else, such as no connection: the same link still works).
+function linkProblem(e){
+  var c=e&&e.code;
+  return c==='auth/invalid-action-code'||c==='auth/expired-action-code'?'expired':c==='auth/invalid-email'?'email':'retry';
 }
 function signOut(){return auth.signOut();}
 
+// A person whose email isn't on the approved list signs in fine, but the rules refuse every read (spec §D), so
+// their listeners fail with permission-denied. ACCESS_DENIED turns the "This email can't open the workspace"
+// screen on. A permission error alone doesn't: it is confirmed by the one thing an unapproved person may read,
+// their own entry on the list (a missing entry, or a refusal, means no; a network failure means nothing yet).
+var ACCESS_DENIED=false,_denyCheck=null;
+function _maybeDenied(e){
+  var u=auth.currentUser,email=u&&String(u.email||'').trim().toLowerCase();
+  if(!e||e.code!=='permission-denied'||!u||u.isAnonymous||!email||ACCESS_DENIED||_denyCheck)return;
+  var uid=u.uid,deny=function(){if(auth.currentUser&&auth.currentUser.uid===uid){ACCESS_DENIED=true;Store._emit('denied');}};
+  _denyCheck=db.collection('allowed_emails').doc(email).get().then(function(d){if(!d.exists)deny();},function(e2){if(e2&&e2.code==='permission-denied')deny();}).then(function(){_denyCheck=null;});
+}
+Store.onChange(function(what,e){if(what==='error')_maybeDenied(e);});
+
 // Loads role + folder access once per auth session. Emits through Store.onChange:
 // 'guest' (anonymous share-link visitor), 'role' (CURR_USER_ROLE known), 'access' (FA changed),
-// 'users' (WORKSPACE_USERS changed).
+// 'users' (WORKSPACE_USERS changed), 'denied' (this email isn't approved: ACCESS_DENIED).
 function startSession(){
   auth.onAuthStateChanged(function(user){
+    ACCESS_DENIED=false;   // a new sign-in is judged afresh
     if(!user){CURR_USER_ROLE='member';FA=[];CURR_USER_RECENT=[];return;}
 
     // Anonymous share-link guests skip user record lookup
@@ -79,19 +120,19 @@ function startSession(){
       }
       Store._emit('role');
       if(!fromCache)offUser();
-    },function(e){console.error(e);});
+    },function(e){console.error(e);_maybeDenied(e);});
 
     // Watch folder_access collection
     db.collection('folder_access').onSnapshot(function(snap){
       FA=snap.docs.map(function(d){return d.data();});
       Store._emit('access');
-    });
+    },_maybeDenied);
 
     // Load all users (for the Manage Access dropdown)
     db.collection('users').onSnapshot(function(snap){
       WORKSPACE_USERS=snap.docs.map(function(d){return d.data();});
       Store._emit('users');
-    });
+    },_maybeDenied);
   });
 }
 
