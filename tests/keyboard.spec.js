@@ -13,9 +13,9 @@ test('⌘K opens the bar, ↓ and ↵ open the chosen result', async ({ page }) 
   const search = page.getByRole('combobox', { name: 'Search or jump to' });
   await expect(search).toBeVisible();
   await search.fill(area.name);
-  await expect(page.getByRole('option', { name: new RegExp(escapeRe(area.name)) })).toBeVisible();
-  // Down, Down, Up leaves the cursor on the first row whatever the number of matches.
-  await search.press('ArrowDown');
+  // The area's own row (its New MoM, Upload and Save a link commands also name it).
+  await expect(page.locator('[role=option][data-kind="area"]', { hasText: area.name })).toBeVisible();
+  // A typed word starts the cursor on the first match (the area), never on a command. Down then Up returns to it.
   await search.press('ArrowDown');
   await search.press('ArrowUp');
   await search.press('Enter');
