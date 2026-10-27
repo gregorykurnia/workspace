@@ -1,5 +1,5 @@
 // Signed-in: sign-in, the shell, and areas (plan §8.1 rows: auth, sidebar, folders). Needs TEST_EMAIL and TEST_PASSWORD.
-const { test, expect, signIn, createArea, testName, cleanUp, areaIdFromUrl } = require('./support');
+const { test, expect, signIn, createArea, newMoM, testName, cleanUp, areaIdFromUrl } = require('./support');
 
 const made = [];
 test.afterEach(async ({ page }) => { await cleanUp(page, { areas: made.splice(0) }); });
@@ -57,12 +57,17 @@ test('an empty area name is refused in the dialog', async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
-test('an open area shows its header and sections', async ({ page }) => {
+test('an open area shows its header, an empty state, and its sections once it has something', async ({ page }) => {
   await signIn(page);
   const area = await createArea(page, 'Area sections');
   made.push(area);
   await expect(page.getByRole('button', { name: 'New MoM', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Upload', exact: true }).first()).toBeVisible();
+  // design: an empty area shows the empty state; the Meeting notes and Files and links sections appear with the first item
+  await expect(page.getByText(`Nothing in ${area.name} yet`)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Meeting notes/ })).toHaveCount(0);
+  await newMoM(page, area);
+  await page.goto(`/#/areas/${encodeURIComponent(area.id)}`);
   await expect(page.getByRole('heading', { name: /^Meeting notes/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /^Files and links/ })).toBeVisible();
 });
