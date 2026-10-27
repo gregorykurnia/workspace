@@ -1,6 +1,7 @@
 // Shared helpers for the behaviour specs (plan §8.1). Playwright runs only *.spec.js, so this file is not a test.
 // Everything here goes through the UI: no test writes to Firestore directly.
-const { test, expect } = require('@playwright/test');
+const base = require('@playwright/test');
+const { expect } = base;
 
 // Every name a test creates starts with this tag, so cleanup and the real workspace data never mix.
 const RUN_TAG = `[TEST-${process.env.GITHUB_RUN_ID || Date.now()}]`;
@@ -18,6 +19,36 @@ const GREETING = /^(Good (morning|afternoon|evening)|Welcome to)/;
 const EMU = !!process.env.EMU;
 const AUTH_EMULATOR = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099'}`;
 const EMU_PROJECT = 'demo-workspace';
+
+const BASE_URL = process.env.BASE_URL || '';
+/** App addresses ('/…' or under BASE_URL) get ?emulator before the hash, so a spec can't reach the live project. */
+function emulatorUrl(url) {
+  if (typeof url !== 'string' || !(url.startsWith('/') || (BASE_URL && url.startsWith(BASE_URL)))) return url;
+  const i = url.indexOf('#');
+  let path = i < 0 ? url : url.slice(0, i);
+  if (!/[?&]emulator\b/.test(path)) path += (path.includes('?') ? '&' : '?') + 'emulator';
+  return path + (i < 0 ? '' : url.slice(i));
+}
+/** Under EMU: every page of the context opens app addresses with ?emulator, and Cloudinary is never reached. */
+function guardContext(context) {
+  if (!EMU || context.__emuGuard) return context;
+  context.__emuGuard = true;
+  const patch = page => { const go = page.goto.bind(page); page.goto = (url, opts) => go(emulatorUrl(url), opts); };
+  context.pages().forEach(patch);
+  context.on('page', patch);
+  context.route(/cloudinary\.com/, route => route.abort());
+  return context;
+}
+// `context` and `page` come from the fixtures; `browser.newContext()` (visitor and member windows) is guarded too.
+const test = base.test.extend({
+  browser: [async ({ browser }, use) => {
+    const newContext = browser.newContext.bind(browser);
+    browser.newContext = async opts => guardContext(await newContext(opts));
+    await use(browser);
+    browser.newContext = newContext;
+  }, { scope: 'worker' }],
+  context: async ({ context }, use) => { await use(guardContext(context)); },
+});
 
 /** The newest sign-in link the Auth emulator "mailed" to this address (read from its oobCodes), or null. */
 async function emulatorLink(email) {
@@ -109,5 +140,5 @@ async function cleanUp(page, { areas = [], pw = null } = {}) {
 
 module.exports = {
   test, expect, RUN_TAG, ADMIN, MEMBER, HAS_ACCOUNT, HAS_MEMBER,
-  testName, escapeRe, signIn, emulatorSignIn, requestLink, emulatorLink, GREETING, createArea, newMoM, setTitle, cleanUp, areaIdFromUrl, momIdFromUrl,
+  testName, escapeRe, emulatorUrl, signIn, emulatorSignIn, requestLink, emulatorLink, GREETING, createArea, newMoM, setTitle, cleanUp, areaIdFromUrl, momIdFromUrl,
 };

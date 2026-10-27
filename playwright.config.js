@@ -8,7 +8,8 @@ module.exports = defineConfig({
   testIgnore: process.env.CAPTURE ? [] : ['**/visual/**'],
   // npm run test:emu (EMU=1) runs only the specs written for the emulator: they open every URL with ?emulator.
   // The other specs sign in at '/', which would reach the live Firebase project. Add new emulator specs here.
-  testMatch: process.env.EMU ? ['**/smoke.spec.js', '**/phase1-rules.spec.js', '**/private-areas.spec.js', '**/signin-link.spec.js', '**/signin-a11y.spec.js'] : undefined,
+  testMatch: process.env.EMU ? ['**/smoke.spec.js', '**/phase1-rules.spec.js', '**/private-areas.spec.js', '**/signin-link.spec.js', '**/signin-a11y.spec.js',
+    '**/moms.spec.js', '**/session-and-areas.spec.js', '**/keyboard.spec.js', '**/move-restrict-upload.spec.js', '**/sharing-deleted-final.spec.js', '**/accessibility.spec.js'] : undefined,
 timeout: 30000,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // serial — tests share Firebase state
