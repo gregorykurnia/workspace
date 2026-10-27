@@ -80,7 +80,7 @@ test('Remove forever asks first, then removes the item for good', async ({ page 
   const dialog = page.getByRole('dialog', { name: `Remove “${area.name}” forever?` });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Remove forever' }).click();
-  await expect(page.getByText('Removed for good')).toBeVisible();
+  await expect(page.getByText('Removed for good', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: `Remove ${area.name} forever` })).toHaveCount(0);
   made.splice(0);   // already gone; nothing for cleanup to do
 });
@@ -116,13 +116,16 @@ test('a member cannot attach a document to a final MoM', async ({ page, browser 
   await page.goto(`/#/areas/${encodeURIComponent(area.id)}`);
   await page.getByRole('button', { name: `More actions for ${area.name}` }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
-  const access = page.getByRole('dialog', { name: `Who can see ${area.name}` });
+  const access = page.getByRole('dialog', { name: 'Access' });   // the dialog's label; "Who can see …" is its heading
+  await expect(access.getByRole('heading', { name: `Who can see ${area.name}` })).toBeVisible();
   const grant = access.getByRole('button', { name: 'Grant access' });
   if (await grant.count()) {
-    await grant.click();
+    await grant.click();   // granting closes the dialog by itself
     await expect(page.getByText(/^Access granted to/)).toBeVisible();
+  } else {
+    await access.getByRole('button', { name: 'Close' }).first().click();   // already granted: nothing to submit
   }
-  await access.getByRole('button', { name: 'Close' }).click();
+  await expect(access).toBeHidden();
 
   // The member opens the final MoM in their own context.
   const memberContext = await browser.newContext();
