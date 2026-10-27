@@ -158,7 +158,7 @@ test('the week-old purge waits for the server copy of both queries', async () =>
   assert.equal(s.run('_purged'), true);
 });
 
-test('a visitor who signs in gets their own queries, with no news for what was already there', async () => {
+test('a visitor who signs in gets their own queries, with no "added" news for what they bring', async () => {
   const user = { uid: 'anon', isAnonymous: true };
   const s = load(user);
   s.run('startListeners()');
@@ -176,8 +176,12 @@ test('a visitor who signs in gets their own queries, with no news for what was a
   s.feedAll([null, 'admin1'], { moms: { null: [a], admin1: [p] } });
   await tick();
   assert.deepEqual(s.run('M.map(m=>m.id)'), ['a', 'p']);
-  const added = s.events.filter(e => e[0] === 'added');
-  assert.deepEqual(added.flatMap(e => e[1].items.map(i => i.id)), ['p'], 'only the newly visible item is new');
+  assert.deepEqual(s.events.filter(e => e[0] === 'added'), [], 'what the new queries bring was already there: no "added" news');
+  assert.ok(s.events.some(e => e[0] === 'moms'), 'the list still redraws');
+  const q = { id: 'q', privateTo: 'admin1' };   // after the restart, a real arrival is news again
+  s.feed('moms', 'admin1', [p, q], { changes: [['added', q]] });
+  await tick();
+  assert.deepEqual(s.events.filter(e => e[0] === 'added').flatMap(e => e[1].items.map(i => i.id)), ['q']);
 });
 
 test('a refused query emits error', () => {

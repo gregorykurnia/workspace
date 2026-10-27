@@ -382,6 +382,8 @@ main { outline: none; }
 .input:focus, .textarea:focus, .select:focus { border-color: var(--sky-strong); box-shadow: 0 0 0 4px var(--sky-tint); }
 .input[readonly], .input[disabled] { background: var(--surface-2); color: var(--text-2); }
 .field.err .input, .field.err .select { border-color: var(--danger-solid); box-shadow: 0 0 0 4px var(--danger-tint); }
+/* Focus on a field in error (not drawn, §9.1 G21): the danger ring gets a solid edge, so focus still shows. */
+.field.err .input:focus, .field.err .select:focus { box-shadow: 0 0 0 4px var(--danger-tint), 0 0 0 5.5px var(--danger-solid); }
 .ferr { display: none; align-items: center; gap: 6px; margin-top: 8px; font-size: 13.5px; font-weight: 600; color: var(--danger); }
 .field.err .ferr { display: flex; }
 .hcopy { font-size: 13px; color: var(--text-3); margin-top: 6px; }

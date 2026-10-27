@@ -65,6 +65,7 @@ function _pendingMoms(snap){
 // New MoMs and files that arrived after the first load and aren't this device's own unsent writes
 // (S1). Emits 'added' with { col, items }; the screens decide whose they are and what to say.
 function _added(col,snap){
+  if(snap.restart)return;   // a visitor who signed in: what the new queries bring was already there, not just added
   var items=snap.docChanges().filter(function(c){return c.type==='added'&&c.doc&&!(c.doc.metadata&&c.doc.metadata.hasPendingWrites);})
     .map(function(c){return c.doc.data();}).filter(function(x){return x&&!x.deleted;});
   if(items.length)Store._emit('added',{col:col,items:items});
@@ -91,13 +92,14 @@ function _listen(col,key,set,vals,gen,opt,err){
     var cur=new Map();
     snaps.forEach((s,i)=>{if(i!==last)s.docs.forEach(d=>cur.set(d.id,d));});
     snaps[last].docs.forEach(d=>cur.set(d.id,d));   // in both for a moment: the latest snapshot's copy wins
+    var restart=all;
     if(all){all=false;prev.forEach((d,id)=>ids.add(id));cur.forEach((d,id)=>ids.add(id));}
     var changes=[];
     ids.forEach(id=>{var was=prev.has(id),is=cur.has(id);
       if(was||is)changes.push({type:!was?'added':!is?'removed':'modified',doc:is?cur.get(id):prev.get(id)});});
     ids.clear();prev=_merged[key]=cur;
     var docs=Array.from(cur.values()).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
-    _onSnap(col,key,set,{metadata:{fromCache:snaps.some(s=>!!(s.metadata&&s.metadata.fromCache))},docs:docs,docChanges:()=>changes});
+    _onSnap(col,key,set,{metadata:{fromCache:snaps.some(s=>!!(s.metadata&&s.metadata.fromCache))},docs:docs,docChanges:()=>changes,restart:restart});
   }
   vals.forEach(function(v,i){
     _unsubs.push(db.collection(col).where('privateTo','==',v).onSnapshot(opt,function(snap){
