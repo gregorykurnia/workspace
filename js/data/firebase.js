@@ -24,7 +24,8 @@ if(EMULATOR){
 var PERSISTENCE='off';
 (function(){
   var s=document.currentScript;
-  if(!s||s.dataset.persist!=='on'||EMULATOR)return;   // no device copy on the emulator: it would outlive the emulator's data
+  // No device copy on the emulator: it would outlive the emulator's data. A test that needs it sets window.__EMU_PERSIST (a fresh browser context starts empty).
+  if(!s||s.dataset.persist!=='on'||(EMULATOR&&!(typeof window!=='undefined'&&window.__EMU_PERSIST)))return;
   PERSISTENCE='pending';
   db.enablePersistence({synchronizeTabs:true})
     .then(function(){PERSISTENCE='on';})

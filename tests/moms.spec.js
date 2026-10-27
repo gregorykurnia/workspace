@@ -65,6 +65,8 @@ test('flagging a MoM puts it in Flagged', async ({ page }) => {
 });
 
 test('offline, the pill says "Saved on this device", then "Saved" once back online', async ({ page, context }) => {
+  test.setTimeout(90000);   // the test, its resync wait and the cleanup share one timeout
+  await context.addInitScript(() => { window.__EMU_PERSIST = true; });   // the emulator runs without the device copy unless asked
   await signIn(page);
   const area = await createArea(page, 'MoM offline');
   made.push(area);

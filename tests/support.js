@@ -124,17 +124,21 @@ async function cleanUp(page, { areas = [], pw = null } = {}) {
     if (!(await more.count())) continue;   // already gone
     await more.click();
     await page.getByRole('menuitem', { name: 'Delete area' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete area' }).click();
-    await expect(page.getByRole('dialog')).toBeHidden();
+    const confirm = page.getByRole('dialog', { name: `Delete “${a.name}”?` });   // the Area panel can still be open behind it
+    await confirm.getByRole('button', { name: 'Delete area' }).click();
+    await expect(confirm).toBeHidden();
   }
   await page.goto('/#/deleted');
   const row = new RegExp(`^Remove .*${escapeRe(RUN_TAG)}.* forever$`);
   for (let i = 0; i < 40; i++) {
     const button = page.getByRole('button', { name: row });
-    if (!(await button.count())) break;
+    const before = await button.count();
+    if (!before) break;
     await button.first().click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Remove forever' }).click();
-    await expect(page.getByRole('dialog')).toBeHidden();
+    const confirm = page.getByRole('dialog', { name: /^Remove .* forever\?$/ });
+    await confirm.getByRole('button', { name: 'Remove forever' }).click();
+    await expect(confirm).toBeHidden();
+    await expect(button).toHaveCount(before - 1);   // wait for the row to go, or the next count sees it half-removed
   }
 }
 
