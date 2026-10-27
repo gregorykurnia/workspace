@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeEmail, parseEmails, missingPrivateTo, readKey, UserError, DEFAULT_KEY_PATH } from './lib.mjs';
 import { addEmails, removeEmails, listEmails } from './allowlist.mjs';
 import { backfill } from './backfill-private.mjs';
+import { removeTestData } from './remove-test-data.mjs';
 import { unfilteredReads } from './rules-preflight.mjs';
 
 // Minimal in-memory Firestore: collection(name).doc(id) / .get(), db.batch().
@@ -26,6 +27,7 @@ function fakeDb(data = {}) {
       const ops = [];
       return {
         update: (r, v) => ops.push(() => col(r.n).set(r.id, { ...col(r.n).get(r.id), ...v })),
+        delete: r => ops.push(() => col(r.n).delete(r.id)),
         commit: async () => ops.forEach(f => f()),
       };
     },
@@ -104,4 +106,24 @@ test('rules preflight: finds unfiltered list reads of the item collections only'
     db.collection('moms').doc(id).onSnapshot(f);
     db.collection('users').onSnapshot(f);`;
   assert.deepEqual(unfilteredReads(src), ['folders', 'moms']);
+});
+
+test('remove-test-data: finds tagged areas, their sub-areas and contents, and tagged items; dry run deletes nothing', async () => {
+  const db = fakeDb({
+    folders: { t: { name: '[TEST-1] Area' }, sub: { name: 'Plain sub', parent: 't' }, deep: { name: 'Deeper', parent: 'sub' }, real: { name: 'Clients' }, near: { name: 'TEST plan' } },
+    moms: { m1: { title: 'Kickoff', folderId: 'deep' }, m2: { title: 'Real', folderId: 'real' }, m3: { title: '[TEST-2] Stray', folderId: 'real' } },
+    docs: { d1: { name: 'x.pdf', folderId: 't' }, d2: { name: 'y.pdf', folderId: 'real' } },
+    docfolders: { g1: { name: 'Group', folderId: 'sub' } },
+    momfolders: {},
+  });
+  const dry = await removeTestData(db);
+  const ids = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.map(x => x.id).sort()]));
+  assert.deepEqual(ids(dry), { folders: ['deep', 'sub', 't'], moms: ['m1', 'm3'], docs: ['d1'], docfolders: ['g1'], momfolders: [] });
+  assert.equal(db.cols.folders.size, 5);
+
+  await removeTestData(db, { apply: true });
+  assert.deepEqual([...db.cols.folders.keys()].sort(), ['near', 'real']);
+  assert.deepEqual([...db.cols.moms.keys()], ['m2']);
+  assert.deepEqual([...db.cols.docs.keys()], ['d2']);
+  assert.equal(db.cols.docfolders.size, 0);
 });

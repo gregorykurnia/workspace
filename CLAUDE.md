@@ -115,6 +115,7 @@ Parts of this file describe the old app and are out of date (for example, the ed
 - **Model check:** plan §7.0 names the model and effort for each task. If the current model is a lower tier than the task needs, say so before starting and suggest switching.
 - **Never copy from the old UI:** no markup, CSS, class names, element ids or wording from the old files go into new files. New code follows the plan's §2.3–2.4.
 - **Design gaps:** if the prototype and design guide don't answer something, stop and add it to the plan's §9.1 as a need. Don't fill it from the old app. Never send anything to the studio folder; the owner carries needs over.
+- **Tests run on the emulator only** (`npm run test:emu`, also in CI); see "Tests never touch live data" in the global CLAUDE.md. Leftover `[TEST-…]` data in the live workspace: the owner runs `node scripts/admin/remove-test-data.mjs` (dry run), then `--apply`.
 - **Before each commit:** `node -c` on changed JS files, the relevant Playwright tests, and (once it exists) the old-names check from plan §10.
 - **Track progress:** tick the plan's §5 and §10 rows as they're done, and the phase checkboxes in `ui-redesign-plan.md`.
 - Don't save memories that describe the old UI.
