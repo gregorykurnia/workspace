@@ -47,8 +47,9 @@ test('a moved MoM goes to its new area, and Undo brings it back', async ({ page 
   await dialog.getByRole('option', { name: new RegExp(escapeRe(to.name)) }).click();
   await dialog.getByRole('button', { name: 'Move here' }).click();
   await expect(page.getByText(`Moved “${title}” to`)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
-  await page.getByRole('button', { name: 'Undo' }).click();
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });   // not "More actions for … Undo from"
+  await expect(undo).toBeVisible();
+  await undo.click();
   await page.goto(`/#/areas/${encodeURIComponent(from.id)}`);
   await expect(page.getByText(title).first()).toBeVisible({ timeout: 20000 });
 });
@@ -62,8 +63,9 @@ test('several selected MoMs move together, and the bar says how many', async ({ 
   await savedMoM(page, from, a);
   await savedMoM(page, from, b);
   await page.getByRole('button', { name: 'Select', exact: true }).click();
-  await page.getByRole('checkbox', { name: `Select ${a}` }).click();
-  await page.getByRole('checkbox', { name: `Select ${b}` }).click();
+  // The box is drawn on the card and lets clicks through (pointer-events: none): the card takes them.
+  await page.getByRole('checkbox', { name: `Select ${a}` }).click({ force: true });
+  await page.getByRole('checkbox', { name: `Select ${b}` }).click({ force: true });
   const bar = page.getByRole('region', { name: 'Selection' });
   await expect(bar.getByText('2 selected')).toBeVisible();
   await bar.getByRole('button', { name: 'Move…' }).click();
@@ -88,14 +90,16 @@ test('a restricted area asks for its password, and Lock again locks it', async (
   await dialog.getByLabel('Type it again').fill(RESTRICT_PW);
   await dialog.getByRole('button', { name: 'Restrict', exact: true }).click();
   await expect(page.getByText('Restricted with a password')).toBeVisible();
+  await expect(dialog).toBeHidden();   // it fades out with its own "Password" field still in the page
 
   await page.goto(`/#/areas/${encodeURIComponent(area.id)}`);
   await expect(page.getByRole('heading', { name: `${area.name} is restricted` })).toBeVisible({ timeout: 20000 });
+  const open = page.getByRole('button', { name: `Open ${area.name}`, exact: true });
   await page.getByLabel('Password', { exact: true }).fill('wrong-password');
-  await page.getByRole('button', { name: 'Unlock' }).click();
+  await open.click();
   await expect(page.getByText('That password isn’t right. Try again.')).toBeVisible();
   await page.getByLabel('Password', { exact: true }).fill(RESTRICT_PW);
-  await page.getByRole('button', { name: 'Unlock' }).click();
+  await open.click();
   await expect(page.getByRole('button', { name: 'Lock again' })).toBeVisible({ timeout: 20000 });
 
   await page.getByRole('button', { name: 'Lock again' }).click();
@@ -116,12 +120,16 @@ test('nothing inside a restricted area appears in search', async ({ page }) => {
   await dialog.getByLabel('Type it again').fill(RESTRICT_PW);
   await dialog.getByRole('button', { name: 'Restrict', exact: true }).click();
   await expect(page.getByText('Restricted with a password')).toBeVisible();
+  // The toast comes before the password reaches this page's copy of the area: wait for the gate.
+  await expect(page.getByRole('heading', { name: `${area.name} is restricted` })).toBeVisible({ timeout: 20000 });
 
   await page.goto('/#/today');
   await page.keyboard.press('ControlOrMeta+k');
   const search = page.getByRole('combobox', { name: 'Search or jump to' });
   await search.fill(title);
-  await expect(page.getByRole('option', { name: new RegExp(escapeRe(title)) })).toHaveCount(0);
+  await expect(page.getByText(`No matches for “${title}”`)).toBeVisible();
+  // A MoM row starts with its title; the "New MoM ‘…’" action only echoes what was typed.
+  await expect(page.getByRole('option', { name: new RegExp(`^${escapeRe(title)}`) })).toHaveCount(0);
 });
 
 test('a blocked file type is refused before anything is sent', async ({ page }) => {

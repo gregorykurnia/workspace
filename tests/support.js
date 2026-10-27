@@ -113,12 +113,18 @@ async function setTitle(page, title) {
 /** Removes what a test made, through the UI: each area goes to Deleted, then every [TEST-…] row in Deleted is removed for good. */
 async function cleanUp(page, { areas = [], pw = null } = {}) {
   if (!HAS_ACCOUNT) return;
+  // A dialog the test left open (a refused upload, say) covers the page and a same-page goto keeps it: close it.
+  const dialogs = page.locator('#layers [role="dialog"]');
+  for (let n = await dialogs.count(); n > 0; n = await dialogs.count()) {
+    await page.keyboard.press('Escape');
+    await expect(dialogs).toHaveCount(n - 1);
+  }
   for (const a of areas) {
     await page.goto(`/#/areas/${encodeURIComponent(a.id)}`);
     const gate = page.getByRole('heading', { name: `${a.name} is restricted` });
     if (pw && await gate.isVisible().catch(() => false)) {
       await page.getByLabel('Password', { exact: true }).fill(pw);
-      await page.getByRole('button', { name: 'Unlock' }).click();
+      await page.getByRole('button', { name: `Open ${a.name}`, exact: true }).click();
     }
     const more = page.getByRole('button', { name: `More actions for ${a.name}` });
     if (!(await more.count())) continue;   // already gone
