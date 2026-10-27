@@ -14,15 +14,40 @@ const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const areaIdFromUrl = page => decodeURIComponent(new URL(page.url()).hash.split('/').pop());
 const momIdFromUrl = page => decodeURIComponent(new URL(page.url()).hash.split('/').pop());
 
-/** Signs in and waits for the first screen. Skips the test when the account isn't configured (plan Q4). */
+const GREETING = /^(Good (morning|afternoon|evening)|Welcome to)/;
+const EMU = !!process.env.EMU;
+const AUTH_EMULATOR = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099'}`;
+const EMU_PROJECT = 'demo-workspace';
+
+/** The newest sign-in link the Auth emulator "mailed" to this address (read from its oobCodes), or null. */
+async function emulatorLink(email) {
+  const res = await fetch(`${AUTH_EMULATOR}/emulator/v1/projects/${EMU_PROJECT}/oobCodes`);
+  const codes = (await res.json()).oobCodes || [];
+  const mine = codes.filter(c => c.requestType === 'EMAIL_SIGNIN' && String(c.email).toLowerCase() === email.toLowerCase());
+  return mine.length ? mine[mine.length - 1].oobLink : null;
+}
+/** Types the email on the sign-in screen and sends the link; waits for "Check your inbox". Returns the link. */
+async function requestLink(page, email) {
+  await page.goto('/?emulator');
+  await page.getByLabel('Email').fill(email);
+  await page.getByRole('button', { name: 'Send sign-in link' }).click();
+  await expect(page.getByRole('heading', { name: 'Check your inbox' })).toBeVisible({ timeout: 20000 });
+  const link = await emulatorLink(email);
+  expect(link, `the Auth emulator holds a sign-in link for ${email}`).toBeTruthy();
+  return link;
+}
+/** Emulator sign-in by link, as a person does it: ask for the link, then open it in the same browser. */
+async function emulatorSignIn(page, email) {
+  const link = await requestLink(page, email);
+  await page.goto(link);   // the emulator redirects to the app with the link's parameters
+  await expect(page.getByRole('heading', { name: GREETING })).toBeVisible({ timeout: 30000 });
+}
+
+/** Signs in and waits for the first screen. Only the emulator run can: the password form is gone, and the real
+ *  sign-in link goes to an inbox (plan 3.2). Other runs skip. */
 async function signIn(page, who = ADMIN) {
-  const env = who === MEMBER ? 'TEST_MEMBER_EMAIL and TEST_MEMBER_PASSWORD' : 'TEST_EMAIL and TEST_PASSWORD';
-  test.skip(!who.email || !who.password, `needs ${env} (plan Q4)`);
-  await page.goto('/');
-  await page.getByLabel('Email').fill(who.email);
-  await page.getByLabel('Password', { exact: true }).fill(who.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: /^(Good (morning|afternoon|evening)|Welcome to)/ })).toBeVisible({ timeout: 30000 });
+  test.skip(!EMU || !who.email, 'needs the emulator run (npm run test:emu): sign-in is by email link');
+  await emulatorSignIn(page, who.email);
 }
 
 /** Creates an area at the top level through the New area dialog. Returns its id and name. */
@@ -84,5 +109,5 @@ async function cleanUp(page, { areas = [], pw = null } = {}) {
 
 module.exports = {
   test, expect, RUN_TAG, ADMIN, MEMBER, HAS_ACCOUNT, HAS_MEMBER,
-  testName, escapeRe, signIn, createArea, newMoM, setTitle, cleanUp, areaIdFromUrl, momIdFromUrl,
+  testName, escapeRe, signIn, emulatorSignIn, requestLink, emulatorLink, GREETING, createArea, newMoM, setTitle, cleanUp, areaIdFromUrl, momIdFromUrl,
 };

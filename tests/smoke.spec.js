@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect, emulatorSignIn } = require('./support');
 
 // `npm run test:emu` sets EMU=1: the app runs on localhost against the Auth and Firestore emulators (plan 1.3).
 const EMU = !!process.env.EMU;
@@ -10,11 +10,7 @@ test.describe('on the emulator', () => {
   test('the seeded admin signs in', async ({ page }) => {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
-    await page.goto('/?emulator');
-    await page.getByLabel('Email').fill(process.env.TEST_EMAIL);
-    await page.getByLabel('Password', { exact: true }).fill(process.env.TEST_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('heading', { name: /^(Good (morning|afternoon|evening)|Welcome to)/ })).toBeVisible({ timeout: 30000 });
+    await emulatorSignIn(page, process.env.TEST_EMAIL);
     expect(errors).toEqual([]);
   });
 });

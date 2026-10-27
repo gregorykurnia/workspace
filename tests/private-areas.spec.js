@@ -3,10 +3,9 @@
 // MoMs is refused by the rules. A MoM moves into the private area and back out (with the warning), and the area is
 // made visible again. Runs only under `npm run test:emu` (EMU=1). Every URL carries ?emulator, so nothing reaches
 // the live project. It uses areas of its own (AREA_P, AREA_O in scripts/emu/accounts.mjs).
-const { test, expect } = require('@playwright/test');
+const { test, expect, emulatorSignIn } = require('./support');
 
 const EMU = !!process.env.EMU;
-const PASSWORD = process.env.TEST_PASSWORD;
 const PRIVATE_AREA = { id: 'emu-area-p', name: 'Private test area', mom: { id: 'emu-mom-p', title: 'Plan for the private area' } };
 const OPEN_AREA = { id: 'emu-area-o', name: 'Open test area', mom: { id: 'emu-mom-o', title: 'Notes from the open area' } };
 const GREETING = /^(Good (morning|afternoon|evening)|Welcome to)/;
@@ -20,13 +19,7 @@ async function newPerson(browser) {
   const context = await browser.newContext({ serviceWorkers: 'block' });
   return { context, page: await context.newPage() };
 }
-async function signIn(page, email) {
-  await page.goto('/?emulator');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: GREETING })).toBeVisible({ timeout: 30000 });
-}
+const signIn = emulatorSignIn;
 /** 'allowed' or the Firestore error code of reading one MoM by id, the way a hand-made request would. */
 const readMom = (page, id) => page.evaluate(
   id => db.collection('moms').doc(id).get().then(s => (s.exists ? 'allowed' : 'missing'), e => e.code), id);

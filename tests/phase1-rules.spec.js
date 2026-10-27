@@ -1,15 +1,14 @@
-// Phase 1 end-to-end (plan 1.5): the current app (password sign-in) on the emulator with firestore.rules loaded.
+// Phase 1 end-to-end (plan 1.5): the current app (sign-in by email link) on the emulator with firestore.rules loaded.
 // The seeded admin and member open areas, create a MoM, save a link and move both; a share-link visitor reads
 // but can't write. Runs only under `npm run test:emu` (EMU=1). Every URL carries ?emulator, so nothing reaches
 // the live project: a goto without it would reload the page onto the live Firebase.
-const { test, expect } = require('@playwright/test');
+const { test, expect, emulatorSignIn } = require('./support');
 
 const EMU = !!process.env.EMU;
 const PEOPLE = [
   ['admin', process.env.TEST_EMAIL],
   ['member', process.env.TEST_MEMBER_EMAIL],
 ];
-const PASSWORD = process.env.TEST_PASSWORD;
 const AREA = { id: 'emu-area', name: 'Seeded area' };
 const AREA2 = { id: 'emu-area-2', name: 'Seeded second area' };
 const MOM_TITLE = 'Seeded meeting', FILE_NAME = 'Seeded link';
@@ -18,13 +17,7 @@ const GREETING = /^(Good (morning|afternoon|evening)|Welcome to)/;
 test.skip(!EMU, 'only runs under npm run test:emu');
 test.use({ serviceWorkers: 'block' });
 
-async function emuSignIn(page, email) {
-  await page.goto('/?emulator');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: GREETING })).toBeVisible({ timeout: 30000 });
-}
+const emuSignIn = emulatorSignIn;
 const go = (page, hash) => page.goto(`/?emulator#${hash}`);
 
 /** Moves the item whose "More for <name>" button is on the page into `to` and waits for the toast. */
