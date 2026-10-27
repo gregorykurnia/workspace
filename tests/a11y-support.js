@@ -30,7 +30,9 @@ async function resetFocusStart(page) {
 
 /**
  * Tabs through the page (or the open dialog) and returns the stops that show no change when focused. A stop counts as
- * showing focus when its outline, shadow, border, background, position or opacity differs from the same element unfocused.
+ * showing focus when its outline, shadow, border, background, position or opacity differs from the same element unfocused,
+ * or, for a field (base.css clears the ring on every input), its parent's does: the command bar's box draws it with
+ * :focus-within.
  */
 async function stopsWithoutFocusIndicator(page, maxStops = 60) {
   const bad = [];
@@ -44,10 +46,11 @@ async function stopsWithoutFocusIndicator(page, maxStops = 60) {
       const sig = e => { const c = getComputedStyle(e); return [c.outlineStyle, c.outlineWidth, c.boxShadow, c.borderColor, c.backgroundColor, c.textDecorationLine, c.top, c.opacity].join('|'); };
       const label = `${el.tagName.toLowerCase()}${el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : ''} "${(el.getAttribute('aria-label') || el.textContent || el.getAttribute('name') || '').trim().slice(0, 40)}"`;
       const key = label + '@' + Math.round(el.getBoundingClientRect().top) + ',' + Math.round(el.getBoundingClientRect().left);
-      const focused = sig(el);
+      const box = el.matches('input, select, textarea') && el.parentElement || el;
+      const focused = sig(el) + '/' + sig(box);
       const visible = el.matches(':focus-visible');
       el.blur();
-      const unfocused = sig(el);
+      const unfocused = sig(el) + '/' + sig(box);
       el.focus();
       return { key, label, visible, changed: focused !== unfocused };
     });

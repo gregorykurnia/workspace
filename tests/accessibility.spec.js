@@ -1,6 +1,6 @@
 // Accessibility and keyboard checks (plan §8.3): axe on each screen and dialog in both themes (no serious or critical
 // issue), a visible focus indicator on every Tab stop, Enter on a short form, and 44 px touch targets at 390 px.
-// The signed-out screens run in every configuration; the signed-in ones need TEST_EMAIL and TEST_PASSWORD (plan Q4).
+// The signed-out screens run in every configuration; the signed-in ones only on the emulator (npm run test:emu).
 // Nothing here writes data: the signed-in checks only open pages and dialogs. The email-link sign-in screens that need
 // a sent link or a signed-in session are checked on the emulator, in signin-a11y.spec.js.
 const { test, expect, signIn, HAS_ACCOUNT } = require('./support');
@@ -14,22 +14,24 @@ const OPEN_SCREENS = [
   { name: 'Link unavailable', hash: '#/s/a/does-not-exist', ready: p => p.getByRole('heading', { name: 'This link is no longer available' }) },
 ];
 
-/** Signed-in screens that only read data. `open` (optional) opens a layer on top of the page. */
+/** Signed-in screens that only read data. `ready` shows when the page is up; `open` (optional) then opens a layer on
+ *  top of it, and `layer` shows when that layer is ready. */
 const SIGNED_IN_SCREENS = [
   { name: 'Today', hash: '#/today', ready: p => p.getByRole('heading', { name: /^Good (morning|afternoon|evening)/ }) },
-  { name: 'All areas', hash: '#/areas', ready: p => p.getByRole('heading', { level: 1, name: 'All areas' }) },
+  { name: 'All areas', hash: '#/areas', ready: p => p.getByRole('heading', { level: 1, name: 'Areas' }) },
   { name: 'Flagged', hash: '#/flagged', ready: p => p.getByRole('heading', { level: 1, name: 'Flagged' }) },
   { name: 'Recent', hash: '#/recent', ready: p => p.getByRole('heading', { level: 1, name: 'Recent' }) },
   { name: 'Deleted', hash: '#/deleted', ready: p => p.getByRole('heading', { level: 1, name: 'Deleted' }) },
-  { name: 'Account', hash: '#/account', ready: p => p.getByRole('heading', { level: 1, name: 'Account' }) },
+  // The Account page's heading is the person's name; "Account" is its eyebrow.
+  { name: 'Account', hash: '#/account', ready: p => p.getByRole('main').getByText('Account', { exact: true }) },
   { name: 'Missing page', hash: '#/nowhere', ready: p => p.getByRole('heading', { name: 'This page isn’t here' }) },
   {
-    name: 'New area dialog', hash: '#/today', ready: p => p.getByRole('dialog', { name: 'New area' }),
-    open: p => p.getByRole('button', { name: 'New area' }).first().click(),
+    name: 'New area dialog', hash: '#/today', ready: p => p.getByRole('heading', { name: /^Good (morning|afternoon|evening)/ }),
+    open: p => p.getByRole('button', { name: 'New area' }).first().click(), layer: p => p.getByRole('dialog', { name: 'New area' }),
   },
   {
-    name: 'Command bar', hash: '#/today', ready: p => p.getByRole('combobox', { name: 'Search or jump to' }),
-    open: p => p.keyboard.press('ControlOrMeta+k'),
+    name: 'Command bar', hash: '#/today', ready: p => p.getByRole('heading', { name: /^Good (morning|afternoon|evening)/ }),
+    open: p => p.keyboard.press('ControlOrMeta+k'), layer: p => p.getByRole('combobox', { name: 'Search or jump to' }),
   },
 ];
 
@@ -40,7 +42,7 @@ async function openScreen(page, screen, theme) {
   await expect(screen.ready(page)).toBeVisible({ timeout: 30000 });
   if (screen.open) {
     await screen.open(page);
-    await expect(screen.ready(page)).toBeVisible();
+    await expect(screen.layer(page)).toBeVisible();
   }
   await page.evaluate(() => document.fonts.ready);
 }
@@ -52,7 +54,7 @@ async function openSignedIn(page, screen, theme) {
   await expect(screen.ready(page)).toBeVisible({ timeout: 30000 });
   if (screen.open) {
     await screen.open(page);
-    await expect(screen.ready(page)).toBeVisible();
+    await expect(screen.layer(page)).toBeVisible();
   }
   await page.evaluate(() => document.fonts.ready);
 }

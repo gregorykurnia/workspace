@@ -187,7 +187,9 @@ body.selecting .cw > .row { padding-left: 52px; }
 .btn:focus-visible, .subcard:focus-visible, .acard:focus-visible, .mcard:focus-visible,
 .ftile:focus-visible, .qtile:focus-visible, .sel-box:focus-visible, .kind:focus-visible,
 .emoji-grid button:focus-visible, .swatch:focus-visible, .toast button:focus-visible,
-.tag-add:focus-visible, .check-row input:focus-visible { box-shadow: var(--focus); }   /* a checkbox has no border to change, and base.css clears the ring on every input */
+.tag-add:focus-visible, .nav-item:focus-visible, .tree-row:focus-visible, .cmd-trigger:focus-visible,
+.place-chip:focus-visible, .shelf-add:focus-visible, .ccard:focus-visible, .seg button:focus-visible,
+.check-row input:focus-visible { box-shadow: var(--focus); }   /* a checkbox has no border to change, and base.css clears the ring on every input */
 /* Touch target: the toast's action is 44 px like every other control (tokens --hit). */
 .toast button { min-height: var(--hit); }
 
@@ -201,8 +203,8 @@ body.selecting .cw > .row { padding-left: 52px; }
   .mchip.tagc > button { width: var(--hit); height: var(--hit); margin: -10px -12px -10px 0; }
   .side-empty .link-btn, .seg button { min-height: var(--hit); }
 }
-/* The dashed "New sub-area" card shows the focus ring too. */
-.subcard.new-card:focus-visible { box-shadow: var(--focus) !important; }
+/* The dashed "New area" and "New sub-area" cards show the focus ring too. */
+.new-card:focus-visible { box-shadow: var(--focus) !important; }
 
 /* ---------- Phase 4: the MoM editor ---------- */
 /* Editor mount: the loading lines before the note opens. */
