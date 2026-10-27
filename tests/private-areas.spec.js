@@ -4,10 +4,8 @@
 // made visible again. Runs only under `npm run test:emu` (EMU=1). Every URL carries ?emulator, so nothing reaches
 // the live project. It uses areas of its own (AREA_P, AREA_O in scripts/emu/accounts.mjs).
 const { test, expect } = require('@playwright/test');
-const { filterListeners } = require('./emu-support');
 
 const EMU = !!process.env.EMU;
-const ADMIN_UID = 'emu-admin';
 const PASSWORD = process.env.TEST_PASSWORD;
 const PRIVATE_AREA = { id: 'emu-area-p', name: 'Private test area', mom: { id: 'emu-mom-p', title: 'Plan for the private area' } };
 const OPEN_AREA = { id: 'emu-area-o', name: 'Open test area', mom: { id: 'emu-mom-o', title: 'Notes from the open area' } };
@@ -17,10 +15,9 @@ test.skip(!EMU, 'only runs under npm run test:emu');
 
 const go = (page, hash) => page.goto(`/?emulator#${hash}`);
 
-/** A fresh browser context. The admin's pages read private items too (see emu-support.js); everyone else's don't. */
-async function newPerson(browser, uid) {
+/** A fresh browser context. */
+async function newPerson(browser) {
   const context = await browser.newContext({ serviceWorkers: 'block' });
-  await filterListeners(context, uid);
   return { context, page: await context.newPage() };
 }
 async function signIn(page, email) {
@@ -54,7 +51,7 @@ test('an admin makes an area private, moves a MoM in and out, and makes it visib
   const errors = [];
   const people = [];
   try {
-    const admin = await newPerson(browser, ADMIN_UID); people.push(admin);
+    const admin = await newPerson(browser); people.push(admin);
     const member = await newPerson(browser); people.push(member);
     const visitor = await newPerson(browser); people.push(visitor);
     admin.page.on('pageerror', e => errors.push(e.message));

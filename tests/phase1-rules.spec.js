@@ -3,7 +3,6 @@
 // but can't write. Runs only under `npm run test:emu` (EMU=1). Every URL carries ?emulator, so nothing reaches
 // the live project: a goto without it would reload the page onto the live Firebase.
 const { test, expect } = require('@playwright/test');
-const { filterListeners } = require('./emu-support');
 
 const EMU = !!process.env.EMU;
 const PEOPLE = [
@@ -18,7 +17,6 @@ const GREETING = /^(Good (morning|afternoon|evening)|Welcome to)/;
 
 test.skip(!EMU, 'only runs under npm run test:emu');
 test.use({ serviceWorkers: 'block' });
-test.beforeEach(async ({ context }) => { await filterListeners(context); });
 
 async function emuSignIn(page, email) {
   await page.goto('/?emulator');
@@ -100,7 +98,6 @@ test('a share-link visitor reads the shared area but cannot write', async ({ pag
 
   // A visitor has no account: a fresh context, signed out.
   const context = await browser.newContext({ serviceWorkers: 'block' });
-  await filterListeners(context);
   try {
     const v = await context.newPage();
     await v.goto(`/?emulator#/s/a/${AREA.id}`);

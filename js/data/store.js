@@ -69,15 +69,53 @@ function _added(col,snap){
     .map(function(c){return c.doc.data();}).filter(function(x){return x&&!x.deleted;});
   if(items.length)Store._emit('added',{col:col,items:items});
 }
-var _listenersStarted=false;
+// Each collection is read by visibility (spec §E), the only list reads the rules allow: privateTo == null for
+// everyone, plus privateTo == uid for a signed-in non-visitor. The queries' latest snapshots are merged by id into
+// one snapshot for _onSnap, with docChanges() relative to the merged list it saw last. An item made private or
+// visible leaves one query and joins the other in two snapshots raised together, so merging waits a tick: the
+// item is dropped (or reported as new) only when neither query has it (or had it).
+var _COLS=[
+  ['folders','f',all=>{F=all.filter(f=>!f.deleted);TF=all.filter(f=>f.deleted);}],
+  ['moms','m',all=>{M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);}],
+  ['docs','d',all=>{D=all.filter(d=>!d.deleted);TD=all.filter(d=>d.deleted);}],
+  ['docfolders','df',all=>{DF=all.filter(df=>!df.deleted);TDF=all.filter(df=>df.deleted);}],
+  ['momfolders','mf',all=>{MF=all.filter(mf=>!mf.deleted);TMF=all.filter(mf=>mf.deleted);}]
+];
+var _listenersStarted=false,_listenKey=null,_listenGen=0,_unsubs=[];
+var _merged={};   // per collection key: Map id -> document, the merged list _onSnap saw last
+function _listen(col,key,set,vals,gen,opt,err){
+  var snaps=vals.map(()=>null),ids=new Set(),last=0,timer=null;
+  var prev=_merged[key]||new Map(),all=prev.size>0;   // after a restart, compare everything with the old list
+  function run(){
+    timer=null;if(gen!==_listenGen)return;
+    var cur=new Map();
+    snaps.forEach((s,i)=>{if(i!==last)s.docs.forEach(d=>cur.set(d.id,d));});
+    snaps[last].docs.forEach(d=>cur.set(d.id,d));   // in both for a moment: the latest snapshot's copy wins
+    if(all){all=false;prev.forEach((d,id)=>ids.add(id));cur.forEach((d,id)=>ids.add(id));}
+    var changes=[];
+    ids.forEach(id=>{var was=prev.has(id),is=cur.has(id);
+      if(was||is)changes.push({type:!was?'added':!is?'removed':'modified',doc:is?cur.get(id):prev.get(id)});});
+    ids.clear();prev=_merged[key]=cur;
+    var docs=Array.from(cur.values()).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
+    _onSnap(col,key,set,{metadata:{fromCache:snaps.some(s=>!!(s.metadata&&s.metadata.fromCache))},docs:docs,docChanges:()=>changes});
+  }
+  vals.forEach(function(v,i){
+    _unsubs.push(db.collection(col).where('privateTo','==',v).onSnapshot(opt,function(snap){
+      if(gen!==_listenGen)return;
+      snaps[i]=snap;last=i;snap.docChanges().forEach(c=>ids.add(c.doc.id));
+      if(!timer&&snaps.every(Boolean))timer=setTimeout(run,0);
+    },err));
+  });
+}
+// Starts the listeners for the signed-in user (core.js calls this on every sign-in). A different person on the
+// same page (a visitor who signs in) restarts them with that person's queries.
 function startListeners(){
-  if(_listenersStarted)return;_listenersStarted=true;
+  var u=auth.currentUser,key=u&&!u.isAnonymous?u.uid:'';
+  if(_listenersStarted&&key===_listenKey)return;
+  _unsubs.forEach(f=>f());_unsubs=[];
+  _listenersStarted=true;_listenKey=key;var gen=++_listenGen;
   var opt={includeMetadataChanges:true},err=e=>Store._emit('error',e);
-  db.collection('folders').onSnapshot(opt,snap=>_onSnap('folders','f',all=>{F=all.filter(f=>!f.deleted);TF=all.filter(f=>f.deleted);},snap),err);
-  db.collection('moms').onSnapshot(opt,snap=>_onSnap('moms','m',all=>{M=all.filter(m=>!m.deleted);TM=all.filter(m=>m.deleted);},snap),err);
-  db.collection('docs').onSnapshot(opt,snap=>_onSnap('docs','d',all=>{D=all.filter(d=>!d.deleted);TD=all.filter(d=>d.deleted);},snap),err);
-  db.collection('docfolders').onSnapshot(opt,snap=>_onSnap('docfolders','df',all=>{DF=all.filter(df=>!df.deleted);TDF=all.filter(df=>df.deleted);},snap),err);
-  db.collection('momfolders').onSnapshot(opt,snap=>_onSnap('momfolders','mf',all=>{MF=all.filter(mf=>!mf.deleted);TMF=all.filter(mf=>mf.deleted);},snap),err);
+  _COLS.forEach(c=>_listen(c[0],c[1],c[2],key?[null,key]:[null],gen,opt,err));
 }
 // Live updates for one MoM (the open editor). Returns the unsubscribe function.
 function watchMom(id,fn){return db.collection('moms').doc(id).onSnapshot(fn);}
