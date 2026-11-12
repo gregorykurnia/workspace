@@ -47,7 +47,7 @@ Cloudinary is a fake `fetch` in tests.
 - [x] R1 Phase 1 review: read C1–C4's diff against §A–§E; run `npm run test:unit`, `npm run test:mcp` and `npm run test:emu` once; hunt for a secret, key or token in a log, error or response, a hidden item reachable through any tool, and an upload that skips the signature or the size cap · Opus 5.5 High: phase review of Sol-built work
 
 ## Release (owner)
-- [ ] O1 *owner*: in Vercel → workspace → Settings → Environment Variables, **Production only**:
+- [x] O1 *owner*: in Vercel → workspace → Settings → Environment Variables, **Production only**:
   `MCP_SECRET` (make one with `openssl rand -hex 24`), `WORKBENCH_OWNER_EMAIL` (your sign-in email) and
   `FIREBASE_SERVICE_ACCOUNT` (the output of `base64 -w0 ~/.config/workbench/firebase-admin.json`). Never in Preview.
 - [ ] O2 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
