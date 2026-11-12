@@ -53,11 +53,11 @@ Cloudinary is a fake `fetch` in tests.
 - [x] O2 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
   `npm run test:unit` and `npm run test:mcp`, then `git push origin chat-connector:main` (fast-forward only; if it's
   blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site.
-- [ ] O3 *owner*: claude.ai → Settings → Connectors → Add custom connector → name "Workbench", address
+- [x] O3 *owner*: claude.ai → Settings → Connectors → Add custom connector → name "Workbench", address
   `https://workspace-mzyz.vercel.app/api/mcp/<MCP_SECRET>`. For files Claude makes: Settings → Capabilities → code
   execution network access → allow `workspace-mzyz.vercel.app`. Without it, files under 1 MB still save, larger
   ones go as a link.
-- [ ] O4 *owner*: in a normal chat, save a meeting summary (MoM), a link and a PDF Claude made; check Claude
+- [x] O4 *owner*: in a normal chat, save a meeting summary (MoM), a link and a PDF Claude made; check Claude
   proposed the place and waited for your yes; open each returned link on your phone.
 
 ## Spec
