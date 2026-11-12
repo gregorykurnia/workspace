@@ -14,6 +14,7 @@ Do not wait for me to ask. Every change = immediate push to GitHub. Vercel auto-
 - `js/app.js` — all app logic (~884 lines)
 - `js/auth.js` — Firebase Auth + login screen (added separately)
 - `js/rbac.js` — role-based access control (added separately)
+- `docs/chat-connector-plan.md` — chat connector spec, task checklist and emulator checks
 
 No framework, no build step, no node_modules.
 
