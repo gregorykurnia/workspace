@@ -201,3 +201,15 @@ test('the Vercel fetch entry serves list_places through real MCP against the emu
   const after = await fixtureDb.collection('folders').get();
   assert.deepEqual(after.docs.map(doc => doc.data()), before.docs.map(doc => doc.data()));
 });
+
+test('MoMs on the same day list the newest-made first, whatever their ids', async () => {
+  await write('folders', [{ id: 'c1-sameday', name: 'Same day' }]);
+  await write('moms', [
+    { id: 'c1-sd-z', folderId: 'c1-sameday', title: 'Made first', date: 5000, created: 1 },
+    { id: 'c1-sd-a', folderId: 'c1-sameday', title: 'Made third', date: 5000, created: 3 },
+    { id: 'c1-sd-m', folderId: 'c1-sameday', title: 'Made second', date: 5000, created: 2 },
+    { id: 'c1-sd-b', folderId: 'c1-sameday', title: 'Made last', date: 5000, created: 4 },
+  ]);
+  const place = (await read({ query: 'Same day' })).places.find(item => item.id === 'c1-sameday');
+  assert.deepEqual(place.recentMoms.map(mom => mom.title), ['Made last', 'Made third', 'Made second']);
+});

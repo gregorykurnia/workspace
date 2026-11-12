@@ -65,7 +65,8 @@ export async function listPlaces({ db, owner }, { query = '' } = {}) {
     ...place,
     groupings: (groupsByArea.get(place.id) || []).sort(byName),
     recentMoms: place.locked ? [] : (momsByArea.get(place.id) || [])
-      .sort((a, b) => itemTime(b) - itemTime(a) || a.id.localeCompare(b.id)).slice(0, 3)
+      // Same-day MoMs (date is midnight) list the newest-made first.
+      .sort((a, b) => itemTime(b) - itemTime(a) || (Number(b.created) || 0) - (Number(a.created) || 0) || a.id.localeCompare(b.id)).slice(0, 3)
       .map(mom => ({ title: label(mom.title, 'Untitled meeting'), date: typeof mom.date === 'number' || typeof mom.date === 'string' ? mom.date : null })),
   }));
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
