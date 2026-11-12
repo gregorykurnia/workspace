@@ -20,6 +20,7 @@ export const linkInputs = z.object({
 export const inputMessages = {
   save_mom: 'Check save_mom inputs: choose an area, give a nonempty title and markdown text, and use yyyy-mm-dd for the optional date.',
   save_link: 'Check save_link inputs: choose an area, give a nonempty name and web address, and use a supported link kind.',
+  save_file: 'Check save_file inputs: choose an area, give a file name with its extension, and supply at most one of text or base64.',
 };
 
 const markdown = new Marked({
@@ -77,7 +78,7 @@ function guessKind(url) {
   return 'link';
 }
 
-async function writeItem({ db, owner, origin }, args, kind, fields) {
+export async function writeItem({ db, owner, origin }, args, kind, fields) {
   const ref = db.collection(kind === 'mom' ? 'moms' : 'docs').doc();
   const url = new URL(kind === 'mom' ? `/#/mom/${ref.id}` : `/#/areas/${encodeURIComponent(args.areaId)}`, origin).href;
   return db.runTransaction(async transaction => {

@@ -6,11 +6,13 @@ import { ConnectorError, getWorkbench, readSettings } from './firebase.mjs';
 import { INSTRUCTIONS } from './instructions.mjs';
 import { listPlaces } from './places.mjs';
 import { inputMessages, linkInputs, momInputs, saveLink, saveMom } from './saves.mjs';
+import { fileInputs, saveFile } from './files.mjs';
 
 const inputs = z.object({ query: z.string().trim().optional().describe('Client, project or topic words; omit to see all places.') });
 const saves = {
   save_mom: { schema: momInputs, save: saveMom, label: 'MoM', description: 'Save notes, a summary, written artifact or chat as a MoM. Call list_places first; propose the title and full area/grouping path, and save only after the owner says yes in chat (tool approval is not a yes). Do not ask again if the owner already named the place and form. Supply markdown; date is yyyy-mm-dd, defaulting to today in Asia/Jakarta. Return the saved link; ask before retrying if the answer was lost.' },
   save_link: { schema: linkInputs, save: saveLink, label: 'link', description: 'Save an existing http or https web address alongside files. Call list_places first; propose the name and full area/grouping path, and save only after the owner says yes in chat (tool approval is not a yes). Do not ask again if the owner already named the place and form. kind is link, slides, pdf, sheet, image or other; omit to infer it from the address. Return the saved link; ask before retrying if the answer was lost.' },
+  save_file: { schema: fileInputs, save: saveFile, label: 'file', description: 'Save a file you made or the owner uploaded. Call list_places first; propose the name and full area/grouping path, and save only after the owner says yes in chat (tool approval is not a yes). Do not ask again if the owner already named the place and form. Include the file extension in name. Supply text (md, html, csv, txt, json, svg) or base64, up to 1 MB decoded, or omit both to get a signed uploadUrl and curl line valid for 15 minutes (one file, up to 4 MB). Run curl in the code sandbox; if it cannot reach the address, use base64 under 1 MB or offer a link instead. Return the saved link; ask before retrying if the answer was lost.' },
 };
 const digest = value => createHash('sha256').update(value).digest();
 
@@ -18,7 +20,7 @@ function rpcError(code, message, id = null, status = 400) {
   return Response.json({ jsonrpc: '2.0', id, error: { code, message } }, { status, headers: { 'Cache-Control': 'no-store' } });
 }
 
-export function createHandler({ env = process.env, getContext = getWorkbench } = {}) {
+export function createHandler({ env = process.env, getContext = getWorkbench, uploadFetch = globalThis.fetch } = {}) {
   return async function handle(request) {
     const url = new URL(request.url);
     let secret;
@@ -75,7 +77,7 @@ export function createHandler({ env = process.env, getContext = getWorkbench } =
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
           }, async args => {
             try {
-              const value = await tool.save({ ...await getContext(settings), origin: url.origin }, args);
+              const value = await tool.save({ ...await getContext(settings), origin: url.origin, uploadSecret: expected, uploadFetch }, args);
               return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
             } catch (error) {
               return { isError: true, content: [{ type: 'text', text: error instanceof ConnectorError ? error.message : `Could not confirm the ${tool.label} was saved. Check Workbench before retrying; it may have saved.` }] };
