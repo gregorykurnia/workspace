@@ -51,6 +51,8 @@ test('bad content types, broken JSON, batches and malformed RPC are rejected bef
   assert.equal(response.status, 400);
   assert.equal(data.id, 'bad-query');
   assert.equal(data.error.code, -32602);
+  const malformedName = await rpcResponse(handle, rpc('tools/call', { name: { toString: null }, arguments: {} }));
+  assert.equal(malformedName.data.error.code, -32602);
 });
 
 test('missing settings name only the setting and preserve the RPC id', async () => {
@@ -84,7 +86,7 @@ test('malformed credentials and partial emulator settings never reveal their val
   assert.deepEqual(readSettings({ ...env, FIREBASE_SERVICE_ACCOUNT: 'ignored-on-emulators' }), { email: OWNER_EMAIL, projectId: 'demo-workspace' });
 });
 
-test('initialize advertises the confirmation instructions and tools/list exposes only C1', async () => {
+test('initialize advertises the confirmation instructions and tools/list exposes the implemented tools', async () => {
   const { response, data } = await rpcResponse(handle, rpc('initialize', {
     protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'C1 tests', version: '1.0' },
   }));
@@ -95,8 +97,15 @@ test('initialize advertises the confirmation instructions and tools/list exposes
     assert.ok(data.result.instructions.includes(phrase), phrase);
   }
   const listed = await rpcResponse(handle, rpc('tools/list'));
-  assert.deepEqual(listed.data.result.tools.map(tool => tool.name), ['list_places']);
+  assert.deepEqual(listed.data.result.tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link']);
   assert.equal(listed.data.result.tools[0].annotations.readOnlyHint, true);
+  for (const tool of listed.data.result.tools.slice(1)) {
+    assert.equal(tool.annotations.readOnlyHint, false);
+    assert.equal(tool.annotations.destructiveHint, false);
+    assert.equal(tool.annotations.idempotentHint, false);
+    assert.ok(tool.description.includes('only after the owner says yes in chat'));
+    assert.ok(tool.description.includes('ask before retrying'));
+  }
 });
 
 test('an incomplete read returns no partial places or internal error and a retry can succeed', async () => {

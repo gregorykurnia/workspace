@@ -1,5 +1,4 @@
-const isVisible = (item, uid) => !item.deleted && (item.privateTo == null || item.privateTo === uid);
-const label = (value, fallback) => typeof value === 'string' && value.trim() ? value : fallback;
+import { isVisible, label } from './destinations.mjs';
 const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id);
 const itemTime = item => Number(item.date) || Number(item.created) || 0;
 
