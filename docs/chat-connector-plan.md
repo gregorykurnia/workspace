@@ -23,12 +23,33 @@ Safeguards beyond that, each for a risk the simple design leaves open:
 - **4 MB file cap with a plain message:** Vercel refuses request bodies over 4.5 MB.
 
 Cut (follow-ups if wanted): sign-in per person (OAuth) so teammates connect as themselves; creating an area or
-grouping from chat; editing or deleting; a preview token or duplicate check (a double save shows as two items, easy
+grouping from chat; deleting; a preview token or duplicate check (a double save shows as two items, easy
 to delete); a "from Claude" badge in the app.
+
+**Phase 2 ask (2026-11-12).** "From Claude chat, it can also reference and pull exact content of MoM's, files etc.
+from the Workbench … say if I refer 'pull up our notes from x meeting on x date' … and if unclear it can ask me for
+which company etc. till we find it", and then: "Is it possible to also edit the MoM from Claude chat?"
+
+**Smallest design for it.** Three more tools on the same connector: `find_items` (MoMs, files and links by words,
+area and dates, with no contents), `read_mom` (one MoM as markdown in numbered sections) and `edit_mom` (add to the
+end, or replace one section). Claude narrows the search by asking the owner, as it already does before a save; the
+server has no AI. Files and links come back as their name, note and address, not their contents.
+
+Safeguards beyond that, each for a risk the simple design leaves open:
+- **The read tools filter privacy and locks** exactly as `list_places` does: the admin key skips the security rules.
+- **A stale-copy check** (`expectEdited`): an edit based on an old read would wipe a change made in the app since.
+- **Edits write `edited`, `prevEdited` and `editedBy` the way the app does:** an editor with the MoM open then merges
+  the chat edit instead of saving over it.
+- **A backup per edit, and `undo`:** the app keeps no history, so a wrong rewrite would be lost for good.
+- **No rewrite of a section with formatting markdown can't hold** (colours, highlights, fonts, alignment, images,
+  journal tables): the round trip would drop it. Adding to the end is always allowed.
+
+Cut from Phase 2 (follow-ups if wanted): changing a MoM's title, date or tags; deleting; editing files or links;
+reading inside PDFs; undoing more than the latest chat edit.
 
 **Branch.** Every task runs on `chat-connector` (made from `main`, 2026-11-12). At the start of a session,
 `git switch chat-connector`, and `git merge main` if `main` moved. Pushes there only make a Vercel preview; the
-connector reaches production at O2. It doesn't depend on the `email-link` plan (`docs/IMPLEMENTATION_PLAN.md`).
+connector reaches production at O2 (Phase 2 at O5). It doesn't depend on the `email-link` plan (`docs/IMPLEMENTATION_PLAN.md`).
 
 **Tests never touch live data.** Every connector test runs on the emulators (`demo-workspace`) through
 `npm run test:mcp`, which refuses to start unless `FIRESTORE_EMULATOR_HOST` is set and the project is `demo-…`.
@@ -40,25 +61,21 @@ Cloudinary is a fake `fetch` in tests.
 - [x] Nothing to set up: every task runs on the emulators. The owner's settings come after the review (O1–O4).
 
 ## Phase 1: The connector
-- [x] C1 Server and places (spec §A, §B, §E). Files: `api/mcp/[secret].mjs`, `api/_lib/`, `package.json` (runtime `dependencies`, script `test:mcp`), `tests/mcp/`. Done when: `npm run test:mcp` passes; wrong secret → 404, GET → 405, a missing setting → a plain error naming it, never a value; `list_places` hides another admin's private area, deleted areas and areas under a hidden parent, shows the owner's private area marked private, shows no MoM titles for a locked area, and `query` narrows while keeping parents; the test guard refuses to run off the emulator (unit test); `node --check` on changed files; the Vercel preview of the pushed commit built (`gh api repos/gregorykurnia/workspace/commits/<sha>/status`) [no look] · Sol Max: reads the whole workspace through the admin key, so the privacy filter is security work
-- [x] C2 `save_mom` and `save_link` (spec §C). Files: `api/_lib/`, `tests/mcp/`. Done when: a markdown sample (headings, bold, link, bullets, numbers, task items, table, a `<script>`, an `onclick`) converts to the expected HTML with the script and handler gone; a saved MoM carries the area's `privateTo`, `createdBy`, `source`, `edited`, and `momFolderId` when a grouping is given; a link record has the same fields as the app's Save link; refused with nothing written: hidden area, another admin's private area, another area's grouping, a files-only grouping, empty title, a `javascript:` or non-http link [no look] · Sol Max: writes saved data
-- [x] C3 `save_file` and the upload endpoint (spec §D). Files: `api/upload/[token].mjs`, `api/_lib/`, `tests/mcp/`. Done when `npm run test:mcp` passes: `text` and `base64` saves reach the fake Cloudinary with the right type (pdf → raw, png → image); no content → `uploadUrl` and a `curl` line, and a good upload saves the file record and returns its link; expired, edited or wrongly signed token → 403, over 4 MB → 413, area deleted or made private by another admin since the address was made → refused, Cloudinary failure → plain message, nothing written in each case [no look] · Sol Max: a public endpoint and a signed address
-- [x] C4 End-to-end (spec §E): `tests/mcp/protocol.test.mjs` runs a local HTTP server around both handlers and drives it with the MCP SDK `Client` over Streamable HTTP (tools/list → `list_places` → `save_mom` → `save_link` → `save_file` → POST the file to its `uploadUrl`); Playwright `tests/chat-connector.spec.js` (added to the emulator list in `playwright.config.js`) has the seeded admin open the saved MoM's link. Add one line to `CLAUDE.md`'s project structure pointing to this plan. Done when: tools/list shows the four tools and the server's instructions hold §E's steps; every returned link opens the right item; the MoM shows its heading, bullet list, ☐ item and table in the editor, and opening it doesn't rewrite it; the area shows the saved link and file; `npm run test:unit` still passes [no look] · Sol Max: end-to-end specs
-- [x] R1 Phase 1 review: read C1–C4's diff against §A–§E; run `npm run test:unit`, `npm run test:mcp` and `npm run test:emu` once; hunt for a secret, key or token in a log, error or response, a hidden item reachable through any tool, and an upload that skips the signature or the size cap · Opus 5.5 High: phase review of Sol-built work
+Phase 1 and its release (C1–C4, R1, O1–O4): done, see `docs/chat-connector-plan-done.md`.
 
-## Release (owner)
-- [x] O1 *owner*: in Vercel → workspace → Settings → Environment Variables, **Production only**:
-  `MCP_SECRET` (make one with `openssl rand -hex 24`), `WORKBENCH_OWNER_EMAIL` (your sign-in email) and
-  `FIREBASE_SERVICE_ACCOUNT` (the output of `base64 -w0 ~/.config/workbench/firebase-admin.json`). Never in Preview.
-- [x] O2 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
+## Phase 2: Find, read and edit MoMs from chat
+- [ ] C5 `find_items` and `read_mom` (spec §F, §G). Files: `api/_lib/reads.mjs` (new), `api/_lib/server.mjs`, `package.json` (an HTML-to-markdown library, exact version), `tests/mcp/`. Read `js/data/content.js` (`isDeltaContent`, `plainText`, `NOTE_TAGS`) for the stored formats; copy nothing about the screen. Done when: `npm run test:mcp` passes, and tools/list shows six tools; `find_items` narrows by words, area, dates and kind; a body match carries a snippet; files and links carry their stored address; never listed, and `read_mom` answers each with the same "not found" as a missing id: another admin's private area, a deleted item, an item in a hidden grouping, anything under a locked area, a file with its own lock; a seeded editor MoM (headings, bullets, table, coloured text, image) comes back as markdown in numbered sections, with the coloured and image sections marked `plain: false`; an old-format (Delta) MoM comes back as text with `format: 'old'`; `node --check` on changed files; the Vercel preview of the pushed commit built [no look] · Sol Max: reads every MoM's contents through the admin key, so the privacy filter is security work
+- [ ] C6 `edit_mom` (spec §H). Files: `api/_lib/edits.mjs` (new), `api/_lib/server.mjs`, `tests/mcp/`, `tests/rules/rules.test.mjs`. Done when: `append` and `replace_section` write the new content, `edited`, `prevEdited`, `editedBy` and a `mom_backups` record in one transaction; refused with nothing written: a stale `expectEdited`; a hidden, locked or missing MoM; an old-format MoM; a section that isn't plain or doesn't exist; a result over 500 KB; a `<script>` or `onclick` in the markdown is stripped, as in `save_mom`; `undo` puts back the backup only while the MoM hasn't changed since that chat edit; otherwise it's refused; `npm run test:rules` proves a signed-in admin can't read or write `mom_backups`; `npm run test:mcp` passes; `node --check` on changed files [no look] · Sol Max: writes saved data
+- [ ] C7 What Claude is told, and end to end (spec §I). Files: `api/_lib/instructions.mjs`, `api/_lib/server.mjs` (tool descriptions), `tests/mcp/protocol.test.mjs`, `tests/chat-connector.spec.js`. Done when: the server's instructions hold §E's and §I's steps, and each new tool's description repeats its step briefly; the protocol test drives `find_items` → `read_mom` → `edit_mom` append → replace a section → undo over Streamable HTTP; Playwright, the seeded admin with the MoM open in the editor: with no typing, the appended paragraph appears; with unsaved typing, after the save both the typed text and the appended paragraph are in the stored content; a replaced section shows its new text; `npm run test:unit` and `npm run test:mcp` pass [no look] · Sol Max: end-to-end specs
+- [ ] R2 Phase 2 review: read C5–C7's diff against §F–§I; run `npm run test:unit`, `npm run test:mcp`, `npm run test:rules` and `npm run test:emu` once; hunt for MoM content reachable from a hidden or locked item through any tool or error message, an edit that skips the stale check or the backup, and a section rewrite that drops formatting · Opus 5.5 High: phase review of Sol-built work
+
+## Release 2 (owner)
+- [ ] O5 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
   `npm run test:unit` and `npm run test:mcp`, then `git push origin chat-connector:main` (fast-forward only; if it's
-  blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site.
-- [x] O3 *owner*: claude.ai → Settings → Connectors → Add custom connector → name "Workbench", address
-  `https://workspace-mzyz.vercel.app/api/mcp/<MCP_SECRET>`. For files Claude makes: Settings → Capabilities → code
-  execution network access → allow `workspace-mzyz.vercel.app`. Without it, files under 1 MB still save, larger
-  ones go as a link.
-- [x] O4 *owner*: in a normal chat, save a meeting summary (MoM), a link and a PDF Claude made; check Claude
-  proposed the place and waited for your yes; open each returned link on your phone.
+  blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site. No new settings.
+- [ ] O6 *owner*: in a new chat (so claude.ai picks up the new tools), ask "pull up our notes from <a real meeting>"
+  without naming the company; check Claude asks until one MoM is left and quotes it. Then on a test MoM: add a line,
+  rewrite one section, ask Claude to undo it; check each in the app.
 
 ## Spec
 
@@ -111,3 +128,50 @@ errors become plain messages (too big → "save it as a link instead").
    otherwise say so and offer to save a link instead.
 6. After saving, give the link. On an error, say it plainly; if a save's answer was lost, ask before trying again
    (it may have saved).
+
+**§F `find_items({ query?, areaId?, from?, to?, kind? })`, read only.** Finds MoMs, files and links so Claude can
+narrow down "our notes from x meeting". `kind` is `mom`, `file` (a `docs` record with `uploaded: true`) or `link`
+(any other `docs` record); omitted, all three. `query`'s words (any case) must all appear somewhere in the item's
+title or name, tags, note, area path or grouping name, or, for a MoM, its body text (`plainText`'s rules in
+`js/data/content.js`; a Delta MoM's text is its `ops` inserts). `areaId` keeps that area and the areas under it.
+`from` and `to` are `yyyy-mm-dd`, inclusive, as Asia/Jakarta days, on a MoM's `date` and a file's `added`. Visible
+means: the item, its grouping (`momFolderId` or `docFolderId`) and every area up its chain pass `isVisible`; no
+area on the chain has a `pw`; a file has no `pw` of its own. Newest first, at most 20, with `total` and `hasMore`.
+Each result: `kind`, `id`, `title`, `date` (`yyyy-mm-dd`), `path` ("Clients › Acme › Board"), `tags`,
+`matchedIn` (`title`, `place` or `body`), `snippet` (about 120 characters around the first body match, body matches
+only) and `url` (the app link, as §A); files and links also `address` (the stored `url`) and `note`. Never content.
+
+**§G `read_mom({ id })`, read only.** One MoM, for quoting or answering from it. A MoM that is missing or that §F
+wouldn't show gets the same answer: "No MoM with that id." Returns `id`, `title`, `date`, `path`, `tags`, `url`,
+`edited` (the stored value, or null), `format` (`html`, or `old` for Delta content) and `markdown`. For `html`, also
+`sections`: the top-level blocks split before each h1–h3 (section 0 is anything before the first heading), each
+`{ n, heading, markdown, plain }`. HTML → markdown with one library (tables kept as GFM tables, ☐/☑ list items kept
+as text, links kept). `plain` is true when every element in the section is one `save_mom` writes (§C's tag list)
+and no element has a `style`, `class`, `data-*` or `colwidth` attribute; images, colours, highlights, fonts,
+alignment and the prospect-journal table (`data-template`) make it false. `old` MoMs have no sections.
+
+**§H `edit_mom({ id, expectEdited, mode, section?, markdown? })`.** Changes one MoM's body, nothing else. In one
+Firestore transaction: the MoM must pass §G's visibility (else "No MoM with that id."), have `format` `html` (else
+"This MoM is in the old format: open it in Workbench once, then try again."), and its stored `edited` must equal
+`expectEdited` (null matches a MoM never edited; else "This MoM changed since you read it: read it again."). Modes:
+- `append`: `markdown` → HTML with `save_mom`'s converter and sanitizer, added after the existing content.
+- `replace_section`: section `section` (numbered as `read_mom` numbers them) must exist and be `plain`; its blocks,
+  heading included, are replaced by `markdown` converted the same way. Every other block stays byte for byte.
+- `undo`: the newest `mom_backups` record for this MoM whose `afterEdited` equals the stored `edited` puts back its
+  `content`; none → "Nothing to undo: the MoM changed after the last chat edit."
+A result over 500 KB is refused. Each write sets `content`, `edited` (now), `prevEdited` (the old `edited` when it's
+a number), `editedBy {uid, name}` (the owner), and adds `mom_backups/<new id>` = `{ momId, content (before),
+edited (before), afterEdited, mode, savedAt }`. `mom_backups` is server-only: `firestore.rules` has no catch-all,
+so clients are already refused; C6 adds a rules test that proves it. Returns `{ id, url, edited, backupId }`.
+
+**§I What Claude is told, added to §E:**
+7. Finding: call `find_items` with the meeting, client or topic words and any date the owner gave. Turn a relative
+   date ("last Tuesday") into `yyyy-mm-dd` from today in Asia/Jakarta and say the date used; for a date without a
+   year, use the latest one not in the future. One match → `read_mom`. Several → list up to five (title, date, path)
+   and ask which; none → say so, ask for the company, area or rough date, and search again with fewer words. Never
+   pick between matches yourself.
+8. When asked for the notes or exact content, quote what `read_mom` returns; say so when summarising instead.
+9. Editing: `read_mom` first. Show the change (for an append, the new text; for a section, before → after) and edit
+   only after the owner's yes in chat. Prefer `append`; replace a section only when asked to change existing text.
+   If the section isn't plain, say its formatting would be lost and offer to append instead. On "changed since you
+   read it", read again and show the change again. After an edit, give the link and say "undo" puts it back.
