@@ -23,11 +23,11 @@ after(async () => {
   for (const app of getApps()) await deleteApp(app);
 });
 
-test('SDK Streamable HTTP discovers four tools and all six instructions, then saves notes, a link and an uploaded PDF', async t => {
+test('SDK Streamable HTTP discovers six tools and all six save instructions, then saves notes, a link and an uploaded PDF', async t => {
   const client = await connectClient(http.origin);
   t.after(() => client.close());
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file']);
+  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom']);
   const steps = client.getInstructions().split('\n').slice(1);
   assert.equal(steps.length, 6);
   const required = [
@@ -42,7 +42,7 @@ test('SDK Streamable HTTP discovers four tools and all six instructions, then sa
     assert.ok(steps[i].startsWith(`${i + 1}. `));
     for (const phrase of phrases) assert.ok(steps[i].includes(phrase), phrase);
   });
-  for (const tool of tools) {
+  for (const tool of tools.slice(0, 4)) {
     assert.match(tool.description, /list_places|Find visible Workbench areas/);
     assert.match(tool.description, /only after the owner says yes in chat/);
     assert.match(tool.description, /ask before retrying/);
@@ -74,6 +74,12 @@ test('SDK Streamable HTTP discovers four tools and all six instructions, then sa
   // The new MoM must also ripple into place suggestions, including its title and grouping.
   const refreshed = await callTool(client, 'list_places', { query: NOTES.title });
   assert.ok(refreshed.places.find(area => area.id === place.area.id).recentMoms.some(item => item.title === NOTES.title));
+  const matches = await callTool(client, 'find_items', { areaId: place.area.id, query: NOTES.title, kind: 'mom' });
+  assert.deepEqual(matches.items.map(item => item.id), [mom.id]);
+  const pulled = await callTool(client, 'read_mom', { id: mom.id });
+  assert.equal(pulled.title, NOTES.title);
+  assert.match(pulled.markdown, /# Connector minutes/);
+  assert.ok(pulled.sections.every(section => section.plain));
 });
 
 test('HTTP validation rejects missing, blank and oversized input without writing; duplicates keep distinct IDs', async t => {
