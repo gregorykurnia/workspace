@@ -207,3 +207,20 @@ describe('anything else', () => {
     await assertFails(as(VISITOR).doc('other/x').get());
   });
 });
+
+describe('mom_backups: server only', () => {
+  test('a signed-in admin cannot get, list, create, update, overwrite or delete a backup', async () => {
+    const record = { momId: 'open', content: '<p>Private history</p>', edited: 1, afterEdited: 2, mode: 'append', savedAt: 2 };
+    await env.withSecurityRulesDisabled(ctx => ctx.firestore().doc('mom_backups/existing').set(record));
+    // Prove this is an approved admin who can otherwise read and write MoMs.
+    await assertSucceeds(as(ADMIN).doc('moms/open').get());
+    await assertSucceeds(as(ADMIN).doc('moms/open').update({ content: '<p>Allowed</p>' }));
+    await assertFails(as(ADMIN).doc('mom_backups/existing').get());
+    await assertFails(as(ADMIN).collection('mom_backups').get());
+    await assertFails(as(ADMIN).collection('mom_backups').where('momId', '==', 'open').get());
+    await assertFails(as(ADMIN).doc('mom_backups/new').set(record));
+    await assertFails(as(ADMIN).doc('mom_backups/existing').update({ content: '<p>Changed</p>' }));
+    await assertFails(as(ADMIN).doc('mom_backups/existing').set(record));
+    await assertFails(as(ADMIN).doc('mom_backups/existing').delete());
+  });
+});

@@ -42,7 +42,7 @@ function parse(schema, input, tool) {
   return result.data;
 }
 
-function delta(content) {
+export function delta(content) {
   if (typeof content !== 'string' || content.charAt(0) !== '{') return null;
   try {
     const value = JSON.parse(content);
@@ -107,8 +107,8 @@ const tagsOf = item => Array.isArray(item.tags) ? item.tags.filter(tag => typeof
 const itemTitle = (item, kind) => label(kind === 'mom' ? item.title : item.name, kind === 'mom' ? 'Untitled meeting' : 'Untitled file');
 const appUrl = (origin, item, kind) => new URL(kind === 'mom' ? `/#/mom/${encodeURIComponent(item.id)}` : `/#/areas/${encodeURIComponent(item.folderId)}`, origin).href;
 
-// Used by both reads: fail closed on missing/moved groupings, broken chains and locks.
-async function visiblePlace(get, uid, item, kind) {
+// Shared by reads and edits: fail closed on missing/moved groupings, broken chains and locks.
+export async function visiblePlace(get, uid, item, kind) {
   if (!item || !isVisible(item, uid) || (kind !== 'mom' && item.pw) || !validId(item.folderId)) return null;
   const chain = [], seen = new Set();
   let areaId = item.folderId;

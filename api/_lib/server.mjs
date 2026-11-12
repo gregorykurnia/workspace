@@ -8,6 +8,7 @@ import { listPlaces } from './places.mjs';
 import { inputMessages, linkInputs, momInputs, saveLink, saveMom } from './saves.mjs';
 import { fileInputs, saveFile } from './files.mjs';
 import { findInputs, findItems, readInputs, readInputMessages, readMom } from './reads.mjs';
+import { editInputMessage, editInputs, editMom } from './edits.mjs';
 
 const inputs = z.object({ query: z.string().trim().optional().describe('Client, project or topic words; omit to see all places.') });
 const saves = {
@@ -53,9 +54,9 @@ export function createHandler({ env = process.env, getContext = getWorkbench, up
     if ('method' in rpc && rpc.method === 'tools/call') {
       const name = rpc.params?.name;
       if (typeof name !== 'string') return rpcError(-32602, 'Name one Workbench tool to call.', id);
-      const schema = name === 'list_places' ? inputs : Object.hasOwn(saves, name) ? saves[name].schema : Object.hasOwn(reads, name) ? reads[name].schema : null;
+      const schema = name === 'list_places' ? inputs : Object.hasOwn(saves, name) ? saves[name].schema : Object.hasOwn(reads, name) ? reads[name].schema : name === 'edit_mom' ? editInputs : null;
       if (schema && !schema.safeParse(rpc.params.arguments === undefined ? {} : rpc.params.arguments).success) {
-        return rpcError(-32602, name === 'list_places' ? 'Check list_places inputs: query must be text.' : inputMessages[name] || readInputMessages[name], id);
+        return rpcError(-32602, name === 'list_places' ? 'Check list_places inputs: query must be text.' : inputMessages[name] || readInputMessages[name] || editInputMessage, id);
       }
     }
     try {
@@ -102,6 +103,18 @@ export function createHandler({ env = process.env, getContext = getWorkbench, up
             }
           });
         }
+        server.registerTool('edit_mom', {
+          description: 'Edit one visible, unlocked HTML MoM. Read it first, show the proposed change and edit only after the owner says yes in chat. Supply its exact edited value as expectEdited (null if never edited). Prefer append; replace_section replaces one numbered plain section including its heading. Undo restores the last chat edit only while the MoM is unchanged. Return its link and mention undo; on a stale copy, read again and show the change again.',
+          inputSchema: editInputs.shape,
+          annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+        }, async args => {
+          try {
+            const value = await editMom({ ...await getContext(settings), origin: url.origin }, args);
+            return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
+          } catch (error) {
+            return { isError: true, content: [{ type: 'text', text: error instanceof ConnectorError ? error.message : 'Could not confirm the MoM edit was saved. Check Workbench and read the MoM again before retrying; it may have saved.' }] };
+          }
+        });
       }, {
         serverInfo: { name: 'Workbench', version: '1.0.0' }, instructions: INSTRUCTIONS,
       }, { basePath: '/api', disableSse: true, sessionIdGenerator: undefined, maxDuration: 60 });

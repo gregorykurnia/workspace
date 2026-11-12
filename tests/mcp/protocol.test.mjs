@@ -23,11 +23,11 @@ after(async () => {
   for (const app of getApps()) await deleteApp(app);
 });
 
-test('SDK Streamable HTTP discovers six tools and all six save instructions, then saves notes, a link and an uploaded PDF', async t => {
+test('SDK Streamable HTTP discovers seven tools and all six save instructions, then saves notes, a link and an uploaded PDF', async t => {
   const client = await connectClient(http.origin);
   t.after(() => client.close());
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom']);
+  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom', 'edit_mom']);
   const steps = client.getInstructions().split('\n').slice(1);
   assert.equal(steps.length, 6);
   const required = [

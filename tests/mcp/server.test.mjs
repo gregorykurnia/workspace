@@ -97,7 +97,7 @@ test('initialize advertises the confirmation instructions and tools/list exposes
     assert.ok(data.result.instructions.includes(phrase), phrase);
   }
   const listed = await rpcResponse(handle, rpc('tools/list'));
-  assert.deepEqual(listed.data.result.tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom']);
+  assert.deepEqual(listed.data.result.tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom', 'edit_mom']);
   assert.equal(listed.data.result.tools[0].annotations.readOnlyHint, true);
   for (const tool of listed.data.result.tools.slice(1, 4)) {
     assert.equal(tool.annotations.readOnlyHint, false);
@@ -106,7 +106,7 @@ test('initialize advertises the confirmation instructions and tools/list exposes
     assert.ok(tool.description.includes('only after the owner says yes in chat'));
     assert.ok(tool.description.includes('ask before retrying'));
   }
-  for (const tool of listed.data.result.tools.slice(4)) {
+  for (const tool of listed.data.result.tools.slice(4, 6)) {
     assert.equal(tool.annotations.readOnlyHint, true);
     assert.equal(tool.annotations.idempotentHint, true);
     assert.equal(tool.annotations.destructiveHint, false);
