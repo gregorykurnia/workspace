@@ -28,7 +28,7 @@ export async function editMom({ db, owner, origin }, input, now = Date.now()) {
       return snapshot.exists ? { ...snapshot.data(), id: snapshot.id } : null;
     };
     const item = await get('moms', args.id);
-    if (!await visiblePlace(get, owner.uid, item, 'mom') || item.pw) {
+    if (!await visiblePlace(get, owner.uid, item, 'mom')) {
       throw new ConnectorError('No MoM with that id.');
     }
     const before = typeof item.content === 'string' ? item.content : '';

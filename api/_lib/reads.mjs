@@ -109,7 +109,8 @@ const appUrl = (origin, item, kind) => new URL(kind === 'mom' ? `/#/mom/${encode
 
 // Shared by reads and edits: fail closed on missing/moved groupings, broken chains and locks.
 export async function visiblePlace(get, uid, item, kind) {
-  if (!item || !isVisible(item, uid) || (kind !== 'mom' && item.pw) || !validId(item.folderId)) return null;
+  // A MoM's own pw (left from the old app) counts as a lock too: fail closed, as edit_mom does.
+  if (!item || !isVisible(item, uid) || item.pw || !validId(item.folderId)) return null;
   const chain = [], seen = new Set();
   let areaId = item.folderId;
   while (areaId) {
@@ -139,7 +140,7 @@ const fields = {
   folders: ['name', 'parent', 'privateTo', 'deleted', 'pw'],
   momfolders: ['name', 'folderId', 'holds', 'privateTo', 'deleted'],
   docfolders: ['name', 'folderId', 'privateTo', 'deleted'],
-  moms: ['title', 'date', 'created', 'folderId', 'momFolderId', 'privateTo', 'deleted', 'tags', 'note', 'content'],
+  moms: ['title', 'date', 'created', 'folderId', 'momFolderId', 'privateTo', 'deleted', 'pw', 'tags', 'note', 'content'],
   docs: ['name', 'added', 'folderId', 'docFolderId', 'privateTo', 'deleted', 'pw', 'uploaded', 'url', 'note', 'tags'],
 };
 

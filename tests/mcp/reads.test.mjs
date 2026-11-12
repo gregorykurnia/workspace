@@ -76,7 +76,7 @@ before(async () => {
   ]);
   const areaCases = ['c5-other', 'c5-under-other', 'c5-deleted', 'c5-under-deleted', 'c5-locked', 'c5-under-locked', 'c5-orphan', 'c5-cycle-a', 'c5-bad-privacy', 'c5-bad-parent', 'c5-false-parent', 'c5-missing', 123];
   const cases = [
-    ...areaCases.map(folderId => ({ folderId })), { privateTo: other }, { privateTo: '' }, { deleted: true },
+    ...areaCases.map(folderId => ({ folderId })), { privateTo: other }, { privateTo: '' }, { deleted: true }, { pw: 'own-mom-lock' },
     ...['c5-other-group', 'c5-deleted-group', 'c5-wrong-area', 'c5-missing', 123, 0, false].map(momFolderId => ({ momFolderId })),
   ];
   await seed('moms', cases.map((extra, i) => {
