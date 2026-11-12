@@ -50,7 +50,7 @@ Cloudinary is a fake `fetch` in tests.
 - [x] O1 *owner*: in Vercel → workspace → Settings → Environment Variables, **Production only**:
   `MCP_SECRET` (make one with `openssl rand -hex 24`), `WORKBENCH_OWNER_EMAIL` (your sign-in email) and
   `FIREBASE_SERVICE_ACCOUNT` (the output of `base64 -w0 ~/.config/workbench/firebase-admin.json`). Never in Preview.
-- [ ] O2 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
+- [x] O2 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
   `npm run test:unit` and `npm run test:mcp`, then `git push origin chat-connector:main` (fast-forward only; if it's
   blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site.
 - [ ] O3 *owner*: claude.ai → Settings → Connectors → Add custom connector → name "Workbench", address
