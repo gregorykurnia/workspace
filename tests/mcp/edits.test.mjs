@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { editMom } from '../../api/_lib/edits.mjs';
-import { findItems, readMom, splitSections } from '../../api/_lib/reads.mjs';
+import { findItems, plainText, readMom, splitSections } from '../../api/_lib/reads.mjs';
 import { markdownToHtml, MAX_CONTENT_BYTES } from '../../api/_lib/saves.mjs';
 import { createHandler } from '../../api/_lib/server.mjs';
 
@@ -105,6 +105,55 @@ test('replace_section uses its number despite duplicate headings and preserves e
   const backup = (await db.collection('mom_backups').doc(result.backupId).get()).data();
   assert.equal(backup.content, rich); assert.equal(backup.mode, 'replace_section');
   assert.deepEqual((await readMom(context, { id: ref.id })).sections.map(section => section.heading), [null, 'Revised', 'Decisions', 'Rich']);
+});
+
+test('round trip read and replace keeps cell breaks, literal tags and linked underlines through search and undo', async () => {
+  const body = '<table><tr><th>Value</th></tr><tr><td><p>one</p><p>two &lt;name&gt;</p></td></tr></table>'
+    + '<p>&lt;script&gt;C6roundtripneedle&lt;/script&gt; &amp;lt;name&amp;gt;</p>'
+    + '<p><a href="https://example.test/report"><u>under</u></a></p>';
+  const original = splitSections(rich), content = original[0].html + '<h2>Decisions</h2>' + body
+    + original.slice(2).map(section => section.html).join('');
+  const ref = await newMom({ content }), read = await readMom(context, { id: ref.id }), section = read.sections[1];
+  assert.equal(section.plain, true);
+  const result = await editMom(context, args(ref, {
+    mode: 'replace_section', section: section.n, markdown: section.markdown, expectEdited: read.edited,
+  }), now);
+  const saved = (await ref.get()).data().content, after = splitSections(saved);
+  assert.equal(after[0].html, original[0].html);
+  assert.equal(after.slice(2).map(section => section.html).join(''), original.slice(2).map(section => section.html).join(''));
+  assert.equal(plainText(saved), plainText(content));
+  assert.match(saved, /one<br\s*\/?>two &lt;name&gt;/);
+  assert.match(saved, /&lt;script&gt;C6roundtripneedle&lt;\/script&gt;/);
+  assert.match(saved, /<a href="https:\/\/example.test\/report"><u>under<\/u><\/a>/);
+  assert.doesNotMatch(saved, /<script>|onetwo/);
+  assert.equal((await db.collection('mom_backups').doc(result.backupId).get()).data().content, content);
+  const pulled = await readMom(context, { id: ref.id });
+  assert.equal(pulled.sections[1].markdown, section.markdown);
+  const found = await findItems(context, { areaId: 'c6-area', query: 'C6roundtripneedle' });
+  assert.equal(found.items.find(item => item.id === ref.id).matchedIn, 'body');
+  await refused(ref, args(ref, { mode: 'replace_section', section: 1, markdown: section.markdown }),
+    'This MoM changed since you read it: read it again.');
+  await editMom(context, args(ref, { mode: 'undo', expectEdited: result.edited }), now);
+  assert.equal((await ref.get()).data().content, content);
+});
+
+test('round trip lossy sections refuse replacement without changing content, metadata or backups', async () => {
+  for (const content of [
+    '<table><tr><th>Cell</th></tr><tr><td><ul><li>one</li><li>two</li></ul></td></tr></table>',
+    '<table><tr><th colspan="2">one</th></tr><tr><td>two</td><td>three</td></tr></table>',
+    '<table><tr><th>one</th></tr><tr><td rowspan="2">two</td></tr><tr><td>three</td></tr></table>',
+    '<table><tr><td>one</td></tr><tr><td>two</td></tr></table>',
+    '<p>one</p><p></p><p>two</p>',
+  ]) {
+    const ref = await newMom({ content }), read = await readMom(context, { id: ref.id });
+    assert.equal(read.sections[0].plain, false, content);
+    await refused(ref, args(ref, { mode: 'replace_section', section: 0, markdown: read.sections[0].markdown }),
+      'This section has formatting markdown cannot preserve. Append instead.');
+    const result = await editMom(context, args(ref), now);
+    assert.equal((await ref.get()).data().content, content + markdownToHtml('Added'));
+    await editMom(context, args(ref, { mode: 'undo', expectEdited: result.edited }), now);
+    assert.equal((await ref.get()).data().content, content);
+  }
 });
 
 test('missing or null versions match null; legacy scalar versions match exactly and clear obsolete prevEdited', async () => {
@@ -296,24 +345,24 @@ test('HTTP advertises edit_mom, returns structured results and rejects invalid i
 });
 
 test('read failures and failures after staging either write commit nothing and hide internal details', async () => {
-  for (const failAt of ['get', 'update', 'create']) {
-    const ref = await newMom(), before = await state(ref);
+  for (const mode of ['append', 'replace_section']) for (const failAt of ['get', 'update', 'create']) {
+    const ref = await newMom(), before = await state(ref), input = args(ref, { mode, section: 1 });
     const broken = withTransaction(callback => db.runTransaction(transaction => callback({
       get: async ref => { const value = await transaction.get(ref); if (failAt === 'get') throw new Error('secret-database-details'); return value; },
       update: (...args) => { transaction.update(...args); if (failAt === 'update') throw new Error('secret-database-details'); },
       create: (...args) => { transaction.create(...args); if (failAt === 'create') throw new Error('secret-database-details'); },
     })));
-    const failed = (await call(args(ref), createHandler({ env, getContext: async () => broken }))).result;
+    const failed = (await call(input, createHandler({ env, getContext: async () => broken }))).result;
     assert.equal(failed.isError, true); assert.match(failed.content[0].text, /Check Workbench and read the MoM again before retrying/);
     assert.doesNotMatch(JSON.stringify(failed), /secret-database-details/);
     assert.deepEqual(await state(ref), before);
-    assert.ok(!(await call(args(ref))).result.isError);
+    assert.ok(!(await call(input)).result.isError);
   }
 });
 
 test('a lost commit acknowledgement or closed caller leaves one complete edit; retrying the old read cannot duplicate it', async () => {
-  for (const close of [false, true]) {
-    const ref = await newMom(), abort = new AbortController();
+  for (const mode of ['append', 'replace_section']) for (const close of [false, true]) {
+    const ref = await newMom(), abort = new AbortController(), input = args(ref, { mode, section: 1 });
     const lost = withTransaction(async callback => {
       const value = await db.runTransaction(callback);
       if (close) { abort.abort(); return value; }
@@ -321,19 +370,21 @@ test('a lost commit acknowledgement or closed caller leaves one complete edit; r
     });
     const handle = createHandler({ env, getContext: async () => lost });
     if (close) {
-      try { await (await handle(new Request(request(rpc('tools/call', { name: 'edit_mom', arguments: args(ref) })), { signal: abort.signal }))).text(); }
+      try { await (await handle(new Request(request(rpc('tools/call', { name: 'edit_mom', arguments: input })), { signal: abort.signal }))).text(); }
       catch { /* The disconnected caller may receive no answer. */ }
       assert.equal(abort.signal.aborted, true);
     } else {
-      const failed = (await call(args(ref), handle)).result;
+      const failed = (await call(input, handle)).result;
       assert.equal(failed.isError, true); assert.match(failed.content[0].text, /may have saved/);
       assert.doesNotMatch(JSON.stringify(failed), /lost-ack-secret/);
     }
     const saved = await state(ref);
-    assert.equal(saved.data.content, rich + markdownToHtml('Added'));
+    const original = splitSections(rich);
+    assert.equal(saved.data.content, mode === 'append' ? rich + markdownToHtml('Added')
+      : original[0].html + markdownToHtml('Added') + original.slice(2).map(section => section.html).join(''));
     assert.equal(saved.data.prevEdited, 100); assert.deepEqual(saved.data.editedBy, context.owner);
     assert.equal(saved.backups.length, 1); assert.equal(saved.backups[0].afterEdited, saved.data.edited);
-    assert.equal((await call(args(ref))).result.content[0].text, 'This MoM changed since you read it: read it again.');
+    assert.equal((await call(input)).result.content[0].text, 'This MoM changed since you read it: read it again.');
     assert.deepEqual(await state(ref), saved);
   }
 });

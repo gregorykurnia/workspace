@@ -18,7 +18,11 @@ export const readInputMessages = {
   read_mom: 'Check read_mom inputs: give one nonempty MoM id.',
 };
 
-const markdown = new NodeHtmlMarkdown({ bulletMarker: '-' }, {
+const markdown = new NodeHtmlMarkdown({
+  bulletMarker: '-',
+  // Escape decoded text, not the inline HTML emitted by translators (or code).
+  textReplace: [[/&/g, '&amp;'], [/</g, '&lt;']],
+}, {
   // Markdown has no underline syntax; save_mom accepts this inline HTML.
   u: { prefix: '<u>', postfix: '</u>' },
 });
@@ -31,7 +35,20 @@ markdown.translators.set('li', context => {
   }
   return config;
 });
+markdown.aTagTranslators.set('u', markdown.translators.get('u'));
+for (const tag of ['u', 'code']) markdown.tableCellTranslators.set(tag, markdown.translators.get(tag));
+// GFM cells cannot contain block markdown: quote block boundaries as inline breaks.
+markdown.tableCellTranslators.set('p,li', { surroundingNewlines: 1 });
+markdown.tableCellTranslators.set('br', { content: '<br>', recurse: false });
+const tableCell = markdown.tableRowTranslators.get('td');
+for (const translators of [markdown.tableTranslators, markdown.tableRowTranslators]) {
+  translators.set('th,td', context => ({
+    ...tableCell(context),
+    postprocess: ({ content }) => content.trim().replace(/\|/g, '\\|').replace(/(?:\r?\n)+/g, '<br>'),
+  }));
+}
 const plainTags = new Set('p h1 h2 h3 strong em u s a ul ol li blockquote code pre hr br table thead tbody tr th td'.split(' '));
+const cellBlockTags = new Set('h1 h2 h3 ul ol li blockquote pre hr table'.split(' '));
 const textDrop = new Set(['script', 'style', 'template', 'noscript']);
 const spaceAfter = new Set('br p div li tr td th h1 h2 h3 h4 blockquote'.split(' '));
 const days = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -78,6 +95,22 @@ function isPlain(nodes) {
     const node = stack.pop();
     if (node.name && (!plainTags.has(node.name) || Object.keys(node.attribs).some(attr =>
       ['style', 'class', 'colwidth'].includes(attr) || attr.startsWith('data-')))) return false;
+    if (node.name === 'p' && !textOf(node.children).trim()) return false;
+    if (['th', 'td'].includes(node.name) && ['colspan', 'rowspan'].some(attr =>
+      node.attribs[attr] !== undefined && Number(node.attribs[attr]) !== 1)) return false;
+    if (node.name === 'table') {
+      const rows = node.children.flatMap(child => child.name === 'tr' ? [child]
+        : (child.children || []).filter(row => row.name === 'tr'));
+      const cells = rows.map(row => row.children.filter(cell => ['th', 'td'].includes(cell.name)));
+      // GFM always promotes the first row to headers and pads shorter rows.
+      if (!cells[0]?.length || cells.some((row, index) => row.length !== cells[0].length
+        || row.some(cell => cell.name !== (index === 0 ? 'th' : 'td')))) return false;
+    }
+    if (cellBlockTags.has(node.name)) {
+      for (let parent = node.parent; parent; parent = parent.parent) {
+        if (['th', 'td'].includes(parent.name)) return false;
+      }
+    }
     for (const child of node.children || []) stack.push(child);
   }
   return true;

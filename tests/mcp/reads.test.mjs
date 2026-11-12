@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { findItems, plainText, readMom, splitSections } from '../../api/_lib/reads.mjs';
+import { markdownToHtml } from '../../api/_lib/saves.mjs';
 import { createHandler } from '../../api/_lib/server.mjs';
 
 const uid = 'c5-owner', other = 'c5-other-admin';
@@ -199,6 +200,64 @@ test('ordered lists keep their stored starting number alongside nested bullets',
   assert.match(section.markdown, /^3\. Third/m);
   assert.match(section.markdown, /^4\. Fourth/m);
   assert.match(section.markdown, /- Nested/);
+});
+
+test('round trip keeps words and formatting or refuses a lossy section', async t => {
+  const table = cell => `<table><tr><th>Cell</th></tr><tr><td>${cell}</td></tr></table>`;
+  for (const [name, html, plain, formatting] of [
+    ['cell paragraphs', table('<p>one</p><p>two</p>'), true, /<td>one<br\s*\/?>two<\/td>/],
+    ['cell line breaks', table('one<br>two<br>three'), true, /<td>one<br\s*\/?>two<br\s*\/?>three<\/td>/],
+    ['cell inline formatting and repeated pipes', table('<p><strong>one | two | three</strong></p><p><u>four</u> <code>&lt;script&gt;</code></p>'), true,
+      /<strong>one \| two \| three<\/strong><br\s*\/?><u>four<\/u> <code>&lt;script&gt;<\/code>/],
+    ['literal tag names', '<p>&lt;name&gt; &lt;script&gt;keep&lt;/script&gt; &lt;u&gt; &amp;lt;name&amp;gt;</p>', true, /&lt;script&gt;keep&lt;\/script&gt;/],
+    ['literal tags in code', '<p><code>&lt;script&gt; &amp;lt;name&amp;gt;</code></p>', true, /<code>&lt;script&gt; &amp;lt;name&amp;gt;<\/code>/],
+    ['underline inside a link', '<p><a href="https://example.test/report"><u>under</u></a></p>', true,
+      /<a href="https:\/\/example.test\/report"><u>under<\/u><\/a>/],
+    ['unordered cell list', table('<ul><li>one</li><li>two</li></ul>'), false],
+    ['ordered cell list', table('<ol start="3"><li>one</li><li>two</li></ol>'), false],
+    ['merged columns', '<table><tr><th colspan="2">one</th></tr><tr><td>two</td><td>three</td></tr></table>', false],
+    ['merged rows', '<table><tr><th>one</th><th>two</th></tr><tr><td rowspan="2">three</td><td>four</td></tr><tr><td>five</td></tr></table>', false],
+    ['headerless table', '<table><tr><td>one</td></tr><tr><td>two</td></tr></table>', false],
+    ['empty paragraph', '<p>one</p><p></p><p>two</p>', false],
+    ['blank paragraph', '<p>one</p><p> \n </p><p>two</p>', false],
+    ['break-only paragraph', '<p>one</p><p><br></p><p>two</p>', false],
+    ['empty cell paragraph', table('<p>one</p><p></p><p>two</p>'), false],
+    ['empty table', '<table></table>', false],
+    ['mixed header cells', '<table><tr><th>one</th><td>two</td></tr></table>', false],
+    ['uneven row lengths', '<table><tr><th>one</th><th>two</th></tr><tr><td>three</td></tr></table>', false],
+    ['later header cells', '<table><tr><th>one</th></tr><tr><th>two</th></tr></table>', false],
+    ['cell blockquote', table('<blockquote>one</blockquote>'), false],
+    ['unmerged span attributes', '<table><tr><th colspan="1">one</th></tr><tr><td rowspan="1">two</td></tr></table>', true, /<td>two<\/td>/],
+    ['empty section', '', true, /^$/],
+  ]) await t.test(name, () => {
+    const [section] = splitSections(html), rewritten = markdownToHtml(section.markdown);
+    assert.equal(section.plain, plain);
+    if (plain) {
+      assert.equal(plainText(rewritten), plainText(html));
+      assert.match(rewritten, formatting);
+    }
+  });
+});
+
+test('round trip keeps repeated literal text, case and long bodies without decoding entities twice', () => {
+  for (const text of ['&lt;Name&gt; &lt;NAME&gt; &lt;name&gt; &amp;lt;name&amp;gt;', '&lt;script&gt;one &amp; two&lt;/script&gt; '.repeat(8000)]) {
+    const html = `<p>${text}</p>`, [section] = splitSections(html);
+    assert.equal(section.plain, true);
+    assert.ok(plainText(markdownToHtml(section.markdown)) === plainText(html), 'Round trip changed literal text');
+  }
+});
+
+test('round trip read_mom quotes cell blocks with breaks in the whole note and numbered section', async () => {
+  const content = '<h2>Cells</h2><table><tr><th>Paragraphs</th><th>List</th></tr><tr>'
+    + '<td><p>one</p><p>two &lt;script&gt;</p></td><td><ul><li>three</li><li>four</li></ul></td></tr></table>';
+  await seed('moms', [{ id: 'c5-cell-blocks', folderId: 'c5-acme', content }]);
+  const result = await read('c5-cell-blocks');
+  for (const quoted of [result.markdown, result.sections[1].markdown]) {
+    assert.match(quoted, /one<br>two &lt;script>/);
+    assert.match(quoted, /three<br>four/);
+    assert.doesNotMatch(quoted, /onetwo|threefour|<script>/);
+  }
+  assert.equal(result.sections[1].plain, false);
 });
 
 test('body text follows browser spacing, entities and inert content rules for HTML and Delta', () => {
