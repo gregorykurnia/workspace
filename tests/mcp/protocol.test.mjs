@@ -28,13 +28,13 @@ after(async () => {
   for (const app of getApps()) await deleteApp(app);
 });
 
-test('SDK Streamable HTTP discovers seven tools and all nine instructions, then saves notes, a link and an uploaded PDF', async t => {
+test('SDK Streamable HTTP discovers eight tools and all ten instructions, then saves notes, a link and an uploaded PDF', async t => {
   const client = await connectClient(http.origin);
   t.after(() => client.close());
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom', 'edit_mom']);
+  assert.deepEqual(tools.map(tool => tool.name), ['list_places', 'save_mom', 'save_link', 'save_file', 'find_items', 'read_mom', 'edit_mom', 'create_area']);
   const steps = client.getInstructions().split('\n').slice(1);
-  assert.equal(steps.length, 9);
+  assert.equal(steps.length, 10);
   const required = [
     ['Pick the form', 'whole chat → MoM', 'web address', '→ link', 'owner uploaded', '→ file'],
     ['Call list_places', 'client, project or topic words', 'without a query if nothing matches'],
@@ -45,6 +45,7 @@ test('SDK Streamable HTTP discovers seven tools and all nine instructions, then 
     ['call find_items', 'meeting, client or topic words', 'any date the owner gave', 'relative date', 'yyyy-mm-dd', 'today in Asia/Jakarta', 'say the date used', 'latest one not in the future', 'One MoM match → read_mom', 'up to five (title, date, path)', 'ask which', 'none → say so', 'company, area or rough date', 'search again with fewer words', 'Never pick between matches yourself'],
     ['notes or exact content', 'quote what read_mom returns', 'say so when summarising instead'],
     ['read_mom first', 'new text', 'before → after', "owner's yes in chat", "tool approval prompt isn't a yes", 'Prefer append', 'only when asked to change existing text', "section isn't plain", 'formatting would be lost', 'offer to append instead', 'changed since you read it', 'read again and show the change again', 'give the link', '"undo" puts it back', "answer was lost, read the MoM again and ask before retrying"],
+    ['New sub-areas', 'only when the owner asks for one', 'Call list_places to find the parent', 'ask which', 'full new path', "create_area only after the owner's yes", "already named the parent and the name, don't ask again", 'each level in turn', 'created: false'],
   ];
   required.forEach((phrases, i) => {
     assert.ok(steps[i].startsWith(`${i + 1}. `));

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { ConnectorError } from './firebase.mjs';
 import { destination } from './destinations.mjs';
 
-const id = z.string().trim().min(1).refine(value => !value.includes('/') && !['.', '..'].includes(value) && Buffer.byteLength(value) <= 1500);
+export const id = z.string().trim().min(1).refine(value => !value.includes('/') && !['.', '..'].includes(value) && Buffer.byteLength(value) <= 1500);
 const place = { areaId: id, groupId: id.optional() };
 const LINK_TYPE = { link: 'link', slides: 'presentation', pdf: 'pdf', sheet: 'spreadsheet', image: 'image', other: 'other' };
 export const MAX_CONTENT_BYTES = 500 * 1024;

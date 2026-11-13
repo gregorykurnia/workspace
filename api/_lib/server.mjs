@@ -9,6 +9,7 @@ import { inputMessages, linkInputs, momInputs, saveLink, saveMom } from './saves
 import { fileInputs, saveFile } from './files.mjs';
 import { findInputs, findItems, readInputs, readInputMessages, readMom } from './reads.mjs';
 import { editInputMessage, editInputs, editMom } from './edits.mjs';
+import { areaInputMessage, areaInputs, createArea } from './areas.mjs';
 
 const inputs = z.object({ query: z.string().trim().optional().describe('Client, project or topic words; omit to see all places.') });
 const saves = {
@@ -54,9 +55,9 @@ export function createHandler({ env = process.env, getContext = getWorkbench, up
     if ('method' in rpc && rpc.method === 'tools/call') {
       const name = rpc.params?.name;
       if (typeof name !== 'string') return rpcError(-32602, 'Name one Workbench tool to call.', id);
-      const schema = name === 'list_places' ? inputs : Object.hasOwn(saves, name) ? saves[name].schema : Object.hasOwn(reads, name) ? reads[name].schema : name === 'edit_mom' ? editInputs : null;
+      const schema = name === 'list_places' ? inputs : Object.hasOwn(saves, name) ? saves[name].schema : Object.hasOwn(reads, name) ? reads[name].schema : name === 'edit_mom' ? editInputs : name === 'create_area' ? areaInputs : null;
       if (schema && !schema.safeParse(rpc.params.arguments === undefined ? {} : rpc.params.arguments).success) {
-        return rpcError(-32602, name === 'list_places' ? 'Check list_places inputs: query must be text.' : inputMessages[name] || readInputMessages[name] || editInputMessage, id);
+        return rpcError(-32602, name === 'list_places' ? 'Check list_places inputs: query must be text.' : inputMessages[name] || readInputMessages[name] || (name === 'create_area' ? areaInputMessage : editInputMessage), id);
       }
     }
     try {
@@ -66,7 +67,7 @@ export function createHandler({ env = process.env, getContext = getWorkbench, up
       url.search = '';
       const handler = createMcpHandler(server => {
         server.registerTool('list_places', {
-          description: 'Find visible Workbench areas with full paths, groupings, and up to three recent MoM titles (none for locked areas). Search client, project or topic words; omit query if nothing matches. Pick MoM, link or file, propose title and full path with a reason, and save only after the owner says yes in chat (a tool approval is not a yes); do not ask again if the owner already named place and form. Never invent a place. Return its link after saving; ask before retrying a save whose answer was lost.',
+          description: 'Find visible Workbench areas with full paths, groupings, and up to three recent MoM titles (none for locked areas). Search client, project or topic words; omit query if nothing matches. Pick MoM, link or file, propose title and full path with a reason, and save only after the owner says yes in chat (a tool approval is not a yes); do not ask again if the owner already named place and form. Never invent a place; make a new sub-area only with create_area when the owner asks or agrees. Return its link after saving; ask before retrying a save whose answer was lost.',
           inputSchema: inputs.shape,
           annotations: { readOnlyHint: true, openWorldHint: false },
         }, async args => {
@@ -113,6 +114,18 @@ export function createHandler({ env = process.env, getContext = getWorkbench, up
             return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
           } catch (error) {
             return { isError: true, content: [{ type: 'text', text: error instanceof ConnectorError ? error.message : 'Could not confirm the MoM edit was saved. Check Workbench and read the MoM again before retrying; it may have saved.' }] };
+          }
+        });
+        server.registerTool('create_area', {
+          description: 'Create a sub-area under an existing visible area, only when the owner asks for a new sub-area or agrees to one. Call list_places to find the parent; if several areas match its name, ask which. Propose the full new path and create only after the owner says yes in chat (tool approval is not a yes); do not ask again if the owner already named the parent and the name. For deeper levels, create each in turn under the id the last call returned, then save into the new area. A visible sub-area with the same name is returned (created: false) instead of a duplicate; say it already existed, and that it is private if private is true. Give the link; if the answer was lost, call list_places and ask before retrying.',
+          inputSchema: areaInputs.shape,
+          annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        }, async args => {
+          try {
+            const value = await createArea({ ...await getContext(settings), origin: url.origin }, args);
+            return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
+          } catch (error) {
+            return { isError: true, content: [{ type: 'text', text: error instanceof ConnectorError ? error.message : 'Could not confirm the area was created. Call list_places to check before retrying; it may have been created.' }] };
           }
         });
       }, {

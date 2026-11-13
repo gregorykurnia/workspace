@@ -330,7 +330,7 @@ test('transaction retries recheck area privacy, locks, grouping membership and t
 test('HTTP advertises edit_mom, returns structured results and rejects invalid input before Firebase', async () => {
   const listed = (await rpcResponse(handler, rpc('tools/list'))).data.result.tools;
   const tool = listed.find(tool => tool.name === 'edit_mom');
-  assert.equal(listed.length, 7); assert.equal(tool.annotations.readOnlyHint, false); assert.equal(tool.annotations.destructiveHint, true);
+  assert.equal(listed.length, 8); assert.equal(tool.annotations.readOnlyHint, false); assert.equal(tool.annotations.destructiveHint, true);
   const ref = await newMom();
   const response = (await call(args(ref))).result;
   assert.deepEqual(JSON.parse(response.content[0].text), response.structuredContent);

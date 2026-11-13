@@ -70,8 +70,13 @@ Phase 1 and its release (C1–C4, R1, O1–O4): done, see `docs/chat-connector-p
 - [x] R2 Phase 2 review: read C5–C7's diff against §F–§I; run `npm run test:unit`, `npm run test:mcp`, `npm run test:rules` and `npm run test:emu` once; hunt for MoM content reachable from a hidden or locked item through any tool or error message, an edit that skips the stale check or the backup, and a section rewrite that drops formatting · Opus 5.5 High: phase review of Sol-built work
 - [x] 2.F1 Markdown round trip keeps every word (spec §G, §H). Files: `api/_lib/reads.mjs`, `tests/mcp/reads.test.mjs`, `tests/mcp/edits.test.mjs`. Found by R2: a table cell holding two paragraphs or a list reads as one run-on word (`<td><p>one</p><p>two</p></td>` → "onetwo") and is marked `plain`, so `replace_section` saves the merged text; text that looks like a tag (`&lt;name&gt;`, `&lt;script&gt;`) comes out of `read_mom` unescaped and the rewrite's sanitizer deletes it; other `plain: true` losses: a merged cell (`colspan`/`rowspan` over 1), a table without a header row, empty paragraphs (blank lines), `<u>` inside a link. Fix each by keeping it through the round trip (cells: blocks joined with `<br>`; text `<` escaped) or by marking the section `plain: false`. Done when: a test runs each case through `splitSections` → `markdownToHtml` and gets the same words and formatting back or `plain: false`, and `read_mom` quotes the cell text with its line break; `npm run test:mcp` passes; `node --check` on changed files [no look] · Sol Max: fix of C5's converter
 
+## Phase 3: New sub-areas from chat
+**Ask (2026-11-13).** "Put this file in a new sub-area under 'Prospects' called abc", and a sub-area of that sub-area.
+One tool, `create_area` (spec §J); cut: top-level areas, groupings, renaming, icons.
+- [x] C8 `create_area` (spec §J). Files: `api/_lib/areas.mjs` (new), `api/_lib/server.mjs`, `api/_lib/instructions.mjs`, `tests/mcp/`. Done when: `npm run test:mcp` passes with `tests/mcp/areas.test.mjs`; a diff review found nothing open · Opus 5.5 High: writes saved data
+
 ## Release 2 (owner)
-- [ ] O5 *owner*: say "release the connector". Claude merges `main` into `chat-connector` if it moved, runs
+- [ ] O5 *owner*: say "release the connector" (ships Phase 2 and Phase 3). Claude merges `main` into `chat-connector` if it moved, runs
   `npm run test:unit` and `npm run test:mcp`, then `git push origin chat-connector:main` (fast-forward only; if it's
   blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site. No new settings.
 - [ ] O6 *owner*: in a new chat (so claude.ai picks up the new tools), ask "pull up our notes from <a real meeting>"
@@ -176,3 +181,13 @@ so clients are already refused; C6 adds a rules test that proves it. Returns `{ 
    only after the owner's yes in chat. Prefer `append`; replace a section only when asked to change existing text.
    If the section isn't plain, say its formatting would be lost and offer to append instead. On "changed since you
    read it", read again and show the change again. After an edit, give the link and say "undo" puts it back.
+
+**§J `create_area({ parentId, name })`.** In one transaction: the parent and every area up its chain pass
+`destination`'s checks (else "Choose an existing, visible Workbench area."); a visible sibling whose trimmed name
+matches in any case is returned with `created: false` and nothing is written, so a retry never makes a second area;
+otherwise writes the app's new-area record (`js/ui/area.js`): `id`, `name` (trimmed, ≤ 200, one line, no ›; matched after NFC), `icon` 🌿, `parent`,
+`created`, `createdBy`, plus the parent's `privateTo` (as `privOf`) and `source: 'claude-chat'`. Returns
+`{ id, path, url, created, private }`. No top-level areas. What Claude is told, added to §I:
+10. New sub-areas only when the owner asks or agrees; find the parent with `list_places` (several matches → ask which);
+   propose the full new path and create after the owner's yes (not again if they named parent and name); deeper levels
+   one call each; `created: false` → say it already existed (and if it's private) and use it.
