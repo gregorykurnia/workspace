@@ -73,15 +73,17 @@ Phase 1 and its release (C1–C4, R1, O1–O4): done, see `docs/chat-connector-p
 ## Phase 3: New sub-areas from chat
 **Ask (2026-11-13).** "Put this file in a new sub-area under 'Prospects' called abc", and a sub-area of that sub-area.
 One tool, `create_area` (spec §J); cut: top-level areas, groupings, renaming, icons.
+**Next ask (2026-11-13, after Release 2):** "also the renaming areas, create groupings etc." Not planned yet.
 - [x] C8 `create_area` (spec §J). Files: `api/_lib/areas.mjs` (new), `api/_lib/server.mjs`, `api/_lib/instructions.mjs`, `tests/mcp/`. Done when: `npm run test:mcp` passes with `tests/mcp/areas.test.mjs`; a diff review found nothing open · Opus 5.5 High: writes saved data
 
 ## Release 2 (owner)
-- [ ] O5 *owner*: say "release the connector" (ships Phase 2 and Phase 3). Claude merges `main` into `chat-connector` if it moved, runs
+- [x] O5 *owner*: say "release the connector" (ships Phase 2 and Phase 3). Claude merges `main` into `chat-connector` if it moved, runs
   `npm run test:unit` and `npm run test:mcp`, then `git push origin chat-connector:main` (fast-forward only; if it's
-  blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site. No new settings.
+  blocked, run it yourself with `!`), and checks `/api/mcp/wrong` answers 404 on the live site. No new settings. Done 2026-11-13 (`a63a23f`).
 - [ ] O6 *owner*: in a new chat (so claude.ai picks up the new tools), ask "pull up our notes from <a real meeting>"
   without naming the company; check Claude asks until one MoM is left and quotes it. Then on a test MoM: add a line,
-  rewrite one section, ask Claude to undo it; check each in the app.
+  rewrite one section, ask Claude to undo it; check each in the app. Then: "put this in a new sub-area under
+  <a real area> called test", and one more level under it; check both in the app, then delete them there.
 
 ## Spec
 
